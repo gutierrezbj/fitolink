@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  @apply rounded-lg;
+  height: 100%;
+  width: 100%;
+}

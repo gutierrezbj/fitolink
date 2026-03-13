@@ -1,0 +1,45 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - '127.0.0.1:6040:27017'
+    volumes:
+      - fitolink-mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: fitolink
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - '127.0.0.1:4040:4040'
+    environment:
+      - NODE_ENV=development
+      - PORT=4040
+      - MONGODB_URI=mongodb://mongo:27017/fitolink
+      - JWT_SECRET=dev-secret-change-in-production
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+    depends_on:
+      - mongo
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_SHOW_DEMO: ${VITE_SHOW_DEMO:-true}
+    ports:
+      - '127.0.0.1:3040:3000'
+    environment:
+      - VITE_API_URL=http://localhost:4040
+      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+
+volumes:
+  fitolink-mongo-data:

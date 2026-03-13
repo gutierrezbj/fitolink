@@ -1,0 +1,48 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    ports:
+      - '127.0.0.1:3040:3000'
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - '127.0.0.1:4040:4040'
+    environment:
+      - NODE_ENV=production
+      - PORT=4040
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+    restart: unless-stopped
+
+  geo-pipeline:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.geo
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - COPERNICUS_CLIENT_ID=${COPERNICUS_CLIENT_ID}
+      - COPERNICUS_CLIENT_SECRET=${COPERNICUS_CLIENT_SECRET}
+    restart: 'no'
+    # Run via cron on the host: docker compose run geo-pipeline
+
+  proxy:
+    image: nginx:alpine
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped

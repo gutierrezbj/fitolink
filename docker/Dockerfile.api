@@ -1,0 +1,36 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy root package files for workspace resolution
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+
+RUN npm ci --workspace=packages/shared --workspace=apps/api
+
+# Copy source
+COPY packages/shared/ ./packages/shared/
+COPY apps/api/ ./apps/api/
+
+# Build shared first, then api
+RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=apps/api
+
+# --- Production stage ---
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+
+RUN npm ci --omit=dev --workspace=packages/shared --workspace=apps/api
+
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+
+EXPOSE 4000
+
+CMD ["node", "apps/api/dist/server.js"]
