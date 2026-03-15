@@ -7,6 +7,8 @@ import DashboardLayout from '@/layouts/DashboardLayout.js';
 import DashboardHome from '@/features/admin/DashboardHome.js';
 import ParcelsPage from '@/features/parcels/ParcelsPage.js';
 import AlertsPage from '@/features/alerts/AlertsPage.js';
+import OperationsPage from '@/features/operations/OperationsPage.js';
+import CreateParcelPage from '@/features/parcels/CreateParcelPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -31,10 +33,10 @@ export default function App() {
         }
       >
         <Route index element={<DashboardHome />} />
+        <Route path="parcels/new" element={<CreateParcelPage />} />
         <Route path="parcels" element={<ParcelsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
-        {/* Placeholder routes for future features */}
-        <Route path="operations" element={<PlaceholderPage title="Operaciones" />} />
+        <Route path="operations" element={<OperationsPage />} />
         <Route path="assignments" element={<PlaceholderPage title="Asignaciones" />} />
         <Route path="b2b/parcels" element={<PlaceholderPage title="Parcelas Aseguradas" />} />
         <Route path="b2b/alerts" element={<PlaceholderPage title="Alertas B2B" />} />

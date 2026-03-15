@@ -4,11 +4,71 @@ NDVI/NDRE computation from Sentinel-2 bands.
 NDVI = (NIR - RED) / (NIR + RED) = (B08 - B04) / (B08 + B04)
 NDRE = (NIR - RED_EDGE) / (NIR + RED_EDGE) = (B08 - B05) / (B08 + B05)
 """
+import os
+import zipfile
 import numpy as np
+import rasterio
+from rasterio.mask import mask as rio_mask
+from shapely.geometry import shape
 import structlog
 from dataclasses import dataclass
 
 logger = structlog.get_logger(__name__)
+
+
+def extract_bands_from_safe(
+    zip_path: str,
+    parcel_geometry: dict,
+    extract_dir: str | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Extract B04 (Red) and B08 (NIR) at 10m resolution from a Sentinel-2 SAFE ZIP,
+    clipped to the parcel geometry.
+
+    Returns (nir_array, red_array) clipped to parcel bounds.
+    """
+    if extract_dir is None:
+        extract_dir = os.path.dirname(zip_path)
+
+    # Extract ZIP
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        zf.extractall(extract_dir)
+
+    # Find B04 and B08 at 10m resolution inside SAFE structure
+    safe_dir = os.path.join(extract_dir, [
+        d for d in os.listdir(extract_dir) if d.endswith('.SAFE')
+    ][0])
+
+    b04_path = None
+    b08_path = None
+    for root, _dirs, files in os.walk(safe_dir):
+        for f in files:
+            if 'R10m' in root or '_10m' in f:
+                if '_B04_' in f and f.endswith('.jp2'):
+                    b04_path = os.path.join(root, f)
+                elif '_B08_' in f and f.endswith('.jp2'):
+                    b08_path = os.path.join(root, f)
+
+    if not b04_path or not b08_path:
+        raise FileNotFoundError(f'B04 or B08 bands not found in {safe_dir}')
+
+    logger.info('bands_found', b04=b04_path, b08=b08_path)
+
+    # Build parcel shape for clipping
+    parcel_shape = shape(parcel_geometry)
+
+    # Read and clip B04 (Red)
+    with rasterio.open(b04_path) as src:
+        red_clipped, _ = rio_mask(src, [parcel_shape], crop=True, all_touched=True)
+        red = red_clipped[0]  # First band
+
+    # Read and clip B08 (NIR)
+    with rasterio.open(b08_path) as src:
+        nir_clipped, _ = rio_mask(src, [parcel_shape], crop=True, all_touched=True)
+        nir = nir_clipped[0]
+
+    logger.info('bands_extracted', red_shape=red.shape, nir_shape=nir.shape)
+    return nir, red
 
 
 @dataclass

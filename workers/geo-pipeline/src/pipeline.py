@@ -2,13 +2,15 @@
 Main pipeline runner - orchestrates the full Sentinel-2 → NDVI → Alert flow.
 Runs as a cron job every 5 days.
 """
+import os
+import shutil
 import structlog
 from datetime import datetime, timedelta
 from pymongo import MongoClient
-from bson import ObjectId
 
-from .config import MONGODB_URI, CLOUD_COVER_MAX
+from .config import MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR
 from .ingestion.copernicus import CopernicusClient
+from .processing.ndvi import extract_bands_from_safe, compute_ndvi, compute_parcel_stats
 from .alerting.detector import detect_anomaly
 
 logger = structlog.get_logger(__name__)
@@ -69,29 +71,61 @@ def run_pipeline() -> None:
                 logger.info('no_imagery_found', parcel=parcel_name)
                 continue
 
-            # For MVP: simulate NDVI computation from product metadata
-            # In production: download bands, compute NDVI with rasterio
             product = products[0]
+            product_id = product.get('Id', '')
             scene_id = product.get('Name', 'unknown')
 
-            # TODO: Replace with actual rasterio-based NDVI computation
-            # For now, we use the existing ndviHistory to simulate
+            # Download Sentinel-2 product
+            os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+            zip_path = os.path.join(DOWNLOAD_DIR, f'{scene_id}.zip')
+
+            try:
+                copernicus.download_product(product_id, zip_path)
+
+                # Extract B04+B08, clip to parcel geometry, compute NDVI
+                nir, red = extract_bands_from_safe(zip_path, parcel['geometry'], DOWNLOAD_DIR)
+                ndvi_array = compute_ndvi(nir, red)
+                stats = compute_parcel_stats(ndvi_array)
+
+                current_mean = stats.mean
+
+                # Store NDVI reading in parcel history
+                new_reading = {
+                    'date': datetime.now(),
+                    'mean': stats.mean,
+                    'min': stats.min_val,
+                    'max': stats.max_val,
+                    'anomalyDetected': False,
+                    'source': 'sentinel2',
+                }
+                db.parcels.update_one(
+                    {'_id': parcel['_id']},
+                    {'$push': {'ndviHistory': new_reading}},
+                )
+                logger.info('ndvi_computed', parcel=parcel_name, mean=stats.mean, pixels=stats.pixel_count)
+
+            finally:
+                # Cleanup downloaded/extracted files
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
+                for entry in os.listdir(DOWNLOAD_DIR):
+                    entry_path = os.path.join(DOWNLOAD_DIR, entry)
+                    if entry.endswith('.SAFE') and os.path.isdir(entry_path):
+                        shutil.rmtree(entry_path)
+
+            # Run anomaly detection
             ndvi_history = parcel.get('ndviHistory', [])
             previous_means = [r['mean'] for r in ndvi_history[-5:]]
-
-            if not previous_means:
-                logger.info('no_ndvi_history', parcel=parcel_name)
-                continue
-
-            # Simulate current reading (in production: computed from bands)
-            # For MVP demo, we check the last reading for anomalies
-            current_mean = previous_means[-1] if previous_means else 0.5
-
-            # Run anomaly detection on latest reading
-            previous_for_detection = previous_means[:-1] if len(previous_means) > 1 else []
-            result = detect_anomaly(current_mean, list(reversed(previous_for_detection)))
+            result = detect_anomaly(current_mean, previous_means)
 
             if result.is_anomaly:
+                # Mark the reading as anomaly
+                db.parcels.update_one(
+                    {'_id': parcel['_id']},
+                    {'$set': {'ndviHistory.$[last].anomalyDetected': True}},
+                    array_filters=[{'last.date': new_reading['date']}],
+                )
+
                 # Create alert in MongoDB
                 alert = {
                     'parcelId': parcel['_id'],

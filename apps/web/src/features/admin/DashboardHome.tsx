@@ -23,8 +23,23 @@ export default function DashboardHome() {
     enabled: user?.role === 'farmer',
   });
 
+  const { data: operationsData } = useQuery({
+    queryKey: ['operations', 'mine'],
+    queryFn: async () => {
+      const res = await api.get('/operations/mine');
+      return res.data.data;
+    },
+    enabled: user?.role === 'farmer',
+  });
+
   const parcels = parcelsData || [];
   const alerts = alertsData || [];
+  const operations = operationsData || [];
+  const thisMonthOps = operations.filter((op: { createdAt: string }) => {
+    const d = new Date(op.createdAt);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
   const activeAlerts = alerts.filter((a: { status: string }) => a.status === 'new' || a.status === 'notified');
   const totalHa = parcels.reduce((sum: number, p: { areaHa: number }) => sum + p.areaHa, 0);
 
@@ -58,7 +73,7 @@ export default function DashboardHome() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Operaciones</p>
-          <p className="text-3xl font-bold text-gray-900">0</p>
+          <p className="text-3xl font-bold text-gray-900">{thisMonthOps.length}</p>
           <p className="text-xs text-gray-400 mt-1">Este mes</p>
         </div>
       </div>

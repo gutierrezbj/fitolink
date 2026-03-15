@@ -15,5 +15,8 @@ NDVI_CRITICAL_THRESHOLD: float = 0.30  # Absolute NDVI below 0.30
 NDVI_HIGH_THRESHOLD: float = 0.40
 CLOUD_COVER_MAX: float = 50.0  # Skip images with >50% cloud cover
 
+# Downloads
+DOWNLOAD_DIR: str = os.getenv('DOWNLOAD_DIR', '/tmp/fitolink-downloads')
+
 # Schedule
 PROCESSING_INTERVAL_DAYS: int = 5

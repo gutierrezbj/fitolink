@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 
@@ -24,11 +24,33 @@ const STATUS_LABELS = {
 };
 
 export default function AlertsPage() {
+  const queryClient = useQueryClient();
+
   const { data: alertsData, isLoading } = useQuery({
     queryKey: ['alerts', 'mine'],
     queryFn: async () => {
       const res = await api.get('/alerts/mine');
       return res.data.data;
+    },
+  });
+
+  const falsePosiveMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      await api.patch(`/alerts/${alertId}`, { status: 'resolved', resolvedBy: 'false_positive' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
+    },
+  });
+
+  const requestServiceMutation = useMutation({
+    mutationFn: async (alert: { _id: string; parcelId: { _id: string } }) => {
+      await api.post('/operations', { parcelId: alert.parcelId._id, type: 'phytosanitary', alertId: alert._id });
+      await api.patch(`/alerts/${alert._id}`, { status: 'acknowledged' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
+      queryClient.invalidateQueries({ queryKey: ['operations', 'mine'] });
     },
   });
 
@@ -62,7 +84,7 @@ export default function AlertsPage() {
             ndviDelta: number;
             aiConfidence: number;
             detectedAt: string;
-            parcelId: { name: string; cropType: string; province: string };
+            parcelId: { _id: string; name: string; cropType: string; province: string };
           }) => (
             <div
               key={alert._id}
@@ -99,11 +121,19 @@ export default function AlertsPage() {
 
               {alert.status === 'new' || alert.status === 'notified' ? (
                 <div className="mt-4 flex gap-2">
-                  <button className="bg-brand-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors">
-                    Solicitar servicio
+                  <button
+                    onClick={() => requestServiceMutation.mutate(alert)}
+                    disabled={requestServiceMutation.isPending}
+                    className="bg-brand-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+                  >
+                    {requestServiceMutation.isPending ? 'Solicitando...' : 'Solicitar servicio'}
                   </button>
-                  <button className="border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    Falso positivo
+                  <button
+                    onClick={() => falsePosiveMutation.mutate(alert._id)}
+                    disabled={falsePosiveMutation.isPending}
+                    className="border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    {falsePosiveMutation.isPending ? 'Marcando...' : 'Falso positivo'}
                   </button>
                 </div>
               ) : null}
