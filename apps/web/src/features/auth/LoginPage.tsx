@@ -4,7 +4,9 @@ import { useAuthStore } from './authStore.js';
 import { api } from '@/lib/api.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SHOW_DEMO = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO === 'true';
+const SHOW_DEMO = import.meta.env.DEV
+  || import.meta.env.VITE_SHOW_DEMO === 'true'
+  || new URLSearchParams(window.location.search).has('demo');
 
 const DEMO_ACCOUNTS = [
   { label: 'Agricultor', googleId: 'demo-farmer-001', icon: '🌾', color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },

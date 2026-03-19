@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
+import { useAuthStore } from '@/features/auth/authStore.js';
 import { formatDate } from '@/lib/utils.js';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -25,15 +27,21 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function OperationsPage() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const isPilot = user?.role === 'pilot';
+  const endpoint = isPilot ? '/operations/assignments' : '/operations/mine';
+
   const { data: operationsData, isLoading } = useQuery({
-    queryKey: ['operations', 'mine'],
+    queryKey: ['operations', isPilot ? 'assignments' : 'mine'],
     queryFn: async () => {
-      const res = await api.get('/operations/mine');
+      const res = await api.get(endpoint);
       return res.data.data;
     },
   });
 
-  const operations = operationsData || [];
+  const allOps = operationsData || [];
+  const operations = isPilot ? allOps.filter((op: { status: string }) => op.status === 'completed') : allOps;
 
   if (isLoading) {
     return <div className="text-center py-10 text-gray-500">Cargando operaciones...</div>;
@@ -42,9 +50,11 @@ export default function OperationsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Operaciones</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isPilot ? 'Historial' : 'Operaciones'}
+        </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Historial de servicios solicitados para tus parcelas
+          {isPilot ? 'Operaciones completadas' : 'Historial de servicios solicitados para tus parcelas'}
         </p>
       </div>
 
@@ -66,7 +76,8 @@ export default function OperationsPage() {
           }) => (
             <div
               key={op._id}
-              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow"
+              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow cursor-pointer"
+              onClick={() => navigate(`/dashboard/operations/${op._id}`)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

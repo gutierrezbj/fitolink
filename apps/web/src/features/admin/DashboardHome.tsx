@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
+import PilotDashboardHome from '@/features/pilot/PilotDashboardHome.js';
 
 export default function DashboardHome() {
   const { user } = useAuthStore();
+
+  if (user?.role === 'pilot') return <PilotDashboardHome />;
 
   const { data: parcelsData } = useQuery({
     queryKey: ['parcels', 'mine'],

@@ -9,6 +9,8 @@ import ParcelsPage from '@/features/parcels/ParcelsPage.js';
 import AlertsPage from '@/features/alerts/AlertsPage.js';
 import OperationsPage from '@/features/operations/OperationsPage.js';
 import CreateParcelPage from '@/features/parcels/CreateParcelPage.js';
+import AssignmentsPage from '@/features/pilot/AssignmentsPage.js';
+import OperationDetailPage from '@/features/operations/OperationDetailPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -36,8 +38,9 @@ export default function App() {
         <Route path="parcels/new" element={<CreateParcelPage />} />
         <Route path="parcels" element={<ParcelsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
+        <Route path="operations/:id" element={<OperationDetailPage />} />
         <Route path="operations" element={<OperationsPage />} />
-        <Route path="assignments" element={<PlaceholderPage title="Asignaciones" />} />
+        <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="b2b/parcels" element={<PlaceholderPage title="Parcelas Aseguradas" />} />
         <Route path="b2b/alerts" element={<PlaceholderPage title="Alertas B2B" />} />
         <Route path="b2b/inspections" element={<PlaceholderPage title="Inspecciones" />} />

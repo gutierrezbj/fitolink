@@ -1,5 +1,6 @@
 import { Operation, type IOperation } from '../models/Operation.js';
 import { Parcel } from '../models/Parcel.js';
+import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 import type { CreateOperation, CompleteOperation } from '@fitolink/shared';
 
@@ -13,6 +14,43 @@ export async function createOperation(farmerId: string, data: CreateOperation): 
     farmerId,
     status: 'requested',
   });
+
+  // Auto-assign nearest verified pilot
+  try {
+    let pilot = null;
+    // Try geospatial match first (within 100km of parcel centroid)
+    if (parcel.geometry?.coordinates?.length) {
+      const coords = parcel.geometry.coordinates[0] as Array<[number, number]>;
+      const sum = coords.reduce(
+        (acc, c) => [acc[0] + c[0], acc[1] + c[1]] as [number, number],
+        [0, 0] as [number, number],
+      );
+      const centroid: [number, number] = [sum[0] / coords.length, sum[1] / coords.length];
+
+      pilot = await User.findOne({
+        role: 'pilot',
+        isVerified: true,
+        location: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: centroid },
+            $maxDistance: 100_000,
+          },
+        },
+      });
+    }
+    // Fallback: any verified pilot
+    if (!pilot) {
+      pilot = await User.findOne({ role: 'pilot', isVerified: true });
+    }
+    if (pilot) {
+      operation.pilotId = pilot._id;
+      operation.status = 'assigned';
+      await operation.save();
+    }
+  } catch {
+    // Non-critical: operation stays in 'requested' if assignment fails
+  }
+
   return operation;
 }
 

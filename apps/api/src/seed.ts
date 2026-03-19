@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { User } from './models/User.js';
 import { Parcel } from './models/Parcel.js';
 import { Alert } from './models/Alert.js';
+import { Operation } from './models/Operation.js';
 import { logger } from './utils/logger.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
@@ -11,7 +12,7 @@ async function seed() {
   logger.info('Connected to MongoDB for seeding');
 
   // Clear existing data
-  await Promise.all([User.deleteMany({}), Parcel.deleteMany({}), Alert.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), Parcel.deleteMany({}), Alert.deleteMany({}), Operation.deleteMany({})]);
 
   // Create admin user
   const admin = await User.create({
@@ -119,7 +120,7 @@ async function seed() {
   });
 
   // Create alerts for parcel1
-  await Alert.create({
+  const alert1 = await Alert.create({
     parcelId: parcel1._id,
     type: 'ndvi_drop',
     severity: 'high',
@@ -131,7 +132,7 @@ async function seed() {
     imagery: { sentinelScene: 'S2B_MSIL2A_20260130T110119' },
   });
 
-  await Alert.create({
+  const alert2 = await Alert.create({
     parcelId: parcel1._id,
     type: 'stress_pattern',
     severity: 'medium',
@@ -143,10 +144,106 @@ async function seed() {
     imagery: { sentinelScene: 'S2A_MSIL2A_20260204T110121' },
   });
 
+  // Third parcel — healthy contrast
+  const parcel3 = await Parcel.create({
+    ownerId: farmer._id,
+    name: 'Cereal Guadalquivir',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-4.8000, 37.8800],
+        [-4.7880, 37.8800],
+        [-4.7880, 37.8720],
+        [-4.8000, 37.8720],
+        [-4.8000, 37.8800],
+      ]],
+    },
+    areaHa: 25.0,
+    cropType: 'cereal',
+    province: 'Cordoba',
+    ndviHistory: [
+      { date: new Date('2026-01-15'), mean: 0.78, min: 0.65, max: 0.88, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-20'), mean: 0.80, min: 0.68, max: 0.90, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-25'), mean: 0.82, min: 0.70, max: 0.91, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-04'), mean: 0.81, min: 0.69, max: 0.90, anomalyDetected: false, source: 'sentinel2' },
+    ],
+  });
+
+  // Alert on vinedo parcel
+  const alert3 = await Alert.create({
+    parcelId: parcel2._id,
+    type: 'ndvi_drop',
+    severity: 'critical',
+    ndviValue: 0.28,
+    ndviDelta: -0.35,
+    detectedAt: new Date('2026-03-10'),
+    status: 'new',
+    aiConfidence: 0.94,
+    imagery: { sentinelScene: 'S2B_MSIL2A_20260310T110119' },
+  });
+
+  // === Operations at different stages ===
+
+  // 1. Completed operation (full traceability)
+  await Operation.create({
+    parcelId: parcel1._id,
+    farmerId: farmer._id,
+    pilotId: pilot._id,
+    type: 'phytosanitary',
+    status: 'completed',
+    alertId: alert1._id,
+    flightLog: {
+      startTime: new Date('2026-02-15T09:30:00'),
+      endTime: new Date('2026-02-15T11:15:00'),
+      areaHa: 12.5,
+    },
+    product: {
+      name: 'Dimetoato 40 EC',
+      activeSubstance: 'Dimetoato',
+      doseLPerHa: 1.5,
+    },
+    applicationMethod: 'Pulverizacion aerea con DJI Agras T40',
+    weatherConditions: { temp: 18, windKmh: 6, humidity: 52 },
+    completedAt: new Date('2026-02-15T11:15:00'),
+    createdAt: new Date('2026-02-10'),
+  });
+
+  // 2. In-progress operation (pilot can complete)
+  await Operation.create({
+    parcelId: parcel1._id,
+    farmerId: farmer._id,
+    pilotId: pilot._id,
+    type: 'inspection',
+    status: 'in_progress',
+    alertId: alert2._id,
+    createdAt: new Date('2026-03-15'),
+  });
+
+  // 3. Assigned operation (pilot can accept/reject)
+  await Operation.create({
+    parcelId: parcel2._id,
+    farmerId: farmer._id,
+    pilotId: pilot._id,
+    type: 'phytosanitary',
+    status: 'assigned',
+    alertId: alert3._id,
+    createdAt: new Date('2026-03-18'),
+  });
+
+  // 4. Requested operation (no pilot assigned yet)
+  await Operation.create({
+    parcelId: parcel3._id,
+    farmerId: farmer._id,
+    type: 'diagnosis',
+    status: 'requested',
+    createdAt: new Date('2026-03-19'),
+  });
+
   logger.info({
     users: 4,
-    parcels: 2,
-    alerts: 2,
+    parcels: 3,
+    alerts: 3,
+    operations: 4,
   }, 'Seed completed successfully');
 
   await mongoose.disconnect();
