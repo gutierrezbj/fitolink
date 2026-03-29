@@ -17,11 +17,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses
+// Handle 401 and network errors (e.g. stale token pointing to wrong host)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    } else if (!error.response && useAuthStore.getState().token) {
+      // Network error with a stored token → likely stale/bad config, force logout
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
