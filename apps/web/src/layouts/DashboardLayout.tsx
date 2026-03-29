@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/authStore.js';
+import ToastContainer from '@/components/ToastContainer.js';
 
 const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string }>> = {
   farmer: [
@@ -97,6 +98,8 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
+
+      <ToastContainer />
     </div>
   );
 }

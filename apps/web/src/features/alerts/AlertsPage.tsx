@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import { toast } from '@/stores/toastStore.js';
 
 const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
@@ -59,7 +60,9 @@ export default function AlertsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
+      toast.info('Alerta marcada como falso positivo');
     },
+    onError: () => toast.error('Error al actualizar la alerta'),
   });
 
   const requestServiceMutation = useMutation({
@@ -70,7 +73,9 @@ export default function AlertsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
       queryClient.invalidateQueries({ queryKey: ['operations', 'mine'] });
+      toast.success('Servicio solicitado — piloto asignado automaticamente');
     },
+    onError: () => toast.error('Error al solicitar el servicio'),
   });
 
   const alerts: Alert[] = alertsData || [];

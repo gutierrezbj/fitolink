@@ -9,6 +9,7 @@ interface User {
   role: UserRole;
   avatar?: string;
   isVerified: boolean;
+  company?: string;
 }
 
 interface AuthState {

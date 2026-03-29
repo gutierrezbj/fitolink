@@ -80,6 +80,7 @@ class NdviResult:
     std: float
     pixel_count: int
     cloud_fraction: float
+    ndre_mean: float | None = None  # NDRE mean (Sprint ML — None if B05 unavailable)
 
 
 def compute_ndvi(nir: np.ndarray, red: np.ndarray) -> np.ndarray:

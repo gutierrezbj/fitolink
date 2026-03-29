@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
+import { toast } from '@/stores/toastStore.js';
 
 interface Props {
   operationId: string;
@@ -55,8 +56,10 @@ export default function CompleteOperationForm({ operationId, parcelName, areaHa,
       await api.patch(`/operations/${operationId}/complete`, body);
     },
     onSuccess: () => {
+      toast.success('Operacion completada con exito');
       onComplete();
     },
+    onError: () => toast.error('Error al completar la operacion'),
   });
 
   const canSubmit = startTime && endTime && flightAreaHa && parseFloat(flightAreaHa) > 0;

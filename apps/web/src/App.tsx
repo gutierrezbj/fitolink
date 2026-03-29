@@ -11,6 +11,10 @@ import OperationsPage from '@/features/operations/OperationsPage.js';
 import CreateParcelPage from '@/features/parcels/CreateParcelPage.js';
 import AssignmentsPage from '@/features/pilot/AssignmentsPage.js';
 import OperationDetailPage from '@/features/operations/OperationDetailPage.js';
+import ParcelDetailPage from '@/features/parcels/ParcelDetailPage.js';
+import B2BParcelsPage from '@/features/insurer/B2BParcelsPage.js';
+import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
+import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -36,16 +40,17 @@ export default function App() {
       >
         <Route index element={<DashboardHome />} />
         <Route path="parcels/new" element={<CreateParcelPage />} />
+        <Route path="parcels/:id" element={<ParcelDetailPage />} />
         <Route path="parcels" element={<ParcelsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="operations/:id" element={<OperationDetailPage />} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
-        <Route path="b2b/parcels" element={<PlaceholderPage title="Parcelas Aseguradas" />} />
-        <Route path="b2b/alerts" element={<PlaceholderPage title="Alertas B2B" />} />
+        <Route path="b2b/parcels" element={<B2BParcelsPage />} />
+        <Route path="b2b/alerts" element={<B2BAlertsPage />} />
         <Route path="b2b/inspections" element={<PlaceholderPage title="Inspecciones" />} />
-        <Route path="admin/users" element={<PlaceholderPage title="Gestion de Usuarios" />} />
-        <Route path="admin/parcels" element={<PlaceholderPage title="Todas las Parcelas" />} />
+        <Route path="admin/users" element={<AdminUsersPage />} />
+        <Route path="admin/parcels" element={<ParcelsPage />} />
         <Route path="admin/alerts" element={<PlaceholderPage title="Todas las Alertas" />} />
       </Route>
 

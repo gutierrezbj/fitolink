@@ -4,10 +4,10 @@
 Marketplace on-demand que conecta agricultores con pilotos de drones certificados para aplicaciones fitosanitarias, potenciado por deteccion satelital de anomalias vegetales via Copernicus (Sentinel-2).
 
 ## Stack
-- **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS + Radix UI + Zustand + TanStack Query + React Router v7 + react-leaflet + Recharts
-- **Backend:** Node.js + Express + TypeScript + MongoDB (Mongoose) + JWT + Google OAuth + Zod + Pino
-- **Geo Pipeline:** Python 3.11+ + rasterio + geopandas + eo-learn + PyTorch
-- **Infra:** Docker Compose + Nginx + MongoDB Atlas + Resend (email)
+- **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS + Zustand + TanStack Query + React Router v7 + react-leaflet + Recharts
+- **Backend:** Node.js + Express 5 + TypeScript + MongoDB (Mongoose) + JWT + Google OAuth + Zod + structlog
+- **Geo Pipeline:** Python 3.11 + openeo>=0.26.0 + rasterio + scikit-learn>=1.4.0 + numpy + pymongo + schedule
+- **Infra:** Docker multi-stage + Nginx + VPS staging 187.77.71.102 (Web:3040, API:4040, Mongo:6040)
 
 ## Estructura del monorepo
 ```
@@ -51,10 +51,12 @@ fitolink/
 
 ### Pipeline Python
 - Python 3.11+, type hints obligatorios
-- Librerias geo: rasterio, geopandas, eo-learn
-- IA: PyTorch
-- Tests: pytest
-- Logging: structlog
+- Librerias geo: rasterio, geopandas
+- **Procesamiento primario: openEO (CDSE)** — proceso graph al cloud, recibe GeoTIFF en BytesIO (sin disco). Bandas B04+B05+B08+SCL. NDVI + NDRE en una llamada. ~10-50x mas rapido, 25% menos creditos. `USE_OPENEO=true` por defecto.
+- **Fallback: OData download** — descarga SAFE ZIP 500MB, extrae bandas, computa localmente. `USE_OPENEO=false` o error de openEO activa fallback automatico.
+- **ML anomaly detector V2:** RandomForestClassifier (scikit-learn>=1.4.0), 13 features, 4 clases de severidad. Fallback a V1 threshold si sklearn no disponible.
+- **NDRE:** Red Edge index = (B08-B05)/(B08+B05). Mas sensible al estres de clorofila que NDVI.
+- Logging: structlog. Tests: pytest.
 
 ### MongoDB
 - Collections: plural, lowercase (users, parcels, operations, alerts)
@@ -78,12 +80,47 @@ fitolink/
 5. No instalar deps core sin documentar la decision
 6. No comentarios obvios
 
-## Roles de usuario
-- farmer: Agricultor
-- pilot: Piloto de drones certificado
-- agronomist: Ingeniero agronomo
-- insurer: Aseguradora (B2B)
-- admin: Administrador
+## Datos satelitales disponibles
+
+### CDSE (Copernicus) — Integrado, core pipeline
+- **Sentinel-2 L2A:** NDVI, NDRE, SAVI (10m, cada 5 dias) — core pipeline
+- **Sentinel-1 SAR:** Coherencia interferometrica via openEO — humedad del suelo
+- **Landsat 8-9:** Bandas termicas TIRS — estres hidrico por temperatura superficial
+- **CLMS Vegetation Productivity:** NPP basado en FAPAR 200m V2 — productividad real
+- **CDSE Embeddings:** Vectores pre-computados de imagenes — clasificacion ML sin CNN
+
+### NASA Earthdata — Acceso solicitado, integracion futura
+- **MODIS/VIIRS:** Cobertura diaria baja resolucion (250m-1km) — tendencias regionales
+- **AppEEARS/LP DAAC:** Evapotranspiracion, temperatura superficial, indices de sequia — riesgo aseguradoras
+- **FIRMS:** Deteccion incendios tiempo real — alertas quema agricola
+- **Landsat historico:** Archivo 40+ anos — analisis temporal largo plazo
+- **Nota:** APIs distintas (CMR/STAC), auth separada. No integrar hasta Sprint ML o Overwatch
+
+## Roles de usuario y dashboards
+- **farmer:** DashboardHome (mapa+gauge+alertas) · ParcelsPage · ParcelDetailPage · AlertsPage · OperationsPage (kanban)
+- **pilot:** PilotDashboardHome · AssignmentsPage (kanban accept/reject) · CompleteOperationForm · OperationDetailPage
+- **insurer:** InsuranceDashboardHome · B2BParcelsPage (filtros riesgo) · B2BAlertsPage (confianza IA)
+- **admin:** AdminDashboardHome (stats globales) · AdminUsersPage · `GET /admin/users` (protegido)
+- **agronomist:** Planificado (futuro)
+
+## Estado de sprints (29 marzo 2026)
+| Sprint | Estado |
+|--------|--------|
+| Sprint 1: Core + NDVI pipeline | ✅ Done |
+| Sprint Piloto: flujo farmer↔pilot | ✅ Done |
+| Sprint UI Wow: NdviChart+gradient, ParcelMap, HealthScoreGauge, Kanban | ✅ Done |
+| Sprint GEE: openEO cloud processing + NDRE | ✅ Done |
+| Sprint ML: RandomForest V2 + feature extractor 13 features | ✅ Done |
+| Sprint Multi-rol: Insurer + Admin dashboards | ✅ Done |
+| Toasts: feedback actions (Zustand toastStore) | ✅ Done |
+| Deploy staging (srs-staging, Docker, seed) | ✅ Done 2026-03-29 |
+
+## Deploy
+- **URL:** https://fitolink.systemrapid.io/login?demo
+- **Server:** srs-staging (100.110.52.22) · `/opt/fitolink/`
+- **Stack:** Docker Compose (web:3040 + api:4040 + mongo:6040) + Nginx reverse proxy + Certbot SSL
+- **Redeploy:** `ssh root@100.110.52.22 "bash /opt/fitolink/deploy.sh"` (git pull + build + up + seed)
+- **TS fixes en build:** `import { User }` named export en admin.ts · `height` como string en ParcelMap · `company?` en User type · `areaHa?` en B2BParcelsPage
 
 ## API Response Format
 ```typescript
