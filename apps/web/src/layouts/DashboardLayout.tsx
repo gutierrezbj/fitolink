@@ -6,25 +6,25 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
   farmer: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
     { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '🌾' },
-    { to: '/dashboard/alerts', label: 'Alertas', icon: '🔔' },
-    { to: '/dashboard/operations', label: 'Operaciones', icon: '📋' },
+    { to: '/dashboard/alerts', label: 'Alertas', icon: '/siren.svg' },
+    { to: '/dashboard/operations', label: 'Operaciones', icon: '/operational-system.svg' },
   ],
   pilot: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '🚁' },
-    { to: '/dashboard/operations', label: 'Historial', icon: '📋' },
+    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/drone.svg' },
+    { to: '/dashboard/operations', label: 'Historial', icon: '/operational-system.svg' },
   ],
   insurer: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
     { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '🛡️' },
-    { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '🔔' },
+    { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/b2b/inspections', label: 'Inspecciones', icon: '🔍' },
   ],
   admin: [
-    { to: '/dashboard', label: 'Inicio', icon: '🏠' },
+    { to: '/dashboard', label: 'Inicio', icon: '/setting.svg' },
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '👥' },
     { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '🌾' },
-    { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '🔔' },
+    { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/siren.svg' },
   ],
 };
 
@@ -62,7 +62,11 @@ export default function DashboardLayout() {
                 }`
               }
             >
-              <span>{item.icon}</span>
+              {item.icon.startsWith('/') ? (
+                <img src={item.icon} alt="" className="w-5 h-5" />
+              ) : (
+                <span>{item.icon}</span>
+              )}
               {item.label}
             </NavLink>
           ))}

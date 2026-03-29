@@ -65,6 +65,32 @@ function FitBounds({ parcels }: { parcels: Parcel[] }) {
   return null;
 }
 
+function FitAllButton({ parcels }: { parcels: Parcel[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (parcels.length === 0) return;
+    const FitAllControl = L.Control.extend({
+      onAdd() {
+        const btn = L.DomUtil.create('button');
+        btn.title = 'Ver todas las parcelas';
+        btn.innerHTML = '⊙ Ver todas';
+        btn.style.cssText =
+          'background:white;border:2px solid rgba(0,0,0,0.2);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#16a34a;white-space:nowrap;border-radius:4px;margin:0;line-height:1.4;';
+        L.DomEvent.disableClickPropagation(btn);
+        L.DomEvent.on(btn, 'click', () => {
+          const group = L.featureGroup(parcels.map((p) => L.geoJSON(p.geometry as GeoJSON.GeoJsonObject)));
+          map.fitBounds(group.getBounds(), { padding: [40, 40] });
+        });
+        return btn;
+      },
+    });
+    const control = new FitAllControl({ position: 'topright' });
+    control.addTo(map);
+    return () => { control.remove(); };
+  }, [map, parcels]);
+  return null;
+}
+
 function AlertPulse({ parcel }: { parcel: Parcel }) {
   const center = getPolygonCenter(parcel.geometry);
   return (
@@ -161,6 +187,7 @@ export default function ParcelMap({
       />
 
       <FitBounds parcels={parcels} />
+      <FitAllButton parcels={parcels} />
 
       {parcels.map((parcel) => (
         <ParcelLayer

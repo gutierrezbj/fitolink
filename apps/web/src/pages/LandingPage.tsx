@@ -472,19 +472,7 @@ const ROLES = [
     border: 'hover:border-brand-300',
   },
   {
-    icon: (
-      <svg viewBox="0 0 56 56" fill="none" className="w-14 h-14">
-        <rect width="56" height="56" rx="16" fill="#eff6ff"/>
-        <path d="M20 28H36" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M24 24L20 28L24 32" stroke="#2563eb" strokeWidth="1.5" opacity="0.4" strokeLinecap="round"/>
-        <path d="M32 24L36 28L32 32" stroke="#2563eb" strokeWidth="1.5" opacity="0.4" strokeLinecap="round"/>
-        <circle cx="20" cy="22" r="4" stroke="#2563eb" strokeWidth="1.5"/>
-        <circle cx="36" cy="22" r="4" stroke="#2563eb" strokeWidth="1.5"/>
-        <circle cx="20" cy="34" r="4" stroke="#2563eb" strokeWidth="1.5"/>
-        <circle cx="36" cy="34" r="4" stroke="#2563eb" strokeWidth="1.5"/>
-        <circle cx="28" cy="28" r="3" fill="#2563eb" opacity="0.3"/>
-      </svg>
-    ),
+    icon: <img src="/smart-farming.svg" alt="Piloto de drones" className="w-14 h-14" />,
     title: 'Piloto de drones',
     subtitle: 'Opera y crece',
     features: [
@@ -497,16 +485,7 @@ const ROLES = [
     border: 'hover:border-blue-300',
   },
   {
-    icon: (
-      <svg viewBox="0 0 56 56" fill="none" className="w-14 h-14">
-        <rect width="56" height="56" rx="16" fill="#fffbeb"/>
-        <rect x="18" y="22" width="20" height="14" rx="3" stroke="#d97706" strokeWidth="1.5"/>
-        <path d="M18 26H38" stroke="#d97706" strokeWidth="1" opacity="0.3"/>
-        <path d="M24 30H32" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M26 33H30" stroke="#d97706" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
-        <rect x="24" y="18" width="8" height="4" rx="1.5" stroke="#d97706" strokeWidth="1.5"/>
-      </svg>
-    ),
+    icon: <img src="/insurance.svg" alt="Aseguradora" className="w-14 h-14" />,
     title: 'Aseguradora',
     subtitle: 'Verifica y optimiza',
     features: [

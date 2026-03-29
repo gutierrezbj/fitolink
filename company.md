@@ -42,7 +42,7 @@
 | SDD | Software Development with AI Direction — human directs, AI executes. 8 mandatory doc sections before code. |
 | Kickoff Protocol | 8-phase launch standard. No phase skipped. |
 | Port Convention | 3xxx front, 4xxx API, 5xxx internal, 6xxx DB. Offset per project. Always 127.0.0.1. |
-| Deploy | Docker Compose multi-stage. `ssh root@100.110.52.22 "bash /opt/fitolink/deploy.sh"` — git pull + build + up + seed. Nginx + SSL via Certbot. |
+| Deploy | Docker Compose multi-stage. `ssh root@100.110.52.22 "bash /opt/fitolink/deploy.sh"` — git pull + build + up + seed. Nginx + SSL via Certbot. Git conectado a GitHub (origin). |
 
 ## Pilot Certifications (JuanCho)
 - EASA Remote Pilot Certificate: A1/A3 + A2 (AESA, Spain)

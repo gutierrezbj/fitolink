@@ -114,6 +114,8 @@ fitolink/
 | Sprint Multi-rol: Insurer + Admin dashboards | ✅ Done |
 | Toasts: feedback actions (Zustand toastStore) | ✅ Done |
 | Deploy staging (srs-staging, Docker, seed) | ✅ Done 2026-03-29 |
+| Fix demo login + favicon | ✅ Done 2026-03-29 |
+| Commit + push GitHub + redeploy | ✅ Done 2026-03-29 |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
@@ -121,6 +123,9 @@ fitolink/
 - **Stack:** Docker Compose (web:3040 + api:4040 + mongo:6040) + Nginx reverse proxy + Certbot SSL
 - **Redeploy:** `ssh root@100.110.52.22 "bash /opt/fitolink/deploy.sh"` (git pull + build + up + seed)
 - **TS fixes en build:** `import { User }` named export en admin.ts · `height` como string en ParcelMap · `company?` en User type · `areaHa?` en B2BParcelsPage
+- **Fix demo login:** `VITE_API_URL` en `.env` raíz tenia `localhost:4040` embebido en build. Fix: `VITE_API_URL=` vacío + `apps/web/.env.production`
+- **Favicon:** `apps/web/public/favicon.svg` creado (círculo verde + trigo + señal satelital)
+- **GitHub:** https://github.com/gutierrezbj/fitolink · commit `256ac22`
 
 ## API Response Format
 ```typescript
