@@ -453,13 +453,7 @@ function HowItWorks() {
 
 const ROLES = [
   {
-    icon: (
-      <svg viewBox="0 0 56 56" fill="none" className="w-14 h-14">
-        <rect width="56" height="56" rx="16" fill="#f0fdf4"/>
-        <path d="M28 18C28 18 22 24 22 30C22 33.3 24.7 36 28 36C31.3 36 34 33.3 34 30C34 24 28 18 28 18Z" fill="#22c55e" opacity="0.2" stroke="#16a34a" strokeWidth="1.5"/>
-        <path d="M28 32V24M25 27L28 24L31 27" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
+    icon: <img src="/vegetables.svg" alt="Agricultor" className="w-14 h-14" />,
     title: 'Agricultor',
     subtitle: 'Monitoriza y protege',
     features: [
