@@ -178,11 +178,11 @@ export default function AdminDashboardHome() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(['farmer', 'pilot', 'insurer', 'admin'] as const).map((role) => {
             const count = roleCounts[role] ?? 0;
-            const icons: Record<string, string> = { farmer: '🌾', pilot: '🚁', insurer: '🛡️', admin: '⚙️' };
+            const icons: Record<string, string> = { farmer: '/farmer.svg', pilot: '/drone-pilot.svg', insurer: '/insurance2.svg', admin: '/system-administration.svg' };
             const labels: Record<string, string> = { farmer: 'Agricultores', pilot: 'Pilotos', insurer: 'Aseguradoras', admin: 'Admins' };
             return (
               <div key={role} className="p-3 bg-gray-50 rounded-xl text-center">
-                <p className="text-2xl mb-1">{icons[role]}</p>
+                <img src={icons[role]} alt={labels[role]} className="w-10 h-10 mx-auto mb-1" />
                 <p className="text-xl font-bold text-gray-900">{count}</p>
                 <p className="text-xs text-gray-500">{labels[role]}</p>
               </div>
