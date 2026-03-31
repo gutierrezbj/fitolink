@@ -5,25 +5,25 @@ import ToastContainer from '@/components/ToastContainer.js';
 const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string }>> = {
   farmer: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '🌾' },
+    { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/location.svg' },
     { to: '/dashboard/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/operations', label: 'Operaciones', icon: '/operational-system.svg' },
   ],
   pilot: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/drone.svg' },
+    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/drone-pilot.svg' },
     { to: '/dashboard/operations', label: 'Historial', icon: '/operational-system.svg' },
   ],
   insurer: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '🛡️' },
+    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/insurance2.svg' },
     { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/b2b/inspections', label: 'Inspecciones', icon: '🔍' },
   ],
   admin: [
     { to: '/dashboard', label: 'Inicio', icon: '/setting.svg' },
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/user.svg' },
-    { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '🌾' },
+    { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/location.svg' },
     { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/siren.svg' },
   ],
 };

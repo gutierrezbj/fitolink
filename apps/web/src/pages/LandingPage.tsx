@@ -466,7 +466,7 @@ const ROLES = [
     border: 'hover:border-brand-300',
   },
   {
-    icon: <img src="/smart-farming.svg" alt="Piloto de drones" className="w-14 h-14" />,
+    icon: <img src="/drone-pilot.svg" alt="Piloto de drones" className="w-14 h-14" />,
     title: 'Piloto de drones',
     subtitle: 'Opera y crece',
     features: [
@@ -479,7 +479,7 @@ const ROLES = [
     border: 'hover:border-blue-300',
   },
   {
-    icon: <img src="/insurance.svg" alt="Aseguradora" className="w-14 h-14" />,
+    icon: <img src="/insurance2.svg" alt="Aseguradora" className="w-14 h-14" />,
     title: 'Aseguradora',
     subtitle: 'Verifica y optimiza',
     features: [
