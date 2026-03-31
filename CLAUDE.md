@@ -103,7 +103,7 @@ fitolink/
 - **admin:** AdminDashboardHome (stats globales) · AdminUsersPage · `GET /admin/users` (protegido)
 - **agronomist:** Planificado (futuro)
 
-## Estado de sprints (29 marzo 2026)
+## Estado de sprints (31 marzo 2026)
 | Sprint | Estado |
 |--------|--------|
 | Sprint 1: Core + NDVI pipeline | ✅ Done |
@@ -115,7 +115,10 @@ fitolink/
 | Toasts: feedback actions (Zustand toastStore) | ✅ Done |
 | Deploy staging (srs-staging, Docker, seed) | ✅ Done 2026-03-29 |
 | Fix demo login + favicon | ✅ Done 2026-03-29 |
-| Commit + push GitHub + redeploy | ✅ Done 2026-03-29 |
+| Fix white screen (stale token logout) | ✅ Done 2026-03-29 · commit b42f5fa |
+| Sprint Icons: custom SVG icons en toda la app | ✅ Done 2026-03-31 |
+| Fix: botón "Ver todas" reset mapa a todas las parcelas | ✅ Done 2026-03-31 |
+| AdminUsersPage: grid cards en vez de filas horizontales | ✅ Done 2026-03-31 |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
@@ -125,7 +128,8 @@ fitolink/
 - **TS fixes en build:** `import { User }` named export en admin.ts · `height` como string en ParcelMap · `company?` en User type · `areaHa?` en B2BParcelsPage
 - **Fix demo login:** `VITE_API_URL` en `.env` raíz tenia `localhost:4040` embebido en build. Fix: `VITE_API_URL=` vacío + `apps/web/.env.production`
 - **Favicon:** `apps/web/public/favicon.svg` creado (círculo verde + trigo + señal satelital)
-- **GitHub:** https://github.com/gutierrezbj/fitolink · commit `256ac22`
+- **GitHub:** https://github.com/gutierrezbj/fitolink · latest commit `461f9b2`
+- **SVG icons en public/:** farmer, drone-pilot, drone, insurance2, location, operational-system, siren, system-administration, user, setting, smart-farming, vegetables, favicon
 
 ## API Response Format
 ```typescript

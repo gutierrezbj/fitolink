@@ -63,3 +63,6 @@
 | **2dsphere index** | MongoDB geospatial index on User.location and Parcel.geometry. Required for $near auto-assign queries. |
 | **deploy.sh** | Script en `/opt/fitolink/deploy.sh`. Ejecuta: git pull → docker compose build → docker compose up -d → seed via container temporal. Invocado via SSH desde Mac. |
 | **Docker Compose** | Orquestacion de contenedores en staging: `fitolink-web` (nginx:alpine + Vite dist), `fitolink-api` (node:22-alpine), `fitolink-mongo` (mongo:7). Red interna `fitolink_default`. |
+| **SVG icons** | Iconos custom en `apps/web/public/`. Convención: paths que empiezan con `/` en DashboardLayout renderizan `<img>` en vez de emoji `<span>`. Archivos: farmer, drone-pilot, drone, insurance2, location, operational-system, siren, system-administration, user, setting, smart-farming, vegetables, favicon. |
+| **FitAllButton** | Componente Leaflet control (topright) en ParcelMap. Botón "⊙ Ver todas" que llama `map.fitBounds()` sobre todas las parcelas con padding 40px. Permite resetear el zoom tras seleccionar una parcela. |
+| **AdminUsersPage cards** | Rediseño de AdminUsersPage con grid de tarjetas (1→2→3 cols) en vez de filas horizontales. UserCard con iniciales, SVG de rol, badge verificado, certs, rating y fecha. |

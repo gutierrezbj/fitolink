@@ -15,7 +15,7 @@
 | OverWatch | +10 | Fase 1 complete | Copernicus + Drones post-disaster inspection |
 | SA99 | +20 | Fase 0 complete | AI agent orchestrator with persistent memory |
 | DroneHub SRS | +30 | Fase 1.5 in progress | Global drone ecosystem platform |
-| **FitoLink** | **+40** | **✅ Deployed staging 2026-03-29** | **Agricultural intelligence + pilot marketplace** |
+| **FitoLink** | **+40** | **✅ Deployed staging 2026-03-31** | **Agricultural intelligence + pilot marketplace** |
 | SkyPro/DroneOps | +50 | Fase 0 in progress | Drone ops notification app (5G + DJI Cloud) |
 | ContractBuilder | +60 | Fase 0 complete | AI document merger for immigration law firm |
 | BodyForge | +70 | Fase 0 complete | Body transformation platform with AI |
