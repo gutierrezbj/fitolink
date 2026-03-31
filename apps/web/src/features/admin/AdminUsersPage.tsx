@@ -19,7 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_ICON: Record<string, string> = {
-  farmer: '/vegetables.svg',
+  farmer: '/farmer.svg',
   pilot: '/drone-pilot.svg',
   insurer: '/insurance2.svg',
   admin: '/setting.svg',
@@ -98,7 +98,7 @@ export default function AdminUsersPage() {
       {farmers.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <img src="/vegetables.svg" alt="" className="w-5 h-5" /> Agricultores ({farmers.length})
+            <img src="/farmer.svg" alt="" className="w-5 h-5" /> Agricultores ({farmers.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {farmers.map((user: User) => <UserCard key={user._id} user={user} />)}

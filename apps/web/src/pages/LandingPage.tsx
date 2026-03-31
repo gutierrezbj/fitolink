@@ -453,7 +453,7 @@ function HowItWorks() {
 
 const ROLES = [
   {
-    icon: <img src="/vegetables.svg" alt="Agricultor" className="w-14 h-14" />,
+    icon: <img src="/farmer.svg" alt="Agricultor" className="w-14 h-14" />,
     title: 'Agricultor',
     subtitle: 'Monitoriza y protege',
     features: [
