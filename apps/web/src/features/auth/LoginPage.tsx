@@ -9,10 +9,10 @@ const SHOW_DEMO = import.meta.env.DEV
   || new URLSearchParams(window.location.search).has('demo');
 
 const DEMO_ACCOUNTS = [
-  { label: 'Agricultor', googleId: 'demo-farmer-001', icon: '🌾', color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
-  { label: 'Piloto', googleId: 'demo-pilot-001', icon: '🚁', color: 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100' },
-  { label: 'Aseguradora', googleId: 'demo-insurer-001', icon: '🏢', color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
-  { label: 'Admin', googleId: 'demo-admin-001', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
+  { label: 'Agricultor', googleId: 'demo-farmer-001', icon: '/vegetables.svg', color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
+  { label: 'Piloto', googleId: 'demo-pilot-001', icon: '/drone-pilot.svg', color: 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100' },
+  { label: 'Aseguradora', googleId: 'demo-insurer-001', icon: '/insurance2.svg', color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
+  { label: 'Admin', googleId: 'demo-admin-001', icon: '/setting.svg', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 
 export default function LoginPage() {
@@ -119,7 +119,7 @@ export default function LoginPage() {
                     <span className="animate-pulse">...</span>
                   ) : (
                     <>
-                      <span className="mr-1.5">{account.icon}</span>
+                      <img src={account.icon} alt="" className="w-5 h-5 mr-1.5 inline-block" />
                       {account.label}
                     </>
                   )}
