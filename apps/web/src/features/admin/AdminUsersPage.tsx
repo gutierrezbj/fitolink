@@ -26,9 +26,6 @@ const ROLE_ICON: Record<string, string> = {
   agronomist: '/user.svg',
 };
 
-const ROLE_SECTION_ICON: Record<string, string> = {
-  farmer: '🌾', pilot: '🚁', insurer: '🛡️', admin: '⚙️',
-};
 
 type User = {
   _id: string;
@@ -88,8 +85,8 @@ export default function AdminUsersPage() {
       {/* Pilots */}
       {pilots.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {ROLE_SECTION_ICON.pilot} Pilotos de Drones ({pilots.length})
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <img src="/drone-pilot.svg" alt="" className="w-5 h-5" /> Pilotos de Drones ({pilots.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {pilots.map((user: User) => <UserCard key={user._id} user={user} />)}
@@ -100,8 +97,8 @@ export default function AdminUsersPage() {
       {/* Farmers */}
       {farmers.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {ROLE_SECTION_ICON.farmer} Agricultores ({farmers.length})
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <img src="/vegetables.svg" alt="" className="w-5 h-5" /> Agricultores ({farmers.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {farmers.map((user: User) => <UserCard key={user._id} user={user} />)}
@@ -112,8 +109,8 @@ export default function AdminUsersPage() {
       {/* Insurers */}
       {insurers.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {ROLE_SECTION_ICON.insurer} Aseguradoras ({insurers.length})
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <img src="/insurance2.svg" alt="" className="w-5 h-5" /> Aseguradoras ({insurers.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {insurers.map((user: User) => <UserCard key={user._id} user={user} />)}
@@ -124,8 +121,8 @@ export default function AdminUsersPage() {
       {/* Others */}
       {others.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {ROLE_SECTION_ICON.admin} Otros ({others.length})
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <img src="/setting.svg" alt="" className="w-5 h-5" /> Otros ({others.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {others.map((user: User) => <UserCard key={user._id} user={user} />)}
