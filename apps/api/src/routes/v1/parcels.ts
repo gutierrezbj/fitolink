@@ -16,6 +16,7 @@ router.get('/:id', parcelController.getById);
 router.put('/:id', authorize('farmer'), validate(updateParcelSchema), parcelController.update);
 router.delete('/:id', authorize('farmer'), parcelController.remove);
 router.get('/:id/ndvi-history', parcelController.getNdviHistory);
+router.get('/:id/ndvi-snapshot', parcelController.getNdviSnapshot);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);

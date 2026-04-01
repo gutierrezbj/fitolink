@@ -75,7 +75,7 @@ class OpenEOClient:
         start_date: datetime,
         end_date: datetime,
         max_cloud_cover: float = CLOUD_COVER_MAX,
-    ) -> Optional[NdviResult]:
+    ) -> Optional[tuple[NdviResult, bytes]]:
         """
         Compute NDVI statistics for a parcel polygon entirely in the CDSE cloud.
 
@@ -153,14 +153,15 @@ class OpenEOClient:
             # Step 6: Download both as in-memory GeoTIFFs (no disk write)
             ndvi_buf = io.BytesIO()
             ndvi_composite.download(ndvi_buf, format='GTiff')
-            ndvi_buf.seek(0)
+            # Read raw bytes once — share across stats + grid (buffer is exhausted after one read)
+            ndvi_raw_bytes = ndvi_buf.getvalue()
 
             ndre_buf = io.BytesIO()
             ndre_composite.download(ndre_buf, format='GTiff')
             ndre_buf.seek(0)
 
-            # Step 7: Compute statistics
-            result = _stats_from_geotiff(ndvi_buf)
+            # Step 7: Compute statistics (feed a fresh BytesIO from the raw bytes)
+            result = _stats_from_geotiff(io.BytesIO(ndvi_raw_bytes))
             if result is None:
                 logger.info('openeo_no_valid_pixels', bbox=bbox)
                 return None
@@ -178,7 +179,8 @@ class OpenEOClient:
                 max_val=result.max_val,
                 pixels=result.pixel_count,
             )
-            return result
+            # Return result + raw NDVI bytes for intra-parcel grid generation
+            return result, ndvi_raw_bytes
 
         except Exception as e:
             logger.error('openeo_processing_failed', error=str(e), bbox=bbox)

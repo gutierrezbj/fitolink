@@ -17,7 +17,7 @@ from typing import Optional
 
 from .config import (
     MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR,
-    USE_OPENEO,
+    USE_OPENEO, NDVI_GRID_ENABLED, NDVI_GRID_RESOLUTION,
 )
 from .ingestion.copernicus import CopernicusClient
 from .ingestion.openeo_client import OpenEOClient
@@ -42,10 +42,11 @@ def _process_parcel_openeo(
     parcel: dict,
     start_date: datetime,
     end_date: datetime,
-) -> Optional[tuple[NdviResult, str]]:
+) -> Optional[tuple[NdviResult, str, Optional[bytes]]]:
     """
     Compute NDVI for a parcel using openEO cloud processing.
-    Returns (NdviResult, scene_id) or None if no imagery found.
+    Returns (NdviResult, scene_id, ndvi_raw_bytes) or None if no imagery found.
+    ndvi_raw_bytes is the raw GeoTIFF bytes for intra-parcel grid generation.
     """
     result = openeo_client.compute_ndvi_stats(
         geometry=parcel['geometry'],
@@ -55,8 +56,9 @@ def _process_parcel_openeo(
     )
     if result is None:
         return None
+    ndvi_stats, ndvi_raw_bytes = result
     scene_id = f"openeo_{end_date.strftime('%Y%m%d')}"
-    return result, scene_id
+    return ndvi_stats, scene_id, ndvi_raw_bytes
 
 
 def _process_parcel_odata(
@@ -155,13 +157,14 @@ def run_pipeline() -> None:
             start_date = end_date - timedelta(days=10)
             stats: Optional[NdviResult] = None
             scene_id = 'unknown'
+            ndvi_raw_bytes: Optional[bytes] = None
 
             # Primary: openEO cloud processing
             if openeo_client is not None:
                 try:
                     result = _process_parcel_openeo(openeo_client, parcel, start_date, end_date)
                     if result is not None:
-                        stats, scene_id = result
+                        stats, scene_id, ndvi_raw_bytes = result
                         openeo_used += 1
                     else:
                         logger.info('openeo_no_imagery', parcel=parcel_name)
@@ -216,6 +219,27 @@ def run_pipeline() -> None:
                 {'_id': parcel['_id']},
                 {'$push': {'ndviHistory': new_reading}},
             )
+
+            # Intra-parcel NDVI grid snapshot (openEO path only — has GeoTIFF bytes)
+            if NDVI_GRID_ENABLED and ndvi_raw_bytes is not None:
+                try:
+                    from .processing.ndvi_grid import build_grid_snapshot
+                    snapshot = build_grid_snapshot(
+                        geotiff_bytes=ndvi_raw_bytes,
+                        geometry=parcel['geometry'],
+                        parcel_id=parcel_id,
+                        date=new_reading['date'],
+                        resolution=NDVI_GRID_RESOLUTION,
+                    )
+                    if snapshot is not None:
+                        db.ndvi_snapshots.insert_one(snapshot)
+                        db.ndvi_snapshots.create_index(
+                            [('parcelId', 1), ('date', -1)], background=True
+                        )
+                        logger.info('ndvi_grid_saved', parcel=parcel_name, points=len(snapshot['points']))
+                except Exception as e:
+                    logger.warning('ndvi_grid_failed', parcel=parcel_name, error=str(e))
+
             logger.info(
                 'ndvi_stored',
                 parcel=parcel_name,

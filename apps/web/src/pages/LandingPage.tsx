@@ -325,6 +325,94 @@ function Hero() {
   );
 }
 
+/* ──────────────────────────── PAC PAIN ──────────────────────────── */
+
+function PacPain() {
+  const reveal = useReveal(0.1);
+  return (
+    <section className="relative py-24 sm:py-32 bg-gray-950 text-white overflow-hidden">
+      {/* Subtle red glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-red-900/20 rounded-full blur-[100px]" />
+
+      <div className="relative max-w-6xl mx-auto px-6" ref={reveal.ref}>
+
+        {/* Header */}
+        <div className={`text-center mb-16 transition-all duration-700 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] uppercase text-red-400 mb-5" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            El problema real
+          </span>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6" style={{ fontFamily: 'Instrument Serif, serif' }}>
+            Sin evidencia t&eacute;cnica,<br />
+            <span className="text-red-400">pierdes tus ayudas PAC</span>
+          </h2>
+          <p className="max-w-2xl mx-auto text-lg text-gray-400 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            La PAC exige documentaci&oacute;n t&eacute;cnica de cada tratamiento. Sin ella, la inspecci&oacute;n te deniega la subvenci&oacute;n. Cada a&ntilde;o.
+          </p>
+        </div>
+
+        {/* Pain cards */}
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-5 mb-16 transition-all duration-700 delay-150 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {/* Pain 1 */}
+          <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
+            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+              315<span className="text-2xl">M€</span>
+            </div>
+            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              Subvenciones PAC en juego
+            </h3>
+            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              El Estado subvenciona 315M&euro;/a&ntilde;o en seguros agrarios. Sin cuaderno de campo digital actualizado, tu expediente queda bloqueado en inspecci&oacute;n.
+            </p>
+          </div>
+
+          {/* Pain 2 */}
+          <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
+            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+              0<span className="text-2xl"> pruebas</span>
+            </div>
+            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              Cuando llega el siniestro
+            </h3>
+            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              Granizo, sequ&iacute;a, DANA. El perito llega despu&eacute;s del da&ntilde;o. Sin historial NDVI previo, no puedes demostrar el estado del cultivo antes del evento.
+            </p>
+          </div>
+
+          {/* Pain 3 */}
+          <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
+            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+              100<span className="text-2xl">%</span>
+            </div>
+            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              Trazabilidad obligatoria
+            </h3>
+            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              La normativa fitosanitaria exige registrar cada aplicaci&oacute;n: producto, dosis, operador ROPO, condiciones meteo. Manual es inviable. El margen de error es cero.
+            </p>
+          </div>
+        </div>
+
+        {/* Resolution */}
+        <div className={`flex flex-col items-center transition-all duration-700 delay-300 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-brand-900/60 border border-brand-700/40">
+            <svg className="w-5 h-5 text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <p className="text-base font-semibold text-brand-200" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              FitoLink es tu proveedor de evidencia t&eacute;cnica para cumplimiento PAC
+            </p>
+          </div>
+          <p className="mt-4 text-sm text-gray-500 text-center max-w-xl" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            Cada vuelo genera autom&aacute;ticamente el registro PAC: fecha, parcela, producto, piloto ROPO, condiciones, firma del agr&oacute;nomo. Cuaderno de campo digital integrado.
+          </p>
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
 /* ─────────────────────── HOW IT WORKS ────────────────────────────── */
 
 const STEPS = [
@@ -713,6 +801,7 @@ export default function LandingPage() {
       <GlobalStyles />
       <Navbar />
       <Hero />
+      <PacPain />
       <HowItWorks />
       <Roles />
       <Stats />

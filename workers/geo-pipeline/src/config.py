@@ -26,5 +26,9 @@ CLOUD_COVER_MAX: float = 50.0  # Skip images with >50% cloud cover
 # Legacy OData download fallback (used when USE_OPENEO=false or openEO unavailable)
 DOWNLOAD_DIR: str = os.getenv('DOWNLOAD_DIR', '/tmp/fitolink-downloads')
 
+# NDVI intra-parcel grid (Sprint Intra-Parcela)
+NDVI_GRID_ENABLED: bool = os.getenv('NDVI_GRID_ENABLED', 'true').lower() != 'false'
+NDVI_GRID_RESOLUTION: int = int(os.getenv('NDVI_GRID_RESOLUTION', '20'))
+
 # Schedule
 PROCESSING_INTERVAL_DAYS: int = 5

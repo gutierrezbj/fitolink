@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
@@ -5,6 +6,9 @@ import { formatDate } from '@/lib/utils.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import ParcelMap from './ParcelMap.js';
+import NdviHeatmap from './NdviHeatmap.js';
+import NdviLegend from './NdviLegend.js';
+import { useNdviSnapshot } from './useNdviSnapshot.js';
 
 const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
@@ -57,6 +61,8 @@ export default function ParcelDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const { data: ndviSnapshot } = useNdviSnapshot(id);
 
   const { data: parcel, isLoading: loadingParcel } = useQuery<Parcel>({
     queryKey: ['parcel', id],
@@ -187,12 +193,38 @@ export default function ParcelDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <div className="lg:col-span-3">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Ubicacion</h2>
-            <ParcelMap
-              parcels={[parcel]}
-              height="280px"
-              showDetailLink={false}
-            />
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">Ubicacion</h2>
+              {ndviSnapshot && (
+                <button
+                  onClick={() => setShowHeatmap((v) => !v)}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium ${
+                    showHeatmap
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700'
+                  }`}
+                >
+                  <img src="/location.svg" alt="" className="w-3.5 h-3.5" />
+                  Mapa NDVI
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <ParcelMap
+                parcels={[parcel]}
+                height="280px"
+                showDetailLink={false}
+              >
+                {showHeatmap && ndviSnapshot && (
+                  <NdviHeatmap snapshot={ndviSnapshot} />
+                )}
+              </ParcelMap>
+              {showHeatmap && ndviSnapshot && (
+                <div className="absolute bottom-3 right-3 z-[1000]">
+                  <NdviLegend />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

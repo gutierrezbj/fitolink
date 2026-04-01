@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type React from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ interface ParcelMapProps {
   onParcelClick?: (parcelId: string) => void;
   height?: string;
   showDetailLink?: boolean;
+  children?: React.ReactNode;
 }
 
 function getParcelColor(parcel: Parcel): string {
@@ -168,6 +170,7 @@ export default function ParcelMap({
   onParcelClick,
   height = '500px',
   showDetailLink = false,
+  children,
 }: ParcelMapProps) {
   const alertParcels = parcels.filter((p) => {
     const latest = p.ndviHistory?.[p.ndviHistory.length - 1];
@@ -202,6 +205,8 @@ export default function ParcelMap({
       {alertParcels.map((parcel) => (
         <AlertPulse key={`pulse-${parcel._id}`} parcel={parcel} />
       ))}
+
+      {children}
     </MapContainer>
   );
 }

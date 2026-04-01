@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import * as parcelService from '../services/parcelService.js';
+import * as ndviSnapshotService from '../services/ndviSnapshotService.js';
 
 export async function create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -51,6 +52,19 @@ export async function getNdviHistory(req: AuthRequest, res: Response, next: Next
   try {
     const history = await parcelService.getNdviHistory(req.params.id as string, req.user!._id.toString());
     res.json({ success: true, data: history });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getNdviSnapshot(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const snapshot = await ndviSnapshotService.getLatestSnapshot(
+      req.params.id as string,
+      req.user!._id.toString(),
+      req.user!.role,
+    );
+    res.json({ success: true, data: snapshot ?? null });
   } catch (error) {
     next(error);
   }
