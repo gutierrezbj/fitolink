@@ -6,7 +6,7 @@ Marketplace on-demand que conecta agricultores con pilotos de drones certificado
 ## Stack
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS + Zustand + TanStack Query + React Router v7 + react-leaflet + Recharts
 - **Backend:** Node.js + Express 5 + TypeScript + MongoDB (Mongoose) + JWT + Google OAuth + Zod + structlog
-- **Geo Pipeline:** Python 3.11 + openeo>=0.26.0 + rasterio + scikit-learn>=1.4.0 + numpy + pymongo + schedule
+- **Geo Pipeline:** Python 3.11 + openeo>=0.26.0 + rasterio + scikit-learn>=1.4.0 + scipy>=1.11.0 + numpy + pymongo + schedule
 - **Infra:** Docker multi-stage + Nginx + VPS staging 187.77.71.102 (Web:3040, API:4040, Mongo:6040)
 
 ## Estructura del monorepo
@@ -56,6 +56,7 @@ fitolink/
 - **Fallback: OData download** — descarga SAFE ZIP 500MB, extrae bandas, computa localmente. `USE_OPENEO=false` o error de openEO activa fallback automatico.
 - **ML anomaly detector V2:** RandomForestClassifier (scikit-learn>=1.4.0), 13 features, 4 clases de severidad. Fallback a V1 threshold si sklearn no disponible.
 - **NDRE:** Red Edge index = (B08-B05)/(B08+B05). Mas sensible al estres de clorofila que NDVI.
+- **NDVI Grid (Intra-Parcela):** `ndvi_grid.py` muestrea pixels del GeoTIFF, interpola con RBF (thin_plate_spline, scipy, UTM EPSG:25830) a grilla uniforme recortada por polígono. Guarda en `ndvi_snapshots` collection. `NdviHeatmap.tsx` + `NdviLegend.tsx` en frontend. Toggle en ParcelDetailPage. CELL_HALF=0.000045°.
 - Logging: structlog. Tests: pytest.
 
 ### MongoDB
@@ -119,6 +120,8 @@ fitolink/
 | Sprint Icons: custom SVG icons en toda la app | ✅ Done 2026-03-31 |
 | Fix: botón "Ver todas" reset mapa a todas las parcelas | ✅ Done 2026-03-31 |
 | AdminUsersPage: grid cards en vez de filas horizontales | ✅ Done 2026-03-31 |
+| Sprint Intra-Parcela: NDVI heatmap overlay en ParcelDetailPage | ✅ Done 2026-04-01 |
+| LandingPage: sección PAC Pain (evidencia técnica cumplimiento PAC) | ✅ Done 2026-04-01 |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
