@@ -10,7 +10,7 @@ export async function getLatestSnapshot(
   parcelId: string,
   userId: string,
   userRole: string,
-): Promise<INdviSnapshot | null> {
+): Promise<Record<string, unknown> | null> {
   // Authorisation: farmers can only access their own parcels
   if (userRole === 'farmer') {
     const parcel = await Parcel.findById(parcelId);
@@ -24,5 +24,5 @@ export async function getLatestSnapshot(
     .sort({ date: -1 })
     .lean();
 
-  return snapshot;
+  return snapshot as Record<string, unknown> | null;
 }
