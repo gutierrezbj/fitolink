@@ -131,7 +131,7 @@ fitolink/
 - **TS fixes en build:** `import { User }` named export en admin.ts · `height` como string en ParcelMap · `company?` en User type · `areaHa?` en B2BParcelsPage
 - **Fix demo login:** `VITE_API_URL` en `.env` raíz tenia `localhost:4040` embebido en build. Fix: `VITE_API_URL=` vacío + `apps/web/.env.production`
 - **Favicon:** `apps/web/public/favicon.svg` creado (círculo verde + trigo + señal satelital)
-- **GitHub:** https://github.com/gutierrezbj/fitolink · latest commit `461f9b2`
+- **GitHub:** https://github.com/gutierrezbj/fitolink · latest commit `ae34a12`
 - **SVG icons en public/:** farmer, drone-pilot, drone, insurance2, location, operational-system, siren, system-administration, user, setting, smart-farming, vegetables, favicon
 
 ## API Response Format

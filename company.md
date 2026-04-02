@@ -7,7 +7,7 @@
 - **Operations**: Spain (HQ), LATAM, Europe, Middle East
 - **Methodology**: SDD (Software Development with AI Direction)
 
-## Active Projects (March 2026)
+## Active Projects (April 2026)
 
 | Project | Offset | Phase | Description |
 |---------|--------|-------|-------------|
@@ -15,7 +15,7 @@
 | OverWatch | +10 | Fase 1 complete | Copernicus + Drones post-disaster inspection |
 | SA99 | +20 | Fase 0 complete | AI agent orchestrator with persistent memory |
 | DroneHub SRS | +30 | Fase 1.5 in progress | Global drone ecosystem platform |
-| **FitoLink** | **+40** | **✅ Deployed staging 2026-03-31** | **Agricultural intelligence + pilot marketplace** |
+| **FitoLink** | **+40** | **✅ Sprint Intra-Parcela + PAC Pain 2026-04-01** | **Agricultural intelligence + pilot marketplace** |
 | SkyPro/DroneOps | +50 | Fase 0 in progress | Drone ops notification app (5G + DJI Cloud) |
 | ContractBuilder | +60 | Fase 0 complete | AI document merger for immigration law firm |
 | BodyForge | +70 | Fase 0 complete | Body transformation platform with AI |
