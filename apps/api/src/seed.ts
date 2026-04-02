@@ -169,6 +169,72 @@ async function seed() {
     ],
   });
 
+  // === Oleoestepa parcels (DOP Estepa, Sevilla) ===
+
+  // Parcel 4 — Healthy olive grove, DOP Estepa Norte
+  const parcel4 = await Parcel.create({
+    ownerId: farmer._id,
+    name: 'Olivar DOP Estepa Norte',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-4.8760, 37.2980],
+        [-4.8650, 37.2980],
+        [-4.8650, 37.2910],
+        [-4.8760, 37.2910],
+        [-4.8760, 37.2980],
+      ]],
+    },
+    areaHa: 8.5,
+    cropType: 'olivo',
+    province: 'Sevilla',
+    sigpacRef: '41-042-0002-00015',
+    isInsured: true,
+    insurerId: insurer._id,
+    ndviHistory: [
+      { date: new Date('2026-01-10'), mean: 0.71, min: 0.58, max: 0.82, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-15'), mean: 0.73, min: 0.60, max: 0.84, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-20'), mean: 0.74, min: 0.61, max: 0.85, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-25'), mean: 0.75, min: 0.62, max: 0.86, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-04'), mean: 0.76, min: 0.63, max: 0.87, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-14'), mean: 0.75, min: 0.61, max: 0.85, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-24'), mean: 0.74, min: 0.60, max: 0.84, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-03-05'), mean: 0.73, min: 0.59, max: 0.83, anomalyDetected: false, source: 'sentinel2' },
+    ],
+  });
+
+  // Parcel 5 — Olive grove with active stress — Estepa Sur
+  const parcel5 = await Parcel.create({
+    ownerId: farmer._id,
+    name: 'Olivar DOP Estepa Sur',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-4.8820, 37.2840],
+        [-4.8700, 37.2840],
+        [-4.8700, 37.2760],
+        [-4.8820, 37.2760],
+        [-4.8820, 37.2840],
+      ]],
+    },
+    areaHa: 14.2,
+    cropType: 'olivo',
+    province: 'Sevilla',
+    sigpacRef: '41-042-0002-00031',
+    isInsured: true,
+    insurerId: insurer._id,
+    ndviHistory: [
+      { date: new Date('2026-01-10'), mean: 0.70, min: 0.57, max: 0.81, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-15'), mean: 0.69, min: 0.55, max: 0.80, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-20'), mean: 0.67, min: 0.52, max: 0.78, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-25'), mean: 0.63, min: 0.47, max: 0.75, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-04'), mean: 0.57, min: 0.38, max: 0.70, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-14'), mean: 0.49, min: 0.29, max: 0.64, anomalyDetected: true,  source: 'sentinel2' },
+      { date: new Date('2026-02-24'), mean: 0.43, min: 0.24, max: 0.59, anomalyDetected: true,  source: 'sentinel2' },
+      { date: new Date('2026-03-05'), mean: 0.38, min: 0.19, max: 0.54, anomalyDetected: true,  source: 'sentinel2' },
+    ],
+  });
+
   // Alert on vinedo parcel
   const alert3 = await Alert.create({
     parcelId: parcel2._id,
@@ -180,6 +246,31 @@ async function seed() {
     status: 'new',
     aiConfidence: 0.94,
     imagery: { sentinelScene: 'S2B_MSIL2A_20260310T110119' },
+  });
+
+  // Alerts on Oleoestepa Sur parcel — stress_pattern over 3 consecutive readings
+  const alert4 = await Alert.create({
+    parcelId: parcel5._id,
+    type: 'stress_pattern',
+    severity: 'high',
+    ndviValue: 0.49,
+    ndviDelta: -0.08,
+    detectedAt: new Date('2026-02-14'),
+    status: 'notified',
+    aiConfidence: 0.81,
+    imagery: { sentinelScene: 'S2A_MSIL2A_20260214T105911' },
+  });
+
+  const alert5 = await Alert.create({
+    parcelId: parcel5._id,
+    type: 'stress_pattern',
+    severity: 'high',
+    ndviValue: 0.38,
+    ndviDelta: -0.05,
+    detectedAt: new Date('2026-03-05'),
+    status: 'new',
+    aiConfidence: 0.89,
+    imagery: { sentinelScene: 'S2B_MSIL2A_20260305T105921' },
   });
 
   // === Operations at different stages ===
@@ -239,11 +330,27 @@ async function seed() {
     createdAt: new Date('2026-03-19'),
   });
 
+  // 5. Oleoestepa Sur — requested phytosanitary intervention after stress_pattern alert
+  await Operation.create({
+    parcelId: parcel5._id,
+    farmerId: farmer._id,
+    pilotId: pilot._id,
+    type: 'phytosanitary',
+    status: 'assigned',
+    alertId: alert5._id,
+    product: {
+      name: 'Fosmet 50 WP',
+      activeSubstance: 'Fosmet',
+      doseLPerHa: 1.2,
+    },
+    createdAt: new Date('2026-03-10'),
+  });
+
   logger.info({
     users: 4,
-    parcels: 3,
-    alerts: 3,
-    operations: 4,
+    parcels: 5,
+    alerts: 5,
+    operations: 5,
   }, 'Seed completed successfully');
 
   await mongoose.disconnect();
