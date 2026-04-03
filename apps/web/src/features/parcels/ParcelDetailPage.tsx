@@ -199,7 +199,7 @@ export default function ParcelDetailPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
         <div className="relative">
           <ParcelMap parcels={[parcel]} height="460px" showDetailLink={false}>
-            {showHeatmap && ndviSnapshot && <NdviHeatmap snapshot={ndviSnapshot} />}
+            {showHeatmap && ndviSnapshot && <NdviHeatmap snapshot={ndviSnapshot} parcelGeometry={parcel.geometry} />}
           </ParcelMap>
 
           {/* Top-left: health badge */}

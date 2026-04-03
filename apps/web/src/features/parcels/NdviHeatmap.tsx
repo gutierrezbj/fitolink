@@ -4,7 +4,22 @@ import type { NdviSnapshot } from './useNdviSnapshot.js';
 
 interface Props {
   snapshot: NdviSnapshot;
+  parcelGeometry?: GeoJSON.Polygon;
   opacity?: number;
+}
+
+// Ray-casting point-in-polygon (handles irregular polygons)
+function pointInPolygon(lng: number, lat: number, polygon: GeoJSON.Polygon): boolean {
+  const ring = polygon.coordinates[0];
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 function getCellHalf(points: NdviSnapshot['points']): number {
@@ -50,9 +65,14 @@ function buildGeoJSON(snapshot: NdviSnapshot, cellHalf: number): NdviFeatureColl
   };
 }
 
-export default function NdviHeatmap({ snapshot, opacity = 0.72 }: Props) {
+export default function NdviHeatmap({ snapshot, parcelGeometry, opacity = 0.72 }: Props) {
   const cellHalf = useMemo(() => getCellHalf(snapshot.points), [snapshot.points]);
-  const geojson = useMemo(() => buildGeoJSON(snapshot, cellHalf), [snapshot, cellHalf]);
+  const geojson = useMemo(() => {
+    const filteredSnapshot = parcelGeometry
+      ? { ...snapshot, points: snapshot.points.filter((p) => pointInPolygon(p.lng, p.lat, parcelGeometry)) }
+      : snapshot;
+    return buildGeoJSON(filteredSnapshot, cellHalf);
+  }, [snapshot, cellHalf, parcelGeometry]);
 
   return (
     <GeoJSON
