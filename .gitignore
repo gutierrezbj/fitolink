@@ -60,3 +60,7 @@ data/db/
 # Misc
 *.tgz
 .turbo/
+
+# Local assets not part of the app
+Arte/
+cursos-escuela-gis/
