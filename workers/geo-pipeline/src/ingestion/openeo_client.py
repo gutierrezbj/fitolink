@@ -128,9 +128,10 @@ class OpenEOClient:
                 max_cloud_cover=max_cloud_cover,
             )
 
-            # Step 2: Cloud masking via SCL
+            # Step 2: Cloud masking via SCL — build mask with OR of comparisons
+            # (isin() not available in all openeo-python-client versions)
             scl = s2.band('SCL')
-            cloud_mask = scl.isin(_SCL_CLOUD_VALUES)
+            cloud_mask = (scl == 0) | (scl == 1) | (scl == 3) | (scl == 8) | (scl == 9) | (scl == 10) | (scl == 11)
             s2_clean = s2.mask(cloud_mask)
 
             # Step 3: NDVI band math = (B08 - B04) / (B08 + B04)
