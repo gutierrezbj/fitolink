@@ -202,14 +202,6 @@ export default function ParcelDetailPage() {
             {showHeatmap && ndviSnapshot && <NdviHeatmap snapshot={ndviSnapshot} parcelGeometry={parcel.geometry} />}
           </ParcelMap>
 
-          {/* Top-left: health badge */}
-          {latestNdvi && (
-            <div className="absolute top-3 left-3 z-[1000]">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md">
-                <HealthScoreGauge ndvi={latestNdvi.mean} size={90} showLabel />
-              </div>
-            </div>
-          )}
 
           {/* Top-right: toggle NDVI */}
           {ndviSnapshot && (
@@ -242,44 +234,9 @@ export default function ParcelDetailPage() {
           )}
         </div>
 
-        {/* Stats bar below map */}
-        <div className="grid grid-cols-2 md:grid-cols-4 border-t border-gray-100">
-          {[
-            {
-              label: 'NDVI Actual',
-              value: latestNdvi ? latestNdvi.mean.toFixed(3) : '—',
-              sub: latestNdvi ? formatDate(latestNdvi.date) : 'Sin lecturas',
-              accent: latestNdvi ? (latestNdvi.mean < 0.3 ? 'text-red-600' : latestNdvi.mean < 0.5 ? 'text-yellow-600' : 'text-green-600') : '',
-            },
-            {
-              label: 'Tendencia',
-              value: ndviTrend !== null ? `${ndviTrend > 0 ? '+' : ''}${ndviTrend.toFixed(3)}` : '—',
-              sub: ndviTrend !== null ? (ndviTrend > 0 ? 'Mejorando' : ndviTrend < 0 ? 'Bajando' : 'Estable') : '',
-              accent: ndviTrend !== null ? (ndviTrend > 0 ? 'text-green-600' : ndviTrend < 0 ? 'text-red-600' : 'text-gray-600') : '',
-            },
-            {
-              label: 'Alertas activas',
-              value: String(activeAlerts.length),
-              sub: activeAlerts.length > 0 ? 'Requieren atencion' : 'Todo en orden',
-              accent: activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600',
-            },
-            {
-              label: 'Lecturas satelite',
-              value: String(parcel.ndviHistory?.length || 0),
-              sub: `${anomalyCount} anomali${anomalyCount === 1 ? 'a' : 'as'} detectadas`,
-              accent: '',
-            },
-          ].map((s, i) => (
-            <div key={i} className={`p-4 ${i < 3 ? 'border-r border-gray-100' : ''}`}>
-              <p className="text-xs text-gray-400 mb-0.5">{s.label}</p>
-              <p className={`text-xl font-bold ${s.accent || 'text-gray-900'}`}>{s.value}</p>
-              <p className="text-xs text-gray-400">{s.sub}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Farmer interpretation */}
+      {/* Two-card row: gauge + interpretation */}
       {latestNdvi && (() => {
         const ndvi = latestNdvi.mean;
         const trend = ndviTrend ?? 0;
@@ -299,20 +256,52 @@ export default function ParcelDetailPage() {
           ? `NDVI ${ndvi.toFixed(3)} en zona de atencion${isDecline ? ', tendencia descendente' : ''}. Monitorizar en los proximos 10-15 dias.`
           : `NDVI ${ndvi.toFixed(3)}. Vegetacion activa y saludable.`;
         return (
-          <div className={`rounded-xl border p-4 mb-4 flex items-start gap-3 ${bg}`}>
-            <div className="flex-1">
-              <p className={`text-sm font-semibold ${textColor}`}>{title}</p>
-              <p className={`text-xs mt-0.5 ${textColor} opacity-80`}>{body}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Card 1: Health gauge + stats */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-5">
+              <HealthScoreGauge ndvi={ndvi} size={100} showLabel />
+              <div className="flex-1 grid grid-cols-2 gap-y-3">
+                <div>
+                  <p className="text-xs text-gray-400">Tendencia</p>
+                  <p className={`text-lg font-bold ${trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    {trend > 0 ? '+' : ''}{trend.toFixed(3)}
+                  </p>
+                  <p className="text-xs text-gray-400">{trend > 0 ? 'Mejorando' : trend < 0 ? 'Bajando' : 'Estable'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Alertas activas</p>
+                  <p className={`text-lg font-bold ${activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600'}`}>{activeAlerts.length}</p>
+                  <p className="text-xs text-gray-400">{activeAlerts.length > 0 ? 'Requieren atencion' : 'Todo en orden'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Lecturas satelite</p>
+                  <p className="text-lg font-bold text-gray-900">{parcel.ndviHistory?.length || 0}</p>
+                  <p className="text-xs text-gray-400">{anomalyCount} anomalia{anomalyCount !== 1 ? 's' : ''}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Ultima lectura</p>
+                  <p className="text-sm font-semibold text-gray-700">{formatDate(latestNdvi.date)}</p>
+                  <p className="text-xs text-gray-400">Sentinel-2</p>
+                </div>
+              </div>
             </div>
-            {(isCritical || isAlert) && activeAlerts.length > 0 && (
-              <button
-                onClick={() => requestServiceMutation.mutate(activeAlerts[0])}
-                disabled={requestServiceMutation.isPending}
-                className="bg-brand-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium whitespace-nowrap flex-shrink-0"
-              >
-                Solicitar dron
-              </button>
-            )}
+
+            {/* Card 2: Interpretation + CTA */}
+            <div className={`rounded-xl border p-5 flex flex-col justify-between ${bg}`}>
+              <div>
+                <p className={`text-sm font-semibold mb-1 ${textColor}`}>{title}</p>
+                <p className={`text-xs leading-relaxed ${textColor} opacity-80`}>{body}</p>
+              </div>
+              {(isCritical || isAlert) && activeAlerts.length > 0 && (
+                <button
+                  onClick={() => requestServiceMutation.mutate(activeAlerts[0])}
+                  disabled={requestServiceMutation.isPending}
+                  className="mt-4 bg-brand-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium w-full"
+                >
+                  Solicitar dron
+                </button>
+              )}
+            </div>
           </div>
         );
       })()}
