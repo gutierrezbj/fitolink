@@ -453,7 +453,7 @@ async function seed() {
     parcelId: mongoose.Types.ObjectId,
   ) {
     const [west, south, east, north] = bbox;
-    const step = 0.0012; // ~110m resolution
+    const step = 0.00018; // ~20m resolution (Sentinel-2)
     const points = [];
     for (let lat = south + step / 2; lat < north; lat += step) {
       for (let lng = west + step / 2; lng < east; lng += step) {
