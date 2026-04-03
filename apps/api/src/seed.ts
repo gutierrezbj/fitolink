@@ -56,6 +56,17 @@ async function seed() {
     ratingCount: 12,
   });
 
+  // Create ASAJA demo farmer (Sevilla — cereal + olivo)
+  const asajaFarmer = await User.create({
+    email: 'asaja@demo.com',
+    name: 'Miguel Santos Reyes',
+    role: 'farmer',
+    phone: '+34 654 789 012',
+    googleId: 'demo-farmer-002',
+    location: { type: 'Point', coordinates: [-5.9845, 37.3891] },
+    isVerified: true,
+  });
+
   // Create insurer
   const insurer = await User.create({
     email: 'seguros@demo.com',
@@ -346,10 +357,86 @@ async function seed() {
     createdAt: new Date('2026-03-10'),
   });
 
+  // === ASAJA parcels (Sevilla — Campiña, cereal + olivo) ===
+
+  // Parcel 6 — Cereal ASAJA, La Campiña Sevillana
+  await Parcel.create({
+    ownerId: asajaFarmer._id,
+    name: 'Cereal La Campiña',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-5.5200, 37.4100],
+        [-5.5060, 37.4100],
+        [-5.5060, 37.4010],
+        [-5.5200, 37.4010],
+        [-5.5200, 37.4100],
+      ]],
+    },
+    areaHa: 32.0,
+    cropType: 'cereal',
+    province: 'Sevilla',
+    sigpacRef: '41-091-0003-00042',
+    isInsured: true,
+    insurerId: insurer._id,
+    ndviHistory: [
+      { date: new Date('2026-01-10'), mean: 0.55, min: 0.42, max: 0.68, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-20'), mean: 0.62, min: 0.49, max: 0.74, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-30'), mean: 0.70, min: 0.57, max: 0.81, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-09'), mean: 0.75, min: 0.62, max: 0.85, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-19'), mean: 0.78, min: 0.65, max: 0.87, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-03-01'), mean: 0.76, min: 0.63, max: 0.86, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-03-11'), mean: 0.72, min: 0.58, max: 0.83, anomalyDetected: false, source: 'sentinel2' },
+    ],
+  });
+
+  // Parcel 7 — Olivar ASAJA with anomaly — Marchena (Sevilla)
+  const parcelAsajaOlivo = await Parcel.create({
+    ownerId: asajaFarmer._id,
+    name: 'Olivar Marchena',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-5.3850, 37.3320],
+        [-5.3720, 37.3320],
+        [-5.3720, 37.3240],
+        [-5.3850, 37.3240],
+        [-5.3850, 37.3320],
+      ]],
+    },
+    areaHa: 18.7,
+    cropType: 'olivo',
+    province: 'Sevilla',
+    sigpacRef: '41-058-0001-00088',
+    isInsured: false,
+    ndviHistory: [
+      { date: new Date('2026-01-10'), mean: 0.66, min: 0.53, max: 0.77, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-20'), mean: 0.65, min: 0.51, max: 0.76, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-30'), mean: 0.61, min: 0.46, max: 0.73, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-09'), mean: 0.54, min: 0.37, max: 0.67, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-19'), mean: 0.45, min: 0.27, max: 0.60, anomalyDetected: true,  source: 'sentinel2' },
+      { date: new Date('2026-03-01'), mean: 0.38, min: 0.20, max: 0.53, anomalyDetected: true,  source: 'sentinel2' },
+      { date: new Date('2026-03-11'), mean: 0.34, min: 0.17, max: 0.49, anomalyDetected: true,  source: 'sentinel2' },
+    ],
+  });
+
+  // Alert on Olivar Marchena
+  await Alert.create({
+    parcelId: parcelAsajaOlivo._id,
+    type: 'stress_pattern',
+    severity: 'critical',
+    ndviValue: 0.34,
+    ndviDelta: -0.04,
+    detectedAt: new Date('2026-03-11'),
+    status: 'new',
+    aiConfidence: 0.92,
+    imagery: { sentinelScene: 'S2A_MSIL2A_20260311T105851' },
+  });
+
   logger.info({
-    users: 4,
-    parcels: 5,
-    alerts: 5,
+    users: 5,
+    parcels: 7,
+    alerts: 6,
     operations: 5,
   }, 'Seed completed successfully');
 
