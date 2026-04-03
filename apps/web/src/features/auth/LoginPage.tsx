@@ -13,6 +13,7 @@ const DEMO_ACCOUNTS = [
   { label: 'Piloto', googleId: 'demo-pilot-001', icon: '/drone-pilot.svg', color: 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100' },
   { label: 'Aseguradora', googleId: 'demo-insurer-001', icon: '/insurance2.svg', color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
   { label: 'Admin', googleId: 'demo-admin-001', icon: '/system-administration.svg', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
+  { label: 'ASAJA', googleId: 'demo-farmer-002', icon: '/farmer.svg', color: 'bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100' },
 ];
 
 export default function LoginPage() {

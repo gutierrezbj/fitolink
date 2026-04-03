@@ -3,6 +3,7 @@ import { User } from './models/User.js';
 import { Parcel } from './models/Parcel.js';
 import { Alert } from './models/Alert.js';
 import { Operation } from './models/Operation.js';
+import { NdviSnapshot } from './models/NdviSnapshot.js';
 import { logger } from './utils/logger.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
@@ -12,7 +13,7 @@ async function seed() {
   logger.info('Connected to MongoDB for seeding');
 
   // Clear existing data
-  await Promise.all([User.deleteMany({}), Parcel.deleteMany({}), Alert.deleteMany({}), Operation.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), Parcel.deleteMany({}), Alert.deleteMany({}), Operation.deleteMany({}), NdviSnapshot.deleteMany({})]);
 
   // Create admin user
   const admin = await User.create({
@@ -433,11 +434,57 @@ async function seed() {
     imagery: { sentinelScene: 'S2A_MSIL2A_20260311T105851' },
   });
 
+  // === NDVI Snapshots (simulate geo-pipeline output for demo heatmap) ===
+
+  function makeGrid(
+    bbox: [number, number, number, number], // [west, south, east, north]
+    baseNdvi: number,
+    stressCorner: 'none' | 'nw' | 'ne' | 'se' | 'sw',
+    date: Date,
+    parcelId: mongoose.Types.ObjectId,
+  ) {
+    const [west, south, east, north] = bbox;
+    const step = 0.0012; // ~110m resolution
+    const points = [];
+    for (let lat = south + step / 2; lat < north; lat += step) {
+      for (let lng = west + step / 2; lng < east; lng += step) {
+        const relLat = (lat - south) / (north - south); // 0=south, 1=north
+        const relLng = (lng - west) / (east - west);   // 0=west, 1=east
+        let stress = 0;
+        if (stressCorner === 'nw') stress = (1 - relLng) * relLat;
+        else if (stressCorner === 'ne') stress = relLng * relLat;
+        else if (stressCorner === 'sw') stress = (1 - relLng) * (1 - relLat);
+        else if (stressCorner === 'se') stress = relLng * (1 - relLat);
+        const noise = (Math.random() - 0.5) * 0.04;
+        const ndvi = Math.max(0.05, Math.min(0.95, baseNdvi - stress * 0.35 + noise));
+        points.push({ lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)), ndvi: parseFloat(ndvi.toFixed(4)) });
+      }
+    }
+    return { parcelId, date, resolution: 20, points, bbox, pixelCount: points.length };
+  }
+
+  // Parcel1 — Olivar El Cerro (Jaén) — stress in NW quadrant
+  await NdviSnapshot.create(makeGrid(
+    [-3.7900, 37.7600, -3.7800, 37.7700],
+    0.52, 'nw',
+    new Date('2026-02-04'),
+    parcel1._id as mongoose.Types.ObjectId,
+  ));
+
+  // Parcel5 — Olivar DOP Estepa Sur (Sevilla) — severe stress SE
+  await NdviSnapshot.create(makeGrid(
+    [-4.8820, 37.2760, -4.8700, 37.2840],
+    0.38, 'se',
+    new Date('2026-03-05'),
+    parcel5._id as mongoose.Types.ObjectId,
+  ));
+
   logger.info({
     users: 5,
     parcels: 7,
     alerts: 6,
     operations: 5,
+    snapshots: 2,
   }, 'Seed completed successfully');
 
   await mongoose.disconnect();
