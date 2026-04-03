@@ -9,7 +9,6 @@ interface Props {
 
 function getCellHalf(points: NdviSnapshot['points']): number {
   if (points.length < 2) return 0.000045;
-  // Detect step from first pair of adjacent points sharing same lat
   const firstLat = points[0].lat;
   const row = points.filter((p) => Math.abs(p.lat - firstLat) < 0.000005).slice(0, 4);
   if (row.length >= 2) {
@@ -29,7 +28,9 @@ function ndviToColor(ndvi: number): string {
   return '#16a34a';
 }
 
-function buildGeoJSON(snapshot: NdviSnapshot): GeoJSON.FeatureCollection {
+type NdviFeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Polygon, { ndvi: number }>;
+
+function buildGeoJSON(snapshot: NdviSnapshot, cellHalf: number): NdviFeatureCollection {
   return {
     type: 'FeatureCollection',
     features: snapshot.points.map((pt) => ({
@@ -37,11 +38,11 @@ function buildGeoJSON(snapshot: NdviSnapshot): GeoJSON.FeatureCollection {
       geometry: {
         type: 'Polygon' as const,
         coordinates: [[
-          [pt.lng - CELL_HALF, pt.lat - CELL_HALF],
-          [pt.lng + CELL_HALF, pt.lat - CELL_HALF],
-          [pt.lng + CELL_HALF, pt.lat + CELL_HALF],
-          [pt.lng - CELL_HALF, pt.lat + CELL_HALF],
-          [pt.lng - CELL_HALF, pt.lat - CELL_HALF],
+          [pt.lng - cellHalf, pt.lat - cellHalf],
+          [pt.lng + cellHalf, pt.lat - cellHalf],
+          [pt.lng + cellHalf, pt.lat + cellHalf],
+          [pt.lng - cellHalf, pt.lat + cellHalf],
+          [pt.lng - cellHalf, pt.lat - cellHalf],
         ]],
       },
       properties: { ndvi: pt.ndvi },
@@ -50,33 +51,13 @@ function buildGeoJSON(snapshot: NdviSnapshot): GeoJSON.FeatureCollection {
 }
 
 export default function NdviHeatmap({ snapshot, opacity = 0.72 }: Props) {
-  const geojson = useMemo(() => buildGeoJSON(snapshot), [snapshot]);
   const cellHalf = useMemo(() => getCellHalf(snapshot.points), [snapshot.points]);
-
-  const geojsonWithSize = useMemo(() => ({
-    ...geojson,
-    features: geojson.features.map((f) => {
-      const [lng, lat] = f.geometry.coordinates[0][0];
-      return {
-        ...f,
-        geometry: {
-          ...f.geometry,
-          coordinates: [[
-            [lng, lat],
-            [lng + cellHalf * 2, lat],
-            [lng + cellHalf * 2, lat + cellHalf * 2],
-            [lng, lat + cellHalf * 2],
-            [lng, lat],
-          ]],
-        },
-      };
-    }),
-  }), [geojson, cellHalf]);
+  const geojson = useMemo(() => buildGeoJSON(snapshot, cellHalf), [snapshot, cellHalf]);
 
   return (
     <GeoJSON
       key={snapshot._id}
-      data={geojsonWithSize}
+      data={geojson}
       style={(feature) => ({
         fillColor: ndviToColor(feature?.properties?.ndvi ?? 0),
         fillOpacity: opacity,
@@ -84,7 +65,7 @@ export default function NdviHeatmap({ snapshot, opacity = 0.72 }: Props) {
         weight: 0,
       })}
       onEachFeature={(feature, layer) => {
-        const ndvi = feature.properties?.ndvi as number;
+        const ndvi = (feature.properties?.ndvi ?? 0) as number;
         const label =
           ndvi < 0.15 ? 'Sin vegetacion' :
           ndvi < 0.25 ? 'Muy escasa' :
