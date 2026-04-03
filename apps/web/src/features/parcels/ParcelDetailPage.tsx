@@ -204,8 +204,10 @@ export default function ParcelDetailPage() {
 
           {/* Top-left: health badge */}
           {latestNdvi && (
-            <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
-              <HealthScoreGauge ndvi={latestNdvi.mean} size={90} showLabel />
+            <div className="absolute top-3 left-3 z-[1000]">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md">
+                <HealthScoreGauge ndvi={latestNdvi.mean} size={90} showLabel />
+              </div>
             </div>
           )}
 
