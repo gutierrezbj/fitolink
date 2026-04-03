@@ -149,9 +149,9 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
       data={parcel.geometry as GeoJSON.GeoJsonObject}
       style={{
         color: isSelected ? '#1d4ed8' : color,
-        weight: isSelected ? 3 : 2,
+        weight: isSelected ? 3 : 2.5,
         fillColor: color,
-        fillOpacity: isSelected ? 0.45 : 0.3,
+        fillOpacity: isSelected ? 0.12 : 0.08,
       }}
       eventHandlers={{
         click: () => onParcelClick?.(parcel._id),

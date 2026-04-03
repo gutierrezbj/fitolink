@@ -1,6 +1,6 @@
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Dot, Legend,
+  ResponsiveContainer, ReferenceLine, ReferenceArea,
 } from 'recharts';
 import { formatDate } from '@/lib/utils.js';
 
@@ -99,7 +99,13 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+          {/* Background health zones */}
+          <ReferenceArea y1={0.55} y2={1.0} fill="#dcfce7" fillOpacity={0.4} />
+          <ReferenceArea y1={0.40} y2={0.55} fill="#fef9c3" fillOpacity={0.4} />
+          <ReferenceArea y1={0.30} y2={0.40} fill="#ffedd5" fillOpacity={0.5} />
+          <ReferenceArea y1={0}    y2={0.30} fill="#fee2e2" fillOpacity={0.5} />
+
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
 
           <XAxis
             dataKey="dateLabel"
@@ -118,22 +124,12 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
 
           <Tooltip content={<CustomTooltip />} />
 
-          {/* Critical threshold */}
-          <ReferenceLine
-            y={0.3}
-            stroke="#ef4444"
-            strokeDasharray="4 3"
-            strokeWidth={1.5}
-            label={{ value: 'Critico', position: 'insideTopLeft', fontSize: 10, fill: '#ef4444', dy: -4 }}
-          />
-          {/* High concern threshold */}
-          <ReferenceLine
-            y={0.4}
-            stroke="#f97316"
-            strokeDasharray="4 3"
-            strokeWidth={1.5}
-            label={{ value: 'Alerta', position: 'insideTopLeft', fontSize: 10, fill: '#f97316', dy: -4 }}
-          />
+          <ReferenceLine y={0.55} stroke="#16a34a" strokeDasharray="3 2" strokeWidth={1}
+            label={{ value: 'Saludable', position: 'insideTopRight', fontSize: 9, fill: '#16a34a' }} />
+          <ReferenceLine y={0.40} stroke="#ca8a04" strokeDasharray="3 2" strokeWidth={1}
+            label={{ value: 'Atencion', position: 'insideTopRight', fontSize: 9, fill: '#ca8a04' }} />
+          <ReferenceLine y={0.30} stroke="#ea580c" strokeDasharray="3 2" strokeWidth={1}
+            label={{ value: 'Riesgo critico', position: 'insideTopRight', fontSize: 9, fill: '#ea580c' }} />
 
           {/* Range band: max */}
           <Area

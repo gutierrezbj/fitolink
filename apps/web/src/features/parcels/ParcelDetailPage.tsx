@@ -289,6 +289,38 @@ export default function ParcelDetailPage() {
         </div>
       </div>
 
+      {/* Farmer interpretation block */}
+      {latestNdvi && (() => {
+        const ndvi = latestNdvi.mean;
+        const trend = ndviTrend ?? 0;
+        const isDecline = trend < -0.02;
+        const isCritical = ndvi < 0.30;
+        const isAlert = ndvi < 0.40;
+        const bg = isCritical ? 'bg-red-50 border-red-200' : isAlert ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
+        const textColor = isCritical ? 'text-red-800' : isAlert ? 'text-orange-800' : 'text-green-800';
+        const title = isCritical
+          ? 'Estres vegetativo critico — su cultivo necesita atencion urgente'
+          : isAlert
+          ? 'Vegetacion debilitada — vigilar evolucion en proximas semanas'
+          : 'Cultivo en buen estado — continuar seguimiento habitual';
+        const body = isCritical
+          ? `El NDVI ha caido a ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos en el ultimo periodo` : ''}. Esto indica perdida severa de actividad vegetal. Puede deberse a plaga, enfermedad fungica, deficit hidrico o dano mecanico.`
+          : isAlert
+          ? `El NDVI de ${ndvi.toFixed(3)} esta en la zona de atencion${isDecline ? ' y sigue bajando' : ''}. Monitorizar en los proximos 10-15 dias.`
+          : `El NDVI de ${ndvi.toFixed(3)} indica vegetacion activa y saludable.`;
+        return (
+          <div className={`rounded-xl border p-4 mb-6 ${bg}`}>
+            <p className={`text-sm font-semibold mb-1 ${textColor}`}>{title}</p>
+            <p className={`text-xs ${textColor} opacity-80`}>{body}</p>
+            {(isCritical || isAlert) && (
+              <p className="text-xs mt-2 font-medium text-gray-600">
+                Recomendacion: solicitar inspeccion con dron multiespectral para localizar las zonas afectadas y planificar el tratamiento.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       {/* NDVI Chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
