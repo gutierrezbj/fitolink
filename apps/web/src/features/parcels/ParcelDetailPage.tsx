@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import type { NdviSnapshot } from './useNdviSnapshot.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import ParcelMap from './ParcelMap.js';
@@ -53,6 +54,38 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className={`text-2xl font-bold ${accent || 'text-gray-900'}`}>{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function NdviHeatmapSummary({ snapshot }: { snapshot: NdviSnapshot }) {
+  const stats = useMemo(() => {
+    const ndvis = snapshot.points.map((p) => p.ndvi);
+    const mean = ndvis.reduce((a, b) => a + b, 0) / ndvis.length;
+    const min = Math.min(...ndvis);
+    const max = Math.max(...ndvis);
+    const stressPct = Math.round((ndvis.filter((n) => n < 0.35).length / ndvis.length) * 100);
+    return { mean, min, max, stressPct };
+  }, [snapshot.points]);
+
+  const interpretation =
+    stats.stressPct > 60 ? 'Estres vegetativo severo en la mayor parte de la parcela' :
+    stats.stressPct > 30 ? `Estres vegetativo en el ${stats.stressPct}% de la parcela — requiere atencion` :
+    stats.stressPct > 10 ? `Zonas de estres localizadas (${stats.stressPct}%) — monitorizar` :
+    'Vegetacion en buen estado en toda la parcela';
+
+  return (
+    <div className="mt-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 text-xs flex flex-wrap items-center gap-x-4 gap-y-1">
+      <span className="text-gray-400">Sentinel-2 · {formatDate(snapshot.date)}</span>
+      <span className="text-gray-500">NDVI min <b className="text-gray-700">{stats.min.toFixed(2)}</b></span>
+      <span className="text-gray-500">max <b className="text-gray-700">{stats.max.toFixed(2)}</b></span>
+      <span className="text-gray-500">media <b className="text-gray-700">{stats.mean.toFixed(2)}</b></span>
+      {stats.stressPct > 0 && (
+        <span className={`font-medium ${stats.stressPct > 30 ? 'text-red-600' : 'text-yellow-600'}`}>
+          {stats.stressPct}% en estres
+        </span>
+      )}
+      <span className="text-gray-600 flex-1 min-w-full sm:min-w-0">{interpretation}</span>
     </div>
   );
 }
@@ -225,6 +258,9 @@ export default function ParcelDetailPage() {
                 </div>
               )}
             </div>
+            {showHeatmap && ndviSnapshot && (
+              <NdviHeatmapSummary snapshot={ndviSnapshot} />
+            )}
           </div>
         </div>
 

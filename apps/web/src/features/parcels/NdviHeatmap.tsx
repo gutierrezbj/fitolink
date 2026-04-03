@@ -7,8 +7,18 @@ interface Props {
   opacity?: number;
 }
 
-// Half-side of each grid cell in degrees (~10m at Spain latitude)
-const CELL_HALF = 0.000045;
+function getCellHalf(points: NdviSnapshot['points']): number {
+  if (points.length < 2) return 0.000045;
+  // Detect step from first pair of adjacent points sharing same lat
+  const firstLat = points[0].lat;
+  const row = points.filter((p) => Math.abs(p.lat - firstLat) < 0.000005).slice(0, 4);
+  if (row.length >= 2) {
+    const lngs = row.map((p) => p.lng).sort((a, b) => a - b);
+    const spacing = lngs[1] - lngs[0];
+    if (spacing > 0.000005) return spacing / 2;
+  }
+  return 0.000045;
+}
 
 function ndviToColor(ndvi: number): string {
   if (ndvi < 0.15) return '#7f1d1d';
@@ -41,11 +51,32 @@ function buildGeoJSON(snapshot: NdviSnapshot): GeoJSON.FeatureCollection {
 
 export default function NdviHeatmap({ snapshot, opacity = 0.72 }: Props) {
   const geojson = useMemo(() => buildGeoJSON(snapshot), [snapshot]);
+  const cellHalf = useMemo(() => getCellHalf(snapshot.points), [snapshot.points]);
+
+  const geojsonWithSize = useMemo(() => ({
+    ...geojson,
+    features: geojson.features.map((f) => {
+      const [lng, lat] = f.geometry.coordinates[0][0];
+      return {
+        ...f,
+        geometry: {
+          ...f.geometry,
+          coordinates: [[
+            [lng, lat],
+            [lng + cellHalf * 2, lat],
+            [lng + cellHalf * 2, lat + cellHalf * 2],
+            [lng, lat + cellHalf * 2],
+            [lng, lat],
+          ]],
+        },
+      };
+    }),
+  }), [geojson, cellHalf]);
 
   return (
     <GeoJSON
       key={snapshot._id}
-      data={geojson}
+      data={geojsonWithSize}
       style={(feature) => ({
         fillColor: ndviToColor(feature?.properties?.ndvi ?? 0),
         fillOpacity: opacity,
@@ -54,9 +85,16 @@ export default function NdviHeatmap({ snapshot, opacity = 0.72 }: Props) {
       })}
       onEachFeature={(feature, layer) => {
         const ndvi = feature.properties?.ndvi as number;
+        const label =
+          ndvi < 0.15 ? 'Sin vegetacion' :
+          ndvi < 0.25 ? 'Muy escasa' :
+          ndvi < 0.35 ? 'Escasa' :
+          ndvi < 0.45 ? 'Moderada' :
+          ndvi < 0.55 ? 'Buena' : 'Optima';
         layer.bindTooltip(
-          `<div style="font-family:Inter,system-ui,sans-serif;font-size:12px">
+          `<div style="font-family:Inter,system-ui,sans-serif;font-size:12px;padding:2px 4px">
             <b style="color:${ndviToColor(ndvi)}">NDVI ${ndvi.toFixed(3)}</b>
+            <span style="color:#6b7280;margin-left:6px">${label}</span>
           </div>`,
           { sticky: true, offset: [0, -4] },
         );
