@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import ParcelDrawMap from './ParcelDrawMap.js';
+import SigpacLookup from './SigpacLookup.js';
 
 const CROP_TYPES = [
   { value: 'olivo', label: 'Olivo' },
@@ -140,15 +141,15 @@ export default function CreateParcelPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Referencia SIGPAC <span className="text-gray-400">(opcional)</span>
             </label>
-            <input
-              type="text"
-              value={sigpacRef}
-              onChange={(e) => setSigpacRef(e.target.value)}
-              placeholder="Ej: 14-041-0-0-12-34-1"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+            <SigpacLookup
+              onResult={({ geometry, areaHa: ha, sigpacRef: ref }) => {
+                setGeometry(geometry);
+                setAreaHa(ha);
+                setSigpacRef(ref);
+              }}
             />
           </div>
 
