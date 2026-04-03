@@ -94,8 +94,8 @@ export default function ParcelDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showHeatmap, setShowHeatmap] = useState(false);
   const { data: ndviSnapshot } = useNdviSnapshot(id);
+  const [showHeatmap, setShowHeatmap] = useState(true);
 
   const { data: parcel, isLoading: loadingParcel } = useQuery<Parcel>({
     queryKey: ['parcel', id],
@@ -195,142 +195,136 @@ export default function ParcelDetailPage() {
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          label="NDVI Actual"
-          value={latestNdvi ? latestNdvi.mean.toFixed(3) : '—'}
-          sub={latestNdvi ? formatDate(latestNdvi.date) : 'Sin lecturas'}
-          accent={latestNdvi ? (latestNdvi.mean < 0.3 ? 'text-red-600' : latestNdvi.mean < 0.5 ? 'text-yellow-600' : 'text-green-600') : undefined}
-        />
-        <StatCard
-          label="Tendencia"
-          value={ndviTrend !== null ? `${ndviTrend > 0 ? '+' : ''}${ndviTrend.toFixed(3)}` : '—'}
-          sub={ndviTrend !== null ? (ndviTrend > 0 ? 'Mejorando' : ndviTrend < 0 ? 'Bajando' : 'Estable') : undefined}
-          accent={ndviTrend !== null ? (ndviTrend > 0 ? 'text-green-600' : ndviTrend < 0 ? 'text-red-600' : 'text-gray-600') : undefined}
-        />
-        <StatCard
-          label="Alertas activas"
-          value={String(activeAlerts.length)}
-          sub={activeAlerts.length > 0 ? 'Requieren atencion' : 'Todo en orden'}
-          accent={activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600'}
-        />
-        <StatCard
-          label="Lecturas NDVI"
-          value={String(parcel.ndviHistory?.length || 0)}
-          sub={`${anomalyCount} anomali${anomalyCount === 1 ? 'a' : 'as'} historicas`}
-        />
-      </div>
+      {/* HERO: Map full width with NDVI overlay */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+        <div className="relative">
+          <ParcelMap parcels={[parcel]} height="460px" showDetailLink={false}>
+            {showHeatmap && ndviSnapshot && <NdviHeatmap snapshot={ndviSnapshot} />}
+          </ParcelMap>
 
-      {/* Map + Gauge */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">Ubicacion</h2>
-              {ndviSnapshot && (
-                <button
-                  onClick={() => setShowHeatmap((v) => !v)}
-                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium ${
-                    showHeatmap
-                      ? 'bg-green-600 text-white border-green-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700'
-                  }`}
-                >
-                  <img src="/location.svg" alt="" className="w-3.5 h-3.5" />
-                  Mapa NDVI
-                </button>
-              )}
+          {/* Top-left: health badge */}
+          {latestNdvi && (
+            <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
+              <HealthScoreGauge ndvi={latestNdvi.mean} size={90} showLabel />
             </div>
-            <div className="relative">
-              <ParcelMap
-                parcels={[parcel]}
-                height="280px"
-                showDetailLink={false}
+          )}
+
+          {/* Top-right: toggle NDVI */}
+          {ndviSnapshot && (
+            <div className="absolute top-3 right-3 z-[1000]">
+              <button
+                onClick={() => setShowHeatmap((v) => !v)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium shadow-sm transition-colors ${
+                  showHeatmap
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                }`}
               >
-                {showHeatmap && ndviSnapshot && (
-                  <NdviHeatmap snapshot={ndviSnapshot} />
-                )}
-              </ParcelMap>
-              {showHeatmap && ndviSnapshot && (
-                <div className="absolute bottom-3 right-3 z-[1000]">
-                  <NdviLegend />
-                </div>
-              )}
+                Indice NDVI {showHeatmap ? 'activado' : 'desactivado'}
+              </button>
             </div>
-            {showHeatmap && ndviSnapshot && (
-              <NdviHeatmapSummary snapshot={ndviSnapshot} />
-            )}
-          </div>
+          )}
+
+          {/* Bottom-right: legend */}
+          {showHeatmap && ndviSnapshot && (
+            <div className="absolute bottom-3 right-3 z-[1000]">
+              <NdviLegend />
+            </div>
+          )}
+
+          {/* Bottom-left: snapshot info */}
+          {showHeatmap && ndviSnapshot && (
+            <div className="absolute bottom-3 left-3 z-[1000] bg-black/50 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
+              Sentinel-2 · {formatDate(ndviSnapshot.date)}
+            </div>
+          )}
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col items-center justify-center h-full">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Indice de Salud</h2>
-            <HealthScoreGauge
-              ndvi={latestNdvi?.mean ?? null}
-              size={140}
-              showLabel
-            />
-            {latestNdvi && (
-              <div className="mt-4 w-full space-y-1.5 text-xs">
-                <div className="flex justify-between text-gray-500">
-                  <span>Minimo</span><span className="font-medium text-gray-700">{latestNdvi.min.toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Maximo</span><span className="font-medium text-gray-700">{latestNdvi.max.toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Fuente</span><span className="font-medium text-gray-700 uppercase">{latestNdvi.source || 'Sentinel-2'}</span>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Stats bar below map */}
+        <div className="grid grid-cols-2 md:grid-cols-4 border-t border-gray-100">
+          {[
+            {
+              label: 'NDVI Actual',
+              value: latestNdvi ? latestNdvi.mean.toFixed(3) : '—',
+              sub: latestNdvi ? formatDate(latestNdvi.date) : 'Sin lecturas',
+              accent: latestNdvi ? (latestNdvi.mean < 0.3 ? 'text-red-600' : latestNdvi.mean < 0.5 ? 'text-yellow-600' : 'text-green-600') : '',
+            },
+            {
+              label: 'Tendencia',
+              value: ndviTrend !== null ? `${ndviTrend > 0 ? '+' : ''}${ndviTrend.toFixed(3)}` : '—',
+              sub: ndviTrend !== null ? (ndviTrend > 0 ? 'Mejorando' : ndviTrend < 0 ? 'Bajando' : 'Estable') : '',
+              accent: ndviTrend !== null ? (ndviTrend > 0 ? 'text-green-600' : ndviTrend < 0 ? 'text-red-600' : 'text-gray-600') : '',
+            },
+            {
+              label: 'Alertas activas',
+              value: String(activeAlerts.length),
+              sub: activeAlerts.length > 0 ? 'Requieren atencion' : 'Todo en orden',
+              accent: activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600',
+            },
+            {
+              label: 'Lecturas satelite',
+              value: String(parcel.ndviHistory?.length || 0),
+              sub: `${anomalyCount} anomali${anomalyCount === 1 ? 'a' : 'as'} detectadas`,
+              accent: '',
+            },
+          ].map((s, i) => (
+            <div key={i} className={`p-4 ${i < 3 ? 'border-r border-gray-100' : ''}`}>
+              <p className="text-xs text-gray-400 mb-0.5">{s.label}</p>
+              <p className={`text-xl font-bold ${s.accent || 'text-gray-900'}`}>{s.value}</p>
+              <p className="text-xs text-gray-400">{s.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Farmer interpretation block */}
+      {/* Farmer interpretation */}
       {latestNdvi && (() => {
         const ndvi = latestNdvi.mean;
         const trend = ndviTrend ?? 0;
         const isDecline = trend < -0.02;
-        const isCritical = ndvi < 0.30;
-        const isAlert = ndvi < 0.40;
+        const isCritical = ndvi < 0.35;
+        const isAlert = ndvi < 0.50;
         const bg = isCritical ? 'bg-red-50 border-red-200' : isAlert ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
         const textColor = isCritical ? 'text-red-800' : isAlert ? 'text-orange-800' : 'text-green-800';
         const title = isCritical
-          ? 'Estres vegetativo critico — su cultivo necesita atencion urgente'
+          ? 'Estres vegetativo severo — su cultivo necesita atencion urgente'
           : isAlert
-          ? 'Vegetacion debilitada — vigilar evolucion en proximas semanas'
-          : 'Cultivo en buen estado — continuar seguimiento habitual';
+          ? 'Vegetacion debilitada — vigilar evolucion'
+          : 'Cultivo en buen estado';
         const body = isCritical
-          ? `El NDVI ha caido a ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos en el ultimo periodo` : ''}. Esto indica perdida severa de actividad vegetal. Puede deberse a plaga, enfermedad fungica, deficit hidrico o dano mecanico.`
+          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} pts` : ''}. Perdida severa de actividad vegetal. Posible plaga, hongo, sequia o dano mecanico.`
           : isAlert
-          ? `El NDVI de ${ndvi.toFixed(3)} esta en la zona de atencion${isDecline ? ' y sigue bajando' : ''}. Monitorizar en los proximos 10-15 dias.`
-          : `El NDVI de ${ndvi.toFixed(3)} indica vegetacion activa y saludable.`;
+          ? `NDVI ${ndvi.toFixed(3)} en zona de atencion${isDecline ? ', tendencia descendente' : ''}. Monitorizar en los proximos 10-15 dias.`
+          : `NDVI ${ndvi.toFixed(3)}. Vegetacion activa y saludable.`;
         return (
-          <div className={`rounded-xl border p-4 mb-6 ${bg}`}>
-            <p className={`text-sm font-semibold mb-1 ${textColor}`}>{title}</p>
-            <p className={`text-xs ${textColor} opacity-80`}>{body}</p>
-            {(isCritical || isAlert) && (
-              <p className="text-xs mt-2 font-medium text-gray-600">
-                Recomendacion: solicitar inspeccion con dron multiespectral para localizar las zonas afectadas y planificar el tratamiento.
-              </p>
+          <div className={`rounded-xl border p-4 mb-4 flex items-start gap-3 ${bg}`}>
+            <div className="flex-1">
+              <p className={`text-sm font-semibold ${textColor}`}>{title}</p>
+              <p className={`text-xs mt-0.5 ${textColor} opacity-80`}>{body}</p>
+            </div>
+            {(isCritical || isAlert) && activeAlerts.length > 0 && (
+              <button
+                onClick={() => requestServiceMutation.mutate(activeAlerts[0])}
+                disabled={requestServiceMutation.isPending}
+                className="bg-brand-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium whitespace-nowrap flex-shrink-0"
+              >
+                Solicitar dron
+              </button>
             )}
           </div>
         );
       })()}
 
-      {/* NDVI Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Evolucion NDVI</h2>
+      {/* NDVI Chart — compact */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">Evolucion NDVI historica</h2>
           <span className="text-xs text-gray-400">Sentinel-2 · cada 5 dias</span>
         </div>
         {parcel.ndviHistory?.length > 0 ? (
-          <NdviChart data={parcel.ndviHistory} height={320} />
+          <NdviChart data={parcel.ndviHistory} height={220} />
         ) : (
-          <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+          <div className="h-32 flex items-center justify-center text-gray-400 text-sm">
             Sin datos NDVI disponibles aun
           </div>
         )}

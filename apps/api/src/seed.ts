@@ -505,12 +505,20 @@ async function seed() {
     parcel5._id as mongoose.Types.ObjectId,
   ));
 
+  // Parcel7 — Olivar Marchena (ASAJA) — critical stress sw
+  await NdviSnapshot.create(makeGrid(
+    [-5.3861, 37.3238, -5.3706, 37.3323],
+    0.34, 'sw',
+    new Date('2026-03-11'),
+    parcelAsajaOlivo._id as mongoose.Types.ObjectId,
+  ));
+
   logger.info({
     users: 5,
     parcels: 7,
     alerts: 6,
     operations: 5,
-    snapshots: 2,
+    snapshots: 3,
   }, 'Seed completed successfully');
 
   await mongoose.disconnect();
