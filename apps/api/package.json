@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
+    "@types/geojson": "^7946.0.14",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.0",
