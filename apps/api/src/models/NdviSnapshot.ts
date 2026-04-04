@@ -39,4 +39,4 @@ const ndviSnapshotSchema = new Schema<INdviSnapshot>(
 
 ndviSnapshotSchema.index({ parcelId: 1, date: -1 });
 
-export const NdviSnapshot = mongoose.model<INdviSnapshot>('NdviSnapshot', ndviSnapshotSchema);
+export const NdviSnapshot = mongoose.model<INdviSnapshot>('NdviSnapshot', ndviSnapshotSchema, 'ndvi_snapshots');
