@@ -15,6 +15,8 @@ Benefits vs legacy OData download:
 Authentication: client_credentials via CDSE OAuth2 (same as CopernicusClient).
 """
 import io
+import os
+import tempfile
 from datetime import datetime
 from typing import Optional
 
@@ -151,24 +153,33 @@ class OpenEOClient:
             ndvi_composite = ndvi_parcel.reduce_temporal('max')
             ndre_composite = ndre_parcel.reduce_temporal('max')
 
-            # Step 6: Download both as in-memory GeoTIFFs (no disk write)
-            ndvi_buf = io.BytesIO()
-            ndvi_composite.download(ndvi_buf, format='GTiff')
-            # Read raw bytes once — share across stats + grid (buffer is exhausted after one read)
-            ndvi_raw_bytes = ndvi_buf.getvalue()
+            # Step 6: Download via temp files (download() requires a path in newer openeo-client)
+            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as ndvi_tmp:
+                ndvi_tmp_path = ndvi_tmp.name
+            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as ndre_tmp:
+                ndre_tmp_path = ndre_tmp.name
 
-            ndre_buf = io.BytesIO()
-            ndre_composite.download(ndre_buf, format='GTiff')
-            ndre_buf.seek(0)
+            try:
+                ndvi_composite.download(ndvi_tmp_path, format='GTiff')
+                ndre_composite.download(ndre_tmp_path, format='GTiff')
 
-            # Step 7: Compute statistics (feed a fresh BytesIO from the raw bytes)
+                with open(ndvi_tmp_path, 'rb') as f:
+                    ndvi_raw_bytes = f.read()
+                with open(ndre_tmp_path, 'rb') as f:
+                    ndre_raw_bytes = f.read()
+            finally:
+                for p in (ndvi_tmp_path, ndre_tmp_path):
+                    if os.path.exists(p):
+                        os.unlink(p)
+
+            # Step 7: Compute statistics
             result = _stats_from_geotiff(io.BytesIO(ndvi_raw_bytes))
             if result is None:
                 logger.info('openeo_no_valid_pixels', bbox=bbox)
                 return None
 
             # Add NDRE mean to result
-            ndre_result = _stats_from_geotiff(ndre_buf)
+            ndre_result = _stats_from_geotiff(io.BytesIO(ndre_raw_bytes))
             if ndre_result is not None:
                 result.ndre_mean = ndre_result.mean
 
