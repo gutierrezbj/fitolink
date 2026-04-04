@@ -50,6 +50,7 @@ def extract_pixel_samples(
             raw = ds.read(1).astype(np.float32)
             transform = ds.transform
             nodata = ds.nodata
+            src_crs = ds.crs
 
     mask = np.isfinite(raw)
     if nodata is not None:
@@ -62,8 +63,14 @@ def extract_pixel_samples(
     # Clip values to physical NDVI range
     values = np.clip(raw[rows, cols], -1.0, 1.0)
 
-    # Convert pixel centres to geographic coordinates
-    lngs, lats = transform_xy(transform, rows.tolist(), cols.tolist())
+    # Convert pixel centres to raster CRS, then to WGS84 if projected
+    xs, ys = transform_xy(transform, rows.tolist(), cols.tolist())
+    if src_crs and not src_crs.is_geographic:
+        from pyproj import Transformer as _T
+        to_wgs84 = _T.from_crs(src_crs, 'EPSG:4326', always_xy=True)
+        lngs, lats = to_wgs84.transform(xs, ys)
+    else:
+        lngs, lats = xs, ys
 
     for lat, lng, ndvi in zip(lats, lngs, values.tolist()):
         samples.append((float(lat), float(lng), float(ndvi)))
