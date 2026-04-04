@@ -16,7 +16,7 @@ async function seed() {
   const realSnapshots = await NdviSnapshot.countDocuments({ 'points.0': { $exists: true } });
   const userCount = await User.countDocuments({});
   if (userCount > 0 && realSnapshots > 3) {
-    logger.info('Real pipeline data detected — skipping seed to preserve NDVI data', { snapshots: realSnapshots });
+    logger.info({ snapshots: realSnapshots }, 'Real pipeline data detected — skipping seed to preserve NDVI data');
     await mongoose.disconnect();
     return;
   }
