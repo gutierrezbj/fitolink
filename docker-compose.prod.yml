@@ -28,11 +28,14 @@ services:
       context: .
       dockerfile: docker/Dockerfile.geo
     environment:
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_URI=mongodb://mongo:27017/fitolink
       - COPERNICUS_CLIENT_ID=${COPERNICUS_CLIENT_ID}
       - COPERNICUS_CLIENT_SECRET=${COPERNICUS_CLIENT_SECRET}
+    networks:
+      - default
+      - fitolink_default
     restart: 'no'
-    # Run via cron on the host: docker compose run geo-pipeline
+    # Run via cron on the host: docker compose -f docker-compose.prod.yml run --rm geo-pipeline
 
   proxy:
     image: nginx:alpine
@@ -46,3 +49,7 @@ services:
       - web
       - api
     restart: unless-stopped
+
+networks:
+  fitolink_default:
+    external: true
