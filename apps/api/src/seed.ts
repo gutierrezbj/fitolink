@@ -12,6 +12,15 @@ async function seed() {
   await mongoose.connect(MONGODB_URI);
   logger.info('Connected to MongoDB for seeding');
 
+  // If real pipeline data exists (snapshots from openEO), preserve it — skip seed
+  const realSnapshots = await NdviSnapshot.countDocuments({ 'points.0': { $exists: true } });
+  const userCount = await User.countDocuments({});
+  if (userCount > 0 && realSnapshots > 3) {
+    logger.info('Real pipeline data detected — skipping seed to preserve NDVI data', { snapshots: realSnapshots });
+    await mongoose.disconnect();
+    return;
+  }
+
   // Clear existing data
   await Promise.all([User.deleteMany({}), Parcel.deleteMany({}), Alert.deleteMany({}), Operation.deleteMany({}), NdviSnapshot.deleteMany({})]);
 
