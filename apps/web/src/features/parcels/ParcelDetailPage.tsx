@@ -134,6 +134,16 @@ export default function ParcelDetailPage() {
     },
   });
 
+  const resolveAlertMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      await api.patch(`/alerts/${alertId}`, { status: 'resolved', resolvedBy: 'farmer' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts', 'parcel', id] });
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+    },
+  });
+
   if (loadingParcel) {
     return (
       <div className="animate-pulse space-y-4">
@@ -249,15 +259,48 @@ export default function ParcelDetailPage() {
         const bg = isCritical ? 'bg-red-50 border-red-200' : isAlert ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
         const textColor = isCritical ? 'text-red-800' : isAlert ? 'text-orange-800' : 'text-green-800';
         const title = isCritical
-          ? 'Estres vegetativo severo — su cultivo necesita atencion urgente'
+          ? 'Estres vegetativo severo — atencion urgente'
           : isAlert
           ? 'Vegetacion debilitada — vigilar evolucion'
           : 'Cultivo en buen estado';
+
+        // Spatial analysis from heatmap grid
+        let spatialNote = '';
+        if (ndviSnapshot && ndviSnapshot.points.length > 8) {
+          const pts = ndviSnapshot.points.filter((p) => Number.isFinite(p.ndvi));
+          if (pts.length > 8) {
+            const lats = pts.map((p) => p.lat);
+            const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+            const northPts = pts.filter((p) => p.lat >= midLat);
+            const southPts = pts.filter((p) => p.lat < midLat);
+            const northMean = northPts.reduce((a, b) => a + b.ndvi, 0) / northPts.length;
+            const southMean = southPts.reduce((a, b) => a + b.ndvi, 0) / southPts.length;
+            const diff = Math.abs(northMean - southMean);
+            if (diff > 0.12) {
+              const weakZone = northMean < southMean ? 'norte' : 'sur';
+              const strongZone = northMean < southMean ? 'sur' : 'norte';
+              const weakVal = Math.min(northMean, southMean).toFixed(2);
+              const strongVal = Math.max(northMean, southMean).toFixed(2);
+              spatialNote = `El mapa muestra un gradiente claro: zona ${weakZone} con actividad reducida (NDVI ${weakVal}) frente a zona ${strongZone} en mejor estado (NDVI ${strongVal}). Posible diferencia de suelo, humedad o densidad de plantacion.`;
+            } else {
+              const stressPct = Math.round((pts.filter((p) => p.ndvi < 0.35).length / pts.length) * 100);
+              if (stressPct > 50) {
+                spatialNote = `El estres esta distribuido de forma uniforme en toda la parcela (${stressPct}% de los pixeles con NDVI < 0.35). Sugiere causa generalizada: sequia, enfermedad o carencia nutricional.`;
+              } else if (stressPct > 15) {
+                spatialNote = `Zonas de estres localizadas (${stressPct}% de la parcela). El resto mantiene actividad vegetal normal.`;
+              } else {
+                spatialNote = `La actividad vegetal es uniforme en toda la parcela. No se detectan patrones espaciales de estres.`;
+              }
+            }
+          }
+        }
+
         const body = isCritical
-          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} pts` : ''}. Perdida severa de actividad vegetal. Posible plaga, hongo, sequia o dano mecanico.`
+          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos` : ''}. Perdida severa de actividad vegetal. Posible plaga, hongo, sequia o dano mecanico.`
           : isAlert
-          ? `NDVI ${ndvi.toFixed(3)} en zona de atencion${isDecline ? ', tendencia descendente' : ''}. Monitorizar en los proximos 10-15 dias.`
-          : `NDVI ${ndvi.toFixed(3)}. Vegetacion activa y saludable.`;
+          ? `NDVI ${ndvi.toFixed(3)} en zona de atencion${isDecline ? ', con tendencia descendente' : ''}. Monitorizar en los proximos 10-15 dias.`
+          : `NDVI ${ndvi.toFixed(3)}. Vegetacion activa y saludable${isDecline ? ', aunque con ligera tendencia a la baja' : ''}.`;
+
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Card 1: Health gauge + stats */}
@@ -289,11 +332,16 @@ export default function ParcelDetailPage() {
               </div>
             </div>
 
-            {/* Card 2: Interpretation + CTA */}
+            {/* Card 2: Interpretation + spatial analysis + CTA */}
             <div className={`rounded-xl border p-5 flex flex-col justify-between ${bg}`}>
               <div>
                 <p className={`text-sm font-semibold mb-1 ${textColor}`}>{title}</p>
-                <p className={`text-xs leading-relaxed ${textColor} opacity-80`}>{body}</p>
+                <p className={`text-xs leading-relaxed ${textColor} opacity-90 mb-2`}>{body}</p>
+                {spatialNote && (
+                  <p className={`text-xs leading-relaxed ${textColor} opacity-75 border-t border-current border-opacity-20 pt-2`}>
+                    {spatialNote}
+                  </p>
+                )}
               </div>
               {(isCritical || isAlert) && activeAlerts.length > 0 && (
                 <button
@@ -394,9 +442,16 @@ export default function ParcelDetailPage() {
                         Solicitar servicio
                       </button>
                       <button
+                        onClick={() => resolveAlertMutation.mutate(alert._id)}
+                        disabled={resolveAlertMutation.isPending}
+                        className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
+                      >
+                        Ya lo atendi
+                      </button>
+                      <button
                         onClick={() => falsePosiveMutation.mutate(alert._id)}
                         disabled={falsePosiveMutation.isPending}
-                        className="border border-gray-200 text-gray-500 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        className="border border-gray-200 text-gray-400 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         Falso positivo
                       </button>
