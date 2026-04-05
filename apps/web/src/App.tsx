@@ -15,6 +15,7 @@ import ParcelDetailPage from '@/features/parcels/ParcelDetailPage.js';
 import B2BParcelsPage from '@/features/insurer/B2BParcelsPage.js';
 import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
 import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
+import DispatchPage from '@/features/admin/DispatchPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="admin/users" element={<AdminUsersPage />} />
         <Route path="admin/parcels" element={<ParcelsPage />} />
         <Route path="admin/alerts" element={<PlaceholderPage title="Todas las Alertas" />} />
+        <Route path="admin/dispatch" element={<DispatchPage />} />
       </Route>
 
       {/* Public landing */}

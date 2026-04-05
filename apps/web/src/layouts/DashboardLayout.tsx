@@ -22,6 +22,7 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
   ],
   admin: [
     { to: '/dashboard', label: 'Inicio', icon: '/system-administration.svg' },
+    { to: '/dashboard/admin/dispatch', label: 'Despacho', icon: '/drone-pilot.svg' },
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/user.svg' },
     { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/location.svg' },
     { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/siren.svg' },
