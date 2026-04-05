@@ -451,7 +451,7 @@ export default function ParcelDetailPage() {
                       <button
                         onClick={() => falsePosiveMutation.mutate(alert._id)}
                         disabled={falsePosiveMutation.isPending}
-                        className="border border-gray-200 text-gray-400 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        className="bg-blue-50 border border-blue-200 text-blue-600 text-xs px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         Falso positivo
                       </button>
