@@ -22,16 +22,31 @@ function pointInPolygon(lng: number, lat: number, polygon: GeoJSON.Polygon): boo
   return inside;
 }
 
-function getCellHalf(points: NdviSnapshot['points']): number {
-  if (points.length < 2) return 0.000045;
+function getCellDimensions(points: NdviSnapshot['points']): { lngHalf: number; latHalf: number } {
+  const fallback = 0.000113; // ~10m at Spain latitude
+  if (points.length < 4) return { lngHalf: fallback, latHalf: fallback };
+
+  // lng spacing: find two points on the same row (exact same lat)
   const firstLat = points[0].lat;
-  const row = points.filter((p) => Math.abs(p.lat - firstLat) < 0.000005).slice(0, 4);
+  const row = points.filter((p) => p.lat === firstLat);
+  let lngHalf = fallback;
   if (row.length >= 2) {
     const lngs = row.map((p) => p.lng).sort((a, b) => a - b);
     const spacing = lngs[1] - lngs[0];
-    if (spacing > 0.000005) return spacing / 2;
+    if (spacing > 0.00001) lngHalf = spacing / 2;
   }
-  return 0.000045;
+
+  // lat spacing: find two points on the same column (exact same lng)
+  const firstLng = points[0].lng;
+  const col = points.filter((p) => p.lng === firstLng);
+  let latHalf = fallback;
+  if (col.length >= 2) {
+    const lats = col.map((p) => p.lat).sort((a, b) => a - b);
+    const spacing = lats[1] - lats[0];
+    if (spacing > 0.00001) latHalf = spacing / 2;
+  }
+
+  return { lngHalf, latHalf };
 }
 
 function ndviToColor(ndvi: number): string {
@@ -45,7 +60,7 @@ function ndviToColor(ndvi: number): string {
 
 type NdviFeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Polygon, { ndvi: number }>;
 
-function buildGeoJSON(snapshot: NdviSnapshot, cellHalf: number): NdviFeatureCollection {
+function buildGeoJSON(snapshot: NdviSnapshot, lngHalf: number, latHalf: number): NdviFeatureCollection {
   return {
     type: 'FeatureCollection',
     features: snapshot.points.map((pt) => ({
@@ -53,11 +68,11 @@ function buildGeoJSON(snapshot: NdviSnapshot, cellHalf: number): NdviFeatureColl
       geometry: {
         type: 'Polygon' as const,
         coordinates: [[
-          [pt.lng - cellHalf, pt.lat - cellHalf],
-          [pt.lng + cellHalf, pt.lat - cellHalf],
-          [pt.lng + cellHalf, pt.lat + cellHalf],
-          [pt.lng - cellHalf, pt.lat + cellHalf],
-          [pt.lng - cellHalf, pt.lat - cellHalf],
+          [pt.lng - lngHalf, pt.lat - latHalf],
+          [pt.lng + lngHalf, pt.lat - latHalf],
+          [pt.lng + lngHalf, pt.lat + latHalf],
+          [pt.lng - lngHalf, pt.lat + latHalf],
+          [pt.lng - lngHalf, pt.lat - latHalf],
         ]],
       },
       properties: { ndvi: pt.ndvi },
@@ -66,13 +81,13 @@ function buildGeoJSON(snapshot: NdviSnapshot, cellHalf: number): NdviFeatureColl
 }
 
 export default function NdviHeatmap({ snapshot, parcelGeometry, opacity = 0.72 }: Props) {
-  const cellHalf = useMemo(() => getCellHalf(snapshot.points), [snapshot.points]);
+  const { lngHalf, latHalf } = useMemo(() => getCellDimensions(snapshot.points), [snapshot.points]);
   const geojson = useMemo(() => {
     const filteredSnapshot = parcelGeometry
       ? { ...snapshot, points: snapshot.points.filter((p) => pointInPolygon(p.lng, p.lat, parcelGeometry)) }
       : snapshot;
-    return buildGeoJSON(filteredSnapshot, cellHalf);
-  }, [snapshot, cellHalf, parcelGeometry]);
+    return buildGeoJSON(filteredSnapshot, lngHalf, latHalf);
+  }, [snapshot, lngHalf, latHalf, parcelGeometry]);
 
   return (
     <GeoJSON

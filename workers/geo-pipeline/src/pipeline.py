@@ -266,21 +266,30 @@ def run_pipeline() -> None:
                     {'$set': {'ndviHistory.$[last].anomalyDetected': True}},
                     array_filters=[{'last.date': new_reading['date']}],
                 )
-                alert_doc = {
+                # Deduplicate: skip if same parcel+scene already has an open alert
+                existing = db.alerts.find_one({
                     'parcelId': parcel['_id'],
-                    'type': anomaly.alert_type,
-                    'severity': anomaly.severity,
-                    'ndviValue': stats.mean,
-                    'ndviDelta': anomaly.ndvi_delta,
-                    'detectedAt': datetime.now(),
-                    'status': 'new',
-                    'aiConfidence': anomaly.confidence,
-                    'imagery': {'sentinelScene': scene_id},
-                    'createdAt': datetime.now(),
-                    'updatedAt': datetime.now(),
-                }
-                db.alerts.insert_one(alert_doc)
-                alerts_created += 1
+                    'imagery.sentinelScene': scene_id,
+                    'status': {'$in': ['new', 'notified']},
+                })
+                if existing:
+                    logger.info('alert_skipped_duplicate', parcel=parcel_name, scene=scene_id)
+                else:
+                    alert_doc = {
+                        'parcelId': parcel['_id'],
+                        'type': anomaly.alert_type,
+                        'severity': anomaly.severity,
+                        'ndviValue': stats.mean,
+                        'ndviDelta': anomaly.ndvi_delta,
+                        'detectedAt': datetime.now(),
+                        'status': 'new',
+                        'aiConfidence': anomaly.confidence,
+                        'imagery': {'sentinelScene': scene_id},
+                        'createdAt': datetime.now(),
+                        'updatedAt': datetime.now(),
+                    }
+                    db.alerts.insert_one(alert_doc)
+                    alerts_created += 1
                 logger.info(
                     'alert_created',
                     parcel=parcel_name,

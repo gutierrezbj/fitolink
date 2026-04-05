@@ -60,31 +60,31 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
 
 function NdviHeatmapSummary({ snapshot }: { snapshot: NdviSnapshot }) {
   const stats = useMemo(() => {
-    const ndvis = snapshot.points.map((p) => p.ndvi);
+    const ndvis = snapshot.points.map((p) => p.ndvi).filter(Number.isFinite);
+    if (ndvis.length === 0) return null;
     const mean = ndvis.reduce((a, b) => a + b, 0) / ndvis.length;
     const min = Math.min(...ndvis);
     const max = Math.max(...ndvis);
-    const stressPct = Math.round((ndvis.filter((n) => n < 0.35).length / ndvis.length) * 100);
-    return { mean, min, max, stressPct };
+    const spread = max - min;
+    return { mean, min, max, spread };
   }, [snapshot.points]);
 
+  if (!stats) return null;
+
   const interpretation =
-    stats.stressPct > 60 ? 'Estres vegetativo severo en la mayor parte de la parcela' :
-    stats.stressPct > 30 ? `Estres vegetativo en el ${stats.stressPct}% de la parcela — requiere atencion` :
-    stats.stressPct > 10 ? `Zonas de estres localizadas (${stats.stressPct}%) — monitorizar` :
-    'Vegetacion en buen estado en toda la parcela';
+    stats.mean < 0.20 ? 'Sin vegetacion activa — revisar urgente' :
+    stats.mean < 0.30 ? 'Actividad vegetal muy baja — posible estres severo' :
+    stats.mean < 0.40 ? 'Actividad vegetal baja — requiere atencion' :
+    stats.mean < 0.50 ? 'Actividad vegetal moderada — monitorizar evolucion' :
+    stats.mean < 0.65 ? 'Vegetacion activa y sana' :
+    'Vegetacion en optimas condiciones';
 
   return (
     <div className="mt-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 text-xs flex flex-wrap items-center gap-x-4 gap-y-1">
       <span className="text-gray-400">Sentinel-2 · {formatDate(snapshot.date)}</span>
-      <span className="text-gray-500">NDVI min <b className="text-gray-700">{stats.min.toFixed(2)}</b></span>
-      <span className="text-gray-500">max <b className="text-gray-700">{stats.max.toFixed(2)}</b></span>
+      <span className="text-gray-500">min <b className="text-gray-700">{stats.min.toFixed(2)}</b></span>
       <span className="text-gray-500">media <b className="text-gray-700">{stats.mean.toFixed(2)}</b></span>
-      {stats.stressPct > 0 && (
-        <span className={`font-medium ${stats.stressPct > 30 ? 'text-red-600' : 'text-yellow-600'}`}>
-          {stats.stressPct}% en estres
-        </span>
-      )}
+      <span className="text-gray-500">max <b className="text-gray-700">{stats.max.toFixed(2)}</b></span>
       <span className="text-gray-600 flex-1 min-w-full sm:min-w-0">{interpretation}</span>
     </div>
   );
