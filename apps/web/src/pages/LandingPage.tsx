@@ -196,8 +196,8 @@ function Hero() {
       </div>
 
       {/* Floating drone */}
-      <div className="absolute bottom-32 left-[6%] hidden lg:block animate-[float_6s_ease-in-out_infinite_1s]">
-        <DroneSVG className="w-28 h-28 opacity-40" />
+      <div className="absolute top-28 left-[5%] hidden md:block animate-[float_6s_ease-in-out_infinite_1s]">
+        <DroneSVG className="w-40 h-40 opacity-50" />
       </div>
 
       {/* Scan line effect */}
