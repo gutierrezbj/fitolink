@@ -149,7 +149,7 @@ export default function AlertsPage() {
                       <button
                         onClick={() => requestServiceMutation.mutate(alert)}
                         disabled={requestServiceMutation.isPending}
-                        className="flex-1 bg-brand-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium"
+                        className="flex-1 bg-terra-500 text-white text-xs px-3 py-2 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50 font-medium"
                       >
                         {requestServiceMutation.isPending ? 'Solicitando...' : 'Solicitar servicio'}
                       </button>

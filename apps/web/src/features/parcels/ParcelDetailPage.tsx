@@ -437,7 +437,7 @@ export default function ParcelDetailPage() {
                       <button
                         onClick={() => requestServiceMutation.mutate(alert)}
                         disabled={requestServiceMutation.isPending}
-                        className="bg-brand-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
+                        className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
                       >
                         Solicitar servicio
                       </button>

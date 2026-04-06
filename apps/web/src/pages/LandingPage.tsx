@@ -50,18 +50,18 @@ function Counter({ end, suffix = '' }: { end: number; suffix?: string }) {
 function SatelliteSVG({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="45" y="45" width="30" height="30" rx="4" fill="#16a34a" opacity="0.9"/>
-      <rect x="50" y="50" width="20" height="20" rx="2" fill="#22c55e"/>
-      <rect x="10" y="52" width="32" height="16" rx="3" fill="#16a34a" opacity="0.7"/>
-      <rect x="78" y="52" width="32" height="16" rx="3" fill="#16a34a" opacity="0.7"/>
-      <rect x="14" y="55" width="10" height="10" rx="1" fill="#4ade80" opacity="0.5"/>
-      <rect x="96" y="55" width="10" height="10" rx="1" fill="#4ade80" opacity="0.5"/>
-      <line x1="60" y1="75" x2="60" y2="95" stroke="#16a34a" strokeWidth="2" opacity="0.5"/>
-      <circle cx="60" cy="98" r="3" fill="#22c55e" opacity="0.4"/>
+      <rect x="45" y="45" width="30" height="30" rx="4" fill="#46632e" opacity="0.9"/>
+      <rect x="50" y="50" width="20" height="20" rx="2" fill="#587c3a"/>
+      <rect x="10" y="52" width="32" height="16" rx="3" fill="#46632e" opacity="0.7"/>
+      <rect x="78" y="52" width="32" height="16" rx="3" fill="#46632e" opacity="0.7"/>
+      <rect x="14" y="55" width="10" height="10" rx="1" fill="#779757" opacity="0.5"/>
+      <rect x="96" y="55" width="10" height="10" rx="1" fill="#779757" opacity="0.5"/>
+      <line x1="60" y1="75" x2="60" y2="95" stroke="#46632e" strokeWidth="2" opacity="0.5"/>
+      <circle cx="60" cy="98" r="3" fill="#587c3a" opacity="0.4"/>
       {/* Scan beams */}
-      <path d="M52 75 L40 110" stroke="#4ade80" strokeWidth="1" opacity="0.3" strokeDasharray="3 3"/>
-      <path d="M68 75 L80 110" stroke="#4ade80" strokeWidth="1" opacity="0.3" strokeDasharray="3 3"/>
-      <path d="M40 110 L80 110" stroke="#4ade80" strokeWidth="1" opacity="0.2"/>
+      <path d="M52 75 L40 110" stroke="#779757" strokeWidth="1" opacity="0.3" strokeDasharray="3 3"/>
+      <path d="M68 75 L80 110" stroke="#779757" strokeWidth="1" opacity="0.3" strokeDasharray="3 3"/>
+      <path d="M40 110 L80 110" stroke="#779757" strokeWidth="1" opacity="0.2"/>
     </svg>
   );
 }
@@ -70,24 +70,24 @@ function DroneSVG({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Body */}
-      <rect x="45" y="50" width="30" height="20" rx="6" fill="#166534"/>
-      <rect x="50" y="54" width="20" height="12" rx="3" fill="#22c55e"/>
+      <rect x="45" y="50" width="30" height="20" rx="6" fill="#253518"/>
+      <rect x="50" y="54" width="20" height="12" rx="3" fill="#587c3a"/>
       {/* Arms */}
-      <line x1="45" y1="55" x2="20" y2="40" stroke="#166534" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="75" y1="55" x2="100" y2="40" stroke="#166534" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="45" y1="65" x2="20" y2="80" stroke="#166534" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="75" y1="65" x2="100" y2="80" stroke="#166534" strokeWidth="3" strokeLinecap="round"/>
+      <line x1="45" y1="55" x2="20" y2="40" stroke="#253518" strokeWidth="3" strokeLinecap="round"/>
+      <line x1="75" y1="55" x2="100" y2="40" stroke="#253518" strokeWidth="3" strokeLinecap="round"/>
+      <line x1="45" y1="65" x2="20" y2="80" stroke="#253518" strokeWidth="3" strokeLinecap="round"/>
+      <line x1="75" y1="65" x2="100" y2="80" stroke="#253518" strokeWidth="3" strokeLinecap="round"/>
       {/* Rotors */}
-      <ellipse cx="20" cy="40" rx="14" ry="3" fill="#4ade80" opacity="0.4"/>
-      <ellipse cx="100" cy="40" rx="14" ry="3" fill="#4ade80" opacity="0.4"/>
-      <ellipse cx="20" cy="80" rx="14" ry="3" fill="#4ade80" opacity="0.4"/>
-      <ellipse cx="100" cy="80" rx="14" ry="3" fill="#4ade80" opacity="0.4"/>
-      <circle cx="20" cy="40" r="3" fill="#166534"/>
-      <circle cx="100" cy="40" r="3" fill="#166534"/>
-      <circle cx="20" cy="80" r="3" fill="#166534"/>
-      <circle cx="100" cy="80" r="3" fill="#166534"/>
+      <ellipse cx="20" cy="40" rx="14" ry="3" fill="#779757" opacity="0.4"/>
+      <ellipse cx="100" cy="40" rx="14" ry="3" fill="#779757" opacity="0.4"/>
+      <ellipse cx="20" cy="80" rx="14" ry="3" fill="#779757" opacity="0.4"/>
+      <ellipse cx="100" cy="80" rx="14" ry="3" fill="#779757" opacity="0.4"/>
+      <circle cx="20" cy="40" r="3" fill="#253518"/>
+      <circle cx="100" cy="40" r="3" fill="#253518"/>
+      <circle cx="20" cy="80" r="3" fill="#253518"/>
+      <circle cx="100" cy="80" r="3" fill="#253518"/>
       {/* Camera */}
-      <rect x="55" y="70" width="10" height="6" rx="2" fill="#14532d"/>
+      <rect x="55" y="70" width="10" height="6" rx="2" fill="#18230f"/>
     </svg>
   );
 }
@@ -96,14 +96,14 @@ function FieldPatternSVG({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Terrain patches */}
-      <path d="M0 180 Q100 120 200 150 Q300 180 400 140 L400 200 L0 200Z" fill="#16a34a" opacity="0.08"/>
-      <path d="M0 190 Q150 160 250 175 Q350 190 400 170 L400 200 L0 200Z" fill="#16a34a" opacity="0.05"/>
+      <path d="M0 180 Q100 120 200 150 Q300 180 400 140 L400 200 L0 200Z" fill="#46632e" opacity="0.08"/>
+      <path d="M0 190 Q150 160 250 175 Q350 190 400 170 L400 200 L0 200Z" fill="#46632e" opacity="0.05"/>
       {/* Grid lines representing parcels */}
       {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
-        <line key={`h${i}`} x1="0" y1={140 + i * 8} x2="400" y2={140 + i * 8} stroke="#22c55e" strokeWidth="0.5" opacity="0.1"/>
+        <line key={`h${i}`} x1="0" y1={140 + i * 8} x2="400" y2={140 + i * 8} stroke="#587c3a" strokeWidth="0.5" opacity="0.1"/>
       ))}
       {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-        <line key={`v${i}`} x1={i * 40} y1="130" x2={i * 40} y2="200" stroke="#22c55e" strokeWidth="0.5" opacity="0.1"/>
+        <line key={`v${i}`} x1={i * 40} y1="130" x2={i * 40} y2="200" stroke="#587c3a" strokeWidth="0.5" opacity="0.1"/>
       ))}
     </svg>
   );
@@ -118,8 +118,8 @@ function GridBG() {
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(22,163,74,1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(22,163,74,1) 1px, transparent 1px)
+            linear-gradient(rgba(70,99,46,1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(70,99,46,1) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}
@@ -127,7 +127,7 @@ function GridBG() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(22,163,74,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(70,99,46,0.08) 0%, transparent 70%)',
         }}
       />
     </div>
@@ -242,7 +242,7 @@ function Hero() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-[fadeUp_0.8s_ease_0.35s_both]">
           <Link
             to="/login"
-            className="group relative px-8 py-4 bg-brand-600 text-white rounded-2xl text-base font-semibold overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-brand-500/30 hover:-translate-y-0.5"
+            className="group relative px-8 py-4 bg-terra-500 text-white rounded-2xl text-base font-semibold overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-terra-500/30 hover:-translate-y-0.5"
             style={{ fontFamily: 'DM Sans, sans-serif' }}
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -251,7 +251,7 @@ function Hero() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
               </svg>
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-brand-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-r from-terra-400 to-terra-600 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
           <a
             href="#como-funciona"
@@ -420,10 +420,10 @@ const STEPS = [
     num: '01',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12">
-        <circle cx="24" cy="24" r="20" stroke="#22c55e" strokeWidth="1.5" opacity="0.3"/>
-        <circle cx="24" cy="24" r="12" stroke="#22c55e" strokeWidth="1.5" opacity="0.5"/>
-        <circle cx="24" cy="24" r="4" fill="#16a34a"/>
-        <path d="M24 4V10M24 38V44M4 24H10M38 24H44" stroke="#22c55e" strokeWidth="1" opacity="0.3"/>
+        <circle cx="24" cy="24" r="20" stroke="#587c3a" strokeWidth="1.5" opacity="0.3"/>
+        <circle cx="24" cy="24" r="12" stroke="#587c3a" strokeWidth="1.5" opacity="0.5"/>
+        <circle cx="24" cy="24" r="4" fill="#46632e"/>
+        <path d="M24 4V10M24 38V44M4 24H10M38 24H44" stroke="#587c3a" strokeWidth="1" opacity="0.3"/>
       </svg>
     ),
     title: 'Detecta',
@@ -434,9 +434,9 @@ const STEPS = [
     num: '02',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12">
-        <rect x="8" y="12" width="32" height="24" rx="4" stroke="#22c55e" strokeWidth="1.5" opacity="0.5"/>
-        <path d="M16 22L22 28L34 16" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <rect x="12" y="8" width="8" height="4" rx="1" fill="#22c55e" opacity="0.3"/>
+        <rect x="8" y="12" width="32" height="24" rx="4" stroke="#587c3a" strokeWidth="1.5" opacity="0.5"/>
+        <path d="M16 22L22 28L34 16" stroke="#46632e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <rect x="12" y="8" width="8" height="4" rx="1" fill="#587c3a" opacity="0.3"/>
       </svg>
     ),
     title: 'Diagnostica',
@@ -447,11 +447,11 @@ const STEPS = [
     num: '03',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12">
-        <circle cx="16" cy="24" r="8" stroke="#22c55e" strokeWidth="1.5" opacity="0.5"/>
-        <circle cx="32" cy="24" r="8" stroke="#22c55e" strokeWidth="1.5" opacity="0.5"/>
-        <path d="M22 20L26 24L22 28" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="16" cy="24" r="2" fill="#16a34a" opacity="0.6"/>
-        <circle cx="32" cy="24" r="2" fill="#16a34a" opacity="0.6"/>
+        <circle cx="16" cy="24" r="8" stroke="#587c3a" strokeWidth="1.5" opacity="0.5"/>
+        <circle cx="32" cy="24" r="8" stroke="#587c3a" strokeWidth="1.5" opacity="0.5"/>
+        <path d="M22 20L26 24L22 28" stroke="#46632e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="16" cy="24" r="2" fill="#46632e" opacity="0.6"/>
+        <circle cx="32" cy="24" r="2" fill="#46632e" opacity="0.6"/>
       </svg>
     ),
     title: 'Conecta',
@@ -462,10 +462,10 @@ const STEPS = [
     num: '04',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12">
-        <circle cx="24" cy="24" r="16" stroke="#22c55e" strokeWidth="1.5" opacity="0.3"/>
-        <circle cx="24" cy="24" r="8" stroke="#22c55e" strokeWidth="1.5" opacity="0.5"/>
-        <circle cx="24" cy="24" r="3" fill="#16a34a"/>
-        <path d="M24 8V12M24 36V40M8 24H12M36 24H40" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+        <circle cx="24" cy="24" r="16" stroke="#587c3a" strokeWidth="1.5" opacity="0.3"/>
+        <circle cx="24" cy="24" r="8" stroke="#587c3a" strokeWidth="1.5" opacity="0.5"/>
+        <circle cx="24" cy="24" r="3" fill="#46632e"/>
+        <path d="M24 8V12M24 36V40M8 24H12M36 24H40" stroke="#46632e" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
       </svg>
     ),
     title: 'Aplica',

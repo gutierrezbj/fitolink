@@ -83,7 +83,7 @@ function AssignModal({ operation, pilots, onClose, onAssign }: {
           <button
             onClick={() => selected && onAssign(selected)}
             disabled={!selected}
-            className="flex-1 bg-brand-600 text-white text-sm py-2 rounded-lg hover:bg-brand-700 disabled:opacity-40"
+            className="flex-1 bg-terra-500 text-white text-sm py-2 rounded-lg hover:bg-terra-600 disabled:opacity-40"
           >
             Asignar
           </button>
@@ -251,7 +251,7 @@ export default function DispatchPage() {
                     {op.status === 'requested' && (
                       <button
                         onClick={() => setAssigningOp(op)}
-                        className="bg-brand-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-brand-700 font-medium whitespace-nowrap"
+                        className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 font-medium whitespace-nowrap"
                       >
                         Asignar operador
                       </button>

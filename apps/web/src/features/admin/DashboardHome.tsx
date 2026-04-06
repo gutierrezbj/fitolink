@@ -87,7 +87,7 @@ function AlertCard({ alert, onAck, onService, loading }: {
         <button
           onClick={onService}
           disabled={loading}
-          className="flex-1 bg-brand-600 text-white text-[11px] px-2 py-1.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-semibold"
+          className="flex-1 bg-terra-500 text-white text-[11px] px-2 py-1.5 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50 font-semibold"
         >
           Solicitar servicio
         </button>
@@ -251,7 +251,7 @@ export default function DashboardHome() {
               <p className="text-sm mb-3">Sin parcelas registradas</p>
               <button
                 onClick={() => navigate('/dashboard/parcels/new')}
-                className="bg-brand-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors font-medium"
+                className="bg-terra-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-terra-600 transition-colors font-medium"
               >
                 + Registrar primera parcela
               </button>

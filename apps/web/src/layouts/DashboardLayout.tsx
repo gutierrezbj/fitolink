@@ -45,8 +45,13 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-100">
-          <h1 className="text-xl font-bold text-brand-700">FitoLink</h1>
-          <p className="text-xs text-gray-400 mt-1">Del pixel al tratamiento</p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shrink-0">
+              <span className="text-white text-sm font-bold font-serif">F</span>
+            </div>
+            <h1 className="text-lg font-semibold text-brand-800 tracking-tight">FitoLink</h1>
+          </div>
+          <p className="text-xs text-gray-400 mt-1.5 pl-9">Del pixel al tratamiento</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
