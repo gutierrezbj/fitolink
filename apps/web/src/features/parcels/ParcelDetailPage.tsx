@@ -11,6 +11,99 @@ import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
 
+// ── Seasonal baselines per crop group ───────────────────────────────────────
+const SEASONAL_RANGE: Record<string, [number, number][]> = {
+  // [min_normal, max_normal] indexed month 0=Jan … 11=Dec
+  evergreen: [
+    [0.32,0.62],[0.33,0.63],[0.35,0.65],[0.38,0.68],[0.40,0.70],[0.38,0.68],
+    [0.35,0.65],[0.33,0.63],[0.34,0.64],[0.34,0.64],[0.32,0.62],[0.31,0.61],
+  ],
+  deciduous: [
+    [0.08,0.25],[0.08,0.28],[0.10,0.35],[0.18,0.48],[0.38,0.65],[0.48,0.72],
+    [0.52,0.75],[0.50,0.73],[0.42,0.68],[0.28,0.58],[0.12,0.35],[0.08,0.26],
+  ],
+  winter_annual: [
+    [0.22,0.50],[0.30,0.58],[0.40,0.68],[0.45,0.72],[0.30,0.62],[0.12,0.30],
+    [0.10,0.22],[0.10,0.20],[0.12,0.25],[0.15,0.32],[0.18,0.40],[0.20,0.46],
+  ],
+  summer_annual: [
+    [0.08,0.20],[0.08,0.20],[0.10,0.22],[0.12,0.30],[0.22,0.48],[0.40,0.65],
+    [0.48,0.72],[0.45,0.70],[0.30,0.60],[0.12,0.30],[0.08,0.22],[0.08,0.20],
+  ],
+};
+
+const CROP_GROUP: Record<string, keyof typeof SEASONAL_RANGE> = {
+  olivo: 'evergreen', citrico: 'evergreen', almendro: 'deciduous',
+  vinedo: 'deciduous', frutal: 'deciduous',
+  cereal: 'winter_annual', leguminosa: 'winter_annual', remolacha: 'winter_annual', patata: 'winter_annual',
+  girasol: 'summer_annual', maiz: 'summer_annual', algodon: 'summer_annual', arroz: 'summer_annual',
+};
+
+const CROP_LABELS: Record<string, string> = {
+  olivo: 'Olivar', vinedo: 'Viñedo', cereal: 'Cereal', girasol: 'Girasol',
+  almendro: 'Almendro', frutal: 'Frutal', citrico: 'Cítrico', maiz: 'Maíz',
+  algodon: 'Algodón', arroz: 'Arroz', leguminosa: 'Leguminosa',
+  remolacha: 'Remolacha', patata: 'Patata', hortaliza: 'Hortaliza', otro: 'Cultivo',
+};
+
+function getSeasonalRange(cropType: string, month: number): [number, number] | null {
+  const group = CROP_GROUP[cropType];
+  if (!group) return null;
+  return SEASONAL_RANGE[group][month - 1];
+}
+
+function buildSeasonalNote(ndvi: number, cropType: string, month: number): string {
+  const range = getSeasonalRange(cropType, month);
+  if (!range) return '';
+  const [lo, hi] = range;
+  const crop = CROP_LABELS[cropType] || 'Cultivo';
+  const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const mes = monthNames[month - 1];
+  if (ndvi >= lo && ndvi <= hi) {
+    return `Rango estacional normal para ${crop} en ${mes} (${lo.toFixed(2)}–${hi.toFixed(2)}). Sin anomalia estacional.`;
+  }
+  if (ndvi < lo) {
+    const pct = Math.round(((lo - ndvi) / lo) * 100);
+    return `${crop} en ${mes} deberia estar entre ${lo.toFixed(2)}–${hi.toFixed(2)}. El valor actual esta un ${pct}% por debajo del minimo estacional esperado.`;
+  }
+  return '';
+}
+
+function buildCauseNote(ndvi: number, cropType: string, month: number, range: number): string {
+  const group = CROP_GROUP[cropType] ?? 'other';
+  const seasonal = getSeasonalRange(cropType, month);
+  const isSeasonallyLow = seasonal ? ndvi < seasonal[0] : ndvi < 0.35;
+  const isHeterogeneous = range > 0.40;
+
+  if (!isSeasonallyLow && !isHeterogeneous) return '';
+
+  const causes: string[] = [];
+
+  // Crop + season specific causes
+  if (group === 'evergreen') {
+    if (month >= 3 && month <= 5) causes.push('helada tardia (muy frecuente en meseta en marzo-abril)');
+    if (month >= 6 && month <= 9) causes.push('estres hidrico por sequia estival');
+    causes.push('verticillium dahliae (marchitez del olivo)', 'repilo (Spilocaea oleagina)');
+  } else if (group === 'deciduous') {
+    if (month >= 5 && month <= 9) {
+      causes.push('mildiu o oidio', 'estres hidrico', 'cicadela (Scaphoideus titanus en viñedo)');
+    }
+    if (month >= 3 && month <= 5) causes.push('helada en brotacion', 'excoriosis');
+  } else if (group === 'winter_annual') {
+    if (month >= 2 && month <= 5) causes.push('roya amarilla (Puccinia striiformis)', 'sequia primaveral', 'carencia de nitrogeno');
+    if (month >= 6 && month <= 8) causes.push('paraje normal post-cosecha');
+  } else if (group === 'summer_annual') {
+    if (month >= 6 && month <= 9) causes.push('deficiencia hidrica', 'trips o araña roja', 'fusarium');
+  }
+
+  if (isHeterogeneous) {
+    causes.unshift('distribucion heterogenea — posible causa localizada (zona baja, suelo variable, foco de enfermedad)');
+  }
+
+  if (causes.length === 0) return '';
+  return `Causas probables: ${causes.slice(0, 3).join('; ')}.`;
+}
+
 const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
   high: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -252,17 +345,34 @@ export default function ParcelDetailPage() {
       {/* Two-card row: gauge + interpretation */}
       {latestNdvi && (() => {
         const ndvi = latestNdvi.mean;
+        const ndviMin = latestNdvi.min ?? ndvi;
+        const ndviMax = latestNdvi.max ?? ndvi;
+        const ndviRange = ndviMax - ndviMin;
         const trend = ndviTrend ?? 0;
         const isDecline = trend < -0.02;
-        const isCritical = ndvi < 0.35;
-        const isAlert = ndvi < 0.50;
+        const month = new Date(latestNdvi.date).getMonth() + 1;
+        const cropType = parcel.cropType || 'otro';
+
+        // Seasonal awareness
+        const seasonalRange = getSeasonalRange(cropType, month);
+        const isSeasonallyNormal = seasonalRange ? ndvi >= seasonalRange[0] && ndvi <= seasonalRange[1] : false;
+        const isCritical = !isSeasonallyNormal && ndvi < 0.35;
+        const isAlert = !isSeasonallyNormal && ndvi < (seasonalRange?.[0] ?? 0.50);
+
         const bg = isCritical ? 'bg-red-50 border-red-200' : isAlert ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
         const textColor = isCritical ? 'text-red-800' : isAlert ? 'text-orange-800' : 'text-green-800';
+
         const title = isCritical
           ? 'Estres vegetativo severo — atencion urgente'
           : isAlert
-          ? 'Vegetacion debilitada — vigilar evolucion'
-          : 'Cultivo en buen estado';
+          ? 'Actividad vegetal por debajo del rango estacional'
+          : 'Cultivo dentro del rango estacional normal';
+
+        const body = isCritical
+          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos` : ''}. Perdida severa de actividad vegetal.`
+          : isAlert
+          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? ', con tendencia descendente' : ''}. Por debajo del minimo esperado para este cultivo en este periodo.`
+          : `NDVI ${ndvi.toFixed(3)}. Actividad vegetal normal para la epoca${isDecline ? ', aunque con ligera tendencia a la baja' : ''}.`;
 
         // Spatial analysis from heatmap grid
         let spatialNote = '';
@@ -279,27 +389,21 @@ export default function ParcelDetailPage() {
             if (diff > 0.12) {
               const weakZone = northMean < southMean ? 'norte' : 'sur';
               const strongZone = northMean < southMean ? 'sur' : 'norte';
-              const weakVal = Math.min(northMean, southMean).toFixed(2);
-              const strongVal = Math.max(northMean, southMean).toFixed(2);
-              spatialNote = `El mapa muestra un gradiente claro: zona ${weakZone} con actividad reducida (NDVI ${weakVal}) frente a zona ${strongZone} en mejor estado (NDVI ${strongVal}). Posible diferencia de suelo, humedad o densidad de plantacion.`;
+              spatialNote = `Gradiente espacial claro: zona ${weakZone} en NDVI ${Math.min(northMean,southMean).toFixed(2)} frente a zona ${strongZone} en ${Math.max(northMean,southMean).toFixed(2)}. Posible diferencia de suelo, humedad o exposicion.`;
             } else {
               const stressPct = Math.round((pts.filter((p) => p.ndvi < 0.35).length / pts.length) * 100);
-              if (stressPct > 50) {
-                spatialNote = `El estres esta distribuido de forma uniforme en toda la parcela (${stressPct}% de los pixeles con NDVI < 0.35). Sugiere causa generalizada: sequia, enfermedad o carencia nutricional.`;
-              } else if (stressPct > 15) {
-                spatialNote = `Zonas de estres localizadas (${stressPct}% de la parcela). El resto mantiene actividad vegetal normal.`;
-              } else {
-                spatialNote = `La actividad vegetal es uniforme en toda la parcela. No se detectan patrones espaciales de estres.`;
-              }
+              if (stressPct > 50) spatialNote = `Estres distribuido de forma uniforme (${stressPct}% de pixeles con NDVI < 0.35). Sugiere causa generalizada: sequia, enfermedad o carencia nutricional.`;
+              else if (stressPct > 15) spatialNote = `Focos de estres localizados en ${stressPct}% de la parcela. El resto mantiene actividad normal.`;
+              else spatialNote = `Actividad vegetal uniforme en toda la parcela. Sin patrones espaciales de estres.`;
             }
           }
+        } else if (ndviRange > 0.30) {
+          // Fallback: use min/max from NDVI reading itself
+          spatialNote = `Rango NDVI amplio dentro de la parcela: min ${ndviMin.toFixed(2)} — max ${ndviMax.toFixed(2)} (diferencia de ${ndviRange.toFixed(2)}). Heterogeneidad significativa: hay zonas muy sanas junto a zonas en estres.`;
         }
 
-        const body = isCritical
-          ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos` : ''}. Perdida severa de actividad vegetal. Posible plaga, hongo, sequia o dano mecanico.`
-          : isAlert
-          ? `NDVI ${ndvi.toFixed(3)} en zona de atencion${isDecline ? ', con tendencia descendente' : ''}. Monitorizar en los proximos 10-15 dias.`
-          : `NDVI ${ndvi.toFixed(3)}. Vegetacion activa y saludable${isDecline ? ', aunque con ligera tendencia a la baja' : ''}.`;
+        const seasonalNote = buildSeasonalNote(ndvi, cropType, month);
+        const causeNote = (isCritical || isAlert) ? buildCauseNote(ndvi, cropType, month, ndviRange) : '';
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -315,9 +419,9 @@ export default function ParcelDetailPage() {
                   <p className="text-xs text-gray-400">{trend > 0 ? 'Mejorando' : trend < 0 ? 'Bajando' : 'Estable'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Alertas activas</p>
-                  <p className={`text-lg font-bold ${activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600'}`}>{activeAlerts.length}</p>
-                  <p className="text-xs text-gray-400">{activeAlerts.length > 0 ? 'Requieren atencion' : 'Todo en orden'}</p>
+                  <p className="text-xs text-gray-400">Rango parcela</p>
+                  <p className="text-sm font-bold text-gray-700">{ndviMin.toFixed(2)} – {ndviMax.toFixed(2)}</p>
+                  <p className="text-xs text-gray-400">{ndviRange > 0.40 ? 'Alta heterogeneidad' : ndviRange > 0.20 ? 'Heterogeneidad moderada' : 'Uniforme'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Lecturas satelite</p>
@@ -332,14 +436,24 @@ export default function ParcelDetailPage() {
               </div>
             </div>
 
-            {/* Card 2: Interpretation + spatial analysis + CTA */}
+            {/* Card 2: Interpretation + seasonal context + causes */}
             <div className={`rounded-xl border p-5 flex flex-col justify-between ${bg}`}>
-              <div>
-                <p className={`text-sm font-semibold mb-1 ${textColor}`}>{title}</p>
-                <p className={`text-xs leading-relaxed ${textColor} opacity-90 mb-2`}>{body}</p>
+              <div className="space-y-2">
+                <p className={`text-sm font-semibold ${textColor}`}>{title}</p>
+                <p className={`text-xs leading-relaxed ${textColor} opacity-90`}>{body}</p>
+                {seasonalNote && (
+                  <p className={`text-xs leading-relaxed ${textColor} opacity-80 border-t border-current border-opacity-20 pt-2`}>
+                    {seasonalNote}
+                  </p>
+                )}
                 {spatialNote && (
                   <p className={`text-xs leading-relaxed ${textColor} opacity-75 border-t border-current border-opacity-20 pt-2`}>
                     {spatialNote}
+                  </p>
+                )}
+                {causeNote && (
+                  <p className={`text-xs leading-relaxed ${textColor} opacity-75 border-t border-current border-opacity-20 pt-2`}>
+                    {causeNote}
                   </p>
                 )}
               </div>
