@@ -1383,7 +1383,7 @@ async function seed() {
 
   // parcel1 — Estepa Norte — saludable, gradiente norte-sur leve
   await NdviSnapshot.create(makeGrid(
-    [-4.8530, 37.2870, -4.8360, 37.2980],
+    [-4.801400, 37.871200, -4.787200, 37.879500],
     0.54, 'sw',
     new Date('2026-02-24'),
     parcel1._id as mongoose.Types.ObjectId,
@@ -1391,7 +1391,7 @@ async function seed() {
 
   // parcel2 — Estepa Sur — stress SE
   await NdviSnapshot.create(makeGrid(
-    [-4.8449, 37.2171, -4.8374, 37.2237],
+    [-4.855580, 37.214938, -4.851271, 37.223407],
     0.38, 'se',
     new Date('2026-03-05'),
     parcel2._id as mongoose.Types.ObjectId,
