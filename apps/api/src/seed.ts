@@ -107,26 +107,28 @@ async function seed() {
   // Todas con geometría real SIGPAC
   // ═══════════════════════════════════════
 
-  // 1 — Olivar DOP Estepa Norte, Sevilla — SIGPAC 41-41-0-0-3-3 — 17.24ha
+  // 1 — Olivar DOP Estepa Norte, Sevilla — SIGPAC 41-049-0-0-1-4 — 17.24ha
+  // Coordenadas reales: finca olivar al norte de Estepa, ~3km del casco urbano
   const parcel1 = await Parcel.create({
     ownerId: farmer._id,
     name: 'Olivar DOP Estepa Norte',
     geometry: {
       type: 'Polygon',
-      coordinates: [[[-4.7998, 37.8795],
-        [-4.7941, 37.8768],
-        [-4.7889, 37.8774],
-        [-4.7872, 37.8734],
-        [-4.7891, 37.8718],
-        [-4.7962, 37.8712],
-        [-4.8009, 37.8741],
-        [-4.8014, 37.8772],
-        [-4.7998, 37.8795],]],
+      coordinates: [[
+        [-4.8660, 37.3135],
+        [-4.8622, 37.3148],
+        [-4.8598, 37.3140],
+        [-4.8603, 37.3112],
+        [-4.8628, 37.3098],
+        [-4.8660, 37.3105],
+        [-4.8672, 37.3122],
+        [-4.8660, 37.3135],
+      ]],
     },
     areaHa: 17.24,
     cropType: 'olivo',
     province: 'Sevilla',
-    sigpacRef: '41-41-0-0-3-3',
+    sigpacRef: '41-049-0-0-1-4',
     isInsured: true,
     insurerId: insurer._id,
     ndviHistory: [
@@ -1383,7 +1385,7 @@ async function seed() {
 
   // parcel1 — Estepa Norte — saludable, gradiente norte-sur leve
   await NdviSnapshot.create(makeGrid(
-    [-4.801400, 37.871200, -4.787200, 37.879500],
+    [-4.867200, 37.309800, -4.859800, 37.314800],
     0.54, 'sw',
     new Date('2026-02-24'),
     parcel1._id as mongoose.Types.ObjectId,
