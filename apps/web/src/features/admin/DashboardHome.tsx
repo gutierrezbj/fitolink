@@ -158,7 +158,7 @@ export default function DashboardHome() {
     : null;
 
   return (
-    <div>
+    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 64px)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -206,7 +206,7 @@ export default function DashboardHome() {
       </div>
 
       {/* Main content: Map + Alert sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 lg:items-stretch">
         {/* Map */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
@@ -219,7 +219,7 @@ export default function DashboardHome() {
             </button>
           </div>
           {parcels.length > 0 ? (
-            <div className="flex-1 min-h-[420px] relative">
+            <div className="flex-1 min-h-[320px] relative">
               <div className="absolute inset-0">
                 <ParcelMap
                   parcels={parcels}
@@ -231,7 +231,7 @@ export default function DashboardHome() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 min-h-[420px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <div className="flex-1 min-h-[320px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
               <p className="text-sm mb-3">Sin parcelas registradas</p>
               <button
                 onClick={() => navigate('/dashboard/parcels/new')}
