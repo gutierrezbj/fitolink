@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
@@ -189,6 +189,10 @@ export default function ParcelDetailPage() {
   const queryClient = useQueryClient();
   const { data: ndviSnapshot } = useNdviSnapshot(id);
   const [showHeatmap, setShowHeatmap] = useState(true);
+  const [serviceModal, setServiceModal] = useState<{ alert: Alert } | null>(null);
+  const [serviceStep, setServiceStep] = useState<1 | 2>(1);
+  const [serviceType, setServiceType] = useState<'inspection' | 'phytosanitary'>('inspection');
+  const [serviceNotes, setServiceNotes] = useState('');
 
   const { data: parcel, isLoading: loadingParcel } = useQuery<Parcel>({
     queryKey: ['parcel', id],
@@ -209,12 +213,16 @@ export default function ParcelDetailPage() {
   });
 
   const requestServiceMutation = useMutation({
-    mutationFn: async (alert: Alert) => {
-      await api.post('/operations', { parcelId: id, type: 'phytosanitary', alertId: alert._id });
+    mutationFn: async ({ alert, type, notes }: { alert: Alert; type: string; notes: string }) => {
+      await api.post('/operations', { parcelId: id, type, alertId: alert._id, notes });
       await api.patch(`/alerts/${alert._id}`, { status: 'acknowledged' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts', 'parcel', id] });
+      queryClient.invalidateQueries({ queryKey: ['operations', 'mine'] });
+      setServiceModal(null);
+      setServiceStep(1);
+      setServiceNotes('');
     },
   });
 
@@ -459,11 +467,10 @@ export default function ParcelDetailPage() {
               </div>
               {(isCritical || isAlert) && activeAlerts.length > 0 && (
                 <button
-                  onClick={() => requestServiceMutation.mutate(activeAlerts[0])}
-                  disabled={requestServiceMutation.isPending}
-                  className="mt-4 bg-brand-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium w-full"
+                  onClick={() => { setServiceModal({ alert: activeAlerts[0] }); setServiceStep(1); setServiceType('inspection'); setServiceNotes(''); }}
+                  className="mt-4 bg-brand-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors font-medium w-full"
                 >
-                  Solicitar dron
+                  Solicitar servicio de dron
                 </button>
               )}
             </div>
@@ -549,9 +556,8 @@ export default function ParcelDetailPage() {
                   {isActive && (
                     <div className="flex flex-col gap-2 flex-shrink-0">
                       <button
-                        onClick={() => requestServiceMutation.mutate(alert)}
-                        disabled={requestServiceMutation.isPending}
-                        className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
+                        onClick={() => { setServiceModal({ alert }); setServiceStep(1); setServiceType('inspection'); setServiceNotes(''); }}
+                        className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors font-medium whitespace-nowrap"
                       >
                         Solicitar servicio
                       </button>
@@ -574,6 +580,120 @@ export default function ParcelDetailPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Service Request Modal ───────────────────────────────────────────── */}
+      {serviceModal && parcel && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Solicitar servicio de dron</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">{parcel.name} · {parcel.areaHa} ha · {parcel.province}</p>
+                </div>
+                <button onClick={() => setServiceModal(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none ml-4">✕</button>
+              </div>
+            </div>
+
+            {serviceStep === 1 ? (
+              /* Step 1: Choose service type */
+              <div className="p-6 space-y-3">
+                <p className="text-sm text-gray-600 mb-4">La IA ha detectado una anomalia en esta parcela. ¿Que necesitas ahora?</p>
+
+                <button
+                  onClick={() => setServiceType('inspection')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${serviceType === 'inspection' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🔍</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Inspeccion multiespectral</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Dron con camara NDVI de alta resolucion. Mapea la parcela al centimetro y localiza el foco exacto del problema.</p>
+                      <p className="text-xs text-brand-600 mt-1.5 font-medium">Recomendado como primer paso · antes de tratar</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setServiceType('phytosanitary')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${serviceType === 'phytosanitary' ? 'border-terra-500 bg-terra-50' : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💊</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Tratamiento fitosanitario</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Dron aplicador con producto fitosanitario. Tratamiento de precision zona a zona segun el mapa de estres.</p>
+                      <p className="text-xs text-terra-600 mt-1.5 font-medium">Cuando ya tienes diagnostico y quieres actuar</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setServiceStep(2)}
+                  className="w-full mt-2 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Continuar →
+                </button>
+              </div>
+            ) : (
+              /* Step 2: Confirm */
+              <div className="p-6">
+                <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{serviceType === 'inspection' ? '🔍' : '💊'}</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {serviceType === 'inspection' ? 'Inspeccion multiespectral' : 'Tratamiento fitosanitario'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-1 pl-7">
+                    <p>Parcela: <span className="font-medium text-gray-700">{parcel.name} · {parcel.areaHa} ha</span></p>
+                    <p>Alerta: <span className="font-medium text-gray-700">
+                      NDVI {serviceModal.alert.ndviValue.toFixed(2)} · {serviceModal.alert.severity === 'critical' ? 'Critica' : serviceModal.alert.severity === 'high' ? 'Alta' : 'Media'}
+                    </span></p>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-xs font-medium text-gray-700 block mb-1.5">
+                    Informacion adicional para el piloto <span className="text-gray-400">(opcional)</span>
+                  </label>
+                  <textarea
+                    value={serviceNotes}
+                    onChange={(e) => setServiceNotes(e.target.value)}
+                    placeholder={serviceType === 'inspection'
+                      ? 'Ej: zona norte parece mas afectada, hay un camino de acceso por el este...'
+                      : 'Ej: posible verticillium, ya aplique cobre en febrero, acceso por puerta principal...'}
+                    rows={3}
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-brand-400 placeholder-gray-300"
+                  />
+                </div>
+
+                <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                  Un piloto certificado de tu zona contactara contigo en menos de 24h para coordinar fecha y condiciones.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setServiceStep(1)}
+                    className="flex-1 border border-gray-200 text-gray-600 text-sm px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    ← Volver
+                  </button>
+                  <button
+                    onClick={() => requestServiceMutation.mutate({ alert: serviceModal.alert, type: serviceType, notes: serviceNotes })}
+                    disabled={requestServiceMutation.isPending}
+                    className={`flex-1 text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium disabled:opacity-50 ${serviceType === 'inspection' ? 'bg-brand-600 hover:bg-brand-700' : 'bg-terra-500 hover:bg-terra-600'}`}
+                  >
+                    {requestServiceMutation.isPending ? 'Enviando...' : 'Confirmar solicitud'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
