@@ -103,6 +103,16 @@ async function seed() {
     isVerified: true,
   });
 
+  // Agricultor Venezuela
+  const venezuelaFarmer = await User.create({
+    email: 'quetepe@demo.com',
+    name: 'Ricardo Gutierrez Peña',
+    role: 'farmer',
+    googleId: 'demo-farmer-ve-001',
+    location: { type: 'Point', coordinates: [-64.029, 10.405] },
+    isVerified: true,
+  });
+
   // ═══════════════════════════════════════
   // PARCELAS — AGRICULTOR SUR (Antonio)
   // Todas con geometría real SIGPAC
@@ -1215,6 +1225,73 @@ async function seed() {
   });
 
   // ═══════════════════════════════════════
+  // FINCA VENEZUELA — Quetepe La Soledad (Estado Sucre)
+  // Poligono real 78 vertices — 3700 ha
+  // ═══════════════════════════════════════
+
+  const parcelQuetepe = await Parcel.create({
+    ownerId: venezuelaFarmer._id,
+    name: 'Quetepe - La Soledad',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-64.033806, 10.444132],[-64.032803, 10.444723],[-64.032447, 10.444923],
+        [-64.034816, 10.443107],[-64.03518, 10.442427],[-64.0375, 10.439571],
+        [-64.038581, 10.435046],[-64.042682, 10.432049],[-64.042657, 10.424543],
+        [-64.046404, 10.416727],[-64.052066, 10.413751],[-64.051538, 10.403164],
+        [-64.052398, 10.401018],[-64.054309, 10.398896],[-64.054789, 10.397565],
+        [-64.054107, 10.395677],[-64.058175, 10.391269],[-64.049463, 10.389136],
+        [-64.047291, 10.367612],[-64.045195, 10.366488],[-64.043097, 10.367164],
+        [-64.040608, 10.365726],[-64.039307, 10.367222],[-64.035785, 10.368282],
+        [-64.035798, 10.369693],[-64.033606, 10.3697],[-64.024163, 10.369884],
+        [-64.024985, 10.369972],[-64.02206, 10.369357],[-64.020071, 10.372818],
+        [-64.01376, 10.372901],[-64.01244, 10.374117],[-64.011699, 10.376624],
+        [-64.008823, 10.376923],[-64.00727, 10.376837],[-64.010531, 10.374087],
+        [-64.000094, 10.37506],[-63.999896, 10.376091],[-64.000094, 10.37506],
+        [-64.001397, 10.374115],[-63.999896, 10.376091],[-64.000853, 10.378349],
+        [-64.001516, 10.380038],[-64.002347, 10.382758],[-64.002418, 10.384892],
+        [-64.00117, 10.389046],[-64.001241, 10.39109],[-64.002576, 10.394504],
+        [-64.00531, 10.395445],[-64.005191, 10.400871],[-64.004469, 10.400783],
+        [-64.004522, 10.403107],[-64.00199, 10.40817],[-64.001813, 10.410078],
+        [-64.002285, 10.412121],[-64.000974, 10.41633],[-64.001789, 10.416987],
+        [-64.001221, 10.416302],[-64.001214, 10.419792],[-64.001135, 10.420824],
+        [-64.000796, 10.423348],[-64.000244, 10.425122],[-64.002312, 10.426282],
+        [-64.002314, 10.426662],[-64.003455, 10.426441],[-64.004962, 10.426436],
+        [-64.008464, 10.424689],[-64.011041, 10.427819],[-64.007509, 10.428644],
+        [-64.018015, 10.4288],[-64.01821, 10.429704],[-64.01871, 10.431719],
+        [-64.017738, 10.433657],[-64.015097, 10.438848],[-64.016308, 10.440553],
+        [-64.017234, 10.441626],[-64.017335, 10.444402],
+        [-64.033806, 10.444132],
+      ]],
+    },
+    areaHa: 3700.07,
+    cropType: 'ganaderia',
+    province: 'Estado Sucre, Venezuela',
+    isInsured: true,
+    insurerId: insurer._id,
+    ndviHistory: [
+      { date: new Date('2025-10-15'), mean: 0.72, min: 0.58, max: 0.84, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2025-11-05'), mean: 0.74, min: 0.60, max: 0.86, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2025-11-25'), mean: 0.71, min: 0.56, max: 0.83, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2025-12-15'), mean: 0.68, min: 0.52, max: 0.81, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-04'), mean: 0.63, min: 0.48, max: 0.77, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-01-24'), mean: 0.58, min: 0.42, max: 0.72, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-02-13'), mean: 0.54, min: 0.38, max: 0.69, anomalyDetected: false, source: 'sentinel2' },
+      { date: new Date('2026-03-05'), mean: 0.48, min: 0.31, max: 0.64, anomalyDetected: true,  source: 'sentinel2' },
+      { date: new Date('2026-03-25'), mean: 0.43, min: 0.27, max: 0.59, anomalyDetected: true,  source: 'sentinel2' },
+    ],
+  });
+
+  // Snapshot heatmap — Quetepe (paso amplio por el tamaño 3700ha)
+  await NdviSnapshot.create(makeGrid(
+    [-64.058175, 10.365726, -63.999896, 10.444923],
+    0.43, 'sw',
+    new Date('2026-03-25'),
+    parcelQuetepe._id as mongoose.Types.ObjectId,
+    0.0012,
+  ));
+
+  // ═══════════════════════════════════════
   // ALERTAS
   // ═══════════════════════════════════════
 
@@ -1353,9 +1430,9 @@ async function seed() {
     stressCorner: 'none' | 'nw' | 'ne' | 'se' | 'sw',
     date: Date,
     parcelId: mongoose.Types.ObjectId,
+    step = 0.00018,
   ) {
     const [west, south, east, north] = bbox;
-    const step = 0.00018;
     const points = [];
     for (let lat = south + step / 2; lat < north; lat += step) {
       for (let lng = west + step / 2; lng < east; lng += step) {
@@ -1455,12 +1532,12 @@ async function seed() {
   ));
 
   logger.info({
-    users: 6,
-    parcels: 13,
+    users: 7,
+    parcels: 14,
     alerts: 4,
     operations: 5,
-    snapshots: 10,
-  }, 'Seed completed — 13 parcelas SIGPAC reales, 7 provincias');
+    snapshots: 11,
+  }, 'Seed completed — 13 parcelas España + 1 finca Venezuela (3700ha)');
 
   await mongoose.disconnect();
 }
