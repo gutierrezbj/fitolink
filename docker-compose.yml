@@ -41,5 +41,20 @@ services:
     volumes:
       - ./apps/web/src:/app/apps/web/src
 
+  pipeline:
+    build:
+      context: ./workers/geo-pipeline
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/fitolink
+      - COPERNICUS_CLIENT_ID=${COPERNICUS_CLIENT_ID}
+      - COPERNICUS_CLIENT_SECRET=${COPERNICUS_CLIENT_SECRET}
+      - USE_OPENEO=true
+      - NDVI_GRID_ENABLED=true
+      - NDVI_GRID_RESOLUTION=20
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
 volumes:
   fitolink-mongo-data:
