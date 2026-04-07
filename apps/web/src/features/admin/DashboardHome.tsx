@@ -44,57 +44,36 @@ function AlertCard({ alert, onAck, onService, loading }: {
 }) {
   const navigate = useNavigate();
   return (
-    <div className={`border-l-4 ${SEVERITY_COLORS[alert.severity]} rounded-r-xl p-3 border border-gray-100`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${SEVERITY_TEXT[alert.severity]}`}>
-              {SEVERITY_LABELS[alert.severity]}
-            </span>
-            <span className="text-[10px] text-gray-400">{formatDate(alert.detectedAt)}</span>
-          </div>
-          <button
-            onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
-            className="text-sm font-semibold text-gray-900 hover:text-brand-700 transition-colors text-left truncate max-w-full block"
-          >
-            {alert.parcelId?.name || 'Parcela'}
-          </button>
-          <p className="text-xs text-gray-500">{alert.parcelId?.cropType} · {alert.parcelId?.province}</p>
-
-          <div className="flex items-center gap-2 mt-2">
-            <span className={`text-base font-bold ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-600'}`}>
-              {alert.ndviValue.toFixed(3)}
-            </span>
-            <span className={`text-xs font-medium ${alert.ndviDelta < 0 ? 'text-red-500' : 'text-green-500'}`}>
-              {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(3)}
-            </span>
-          </div>
-
-          {/* Confidence bar */}
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <div className="flex-1 bg-white/60 rounded-full h-1">
-              <div
-                className={`h-1 rounded-full ${alert.aiConfidence > 0.7 ? 'bg-red-500' : 'bg-orange-400'}`}
-                style={{ width: `${alert.aiConfidence * 100}%` }}
-              />
-            </div>
-            <span className="text-[10px] text-gray-400">{Math.round(alert.aiConfidence * 100)}% IA</span>
-          </div>
+    <div className={`border-t-2 ${SEVERITY_COLORS[alert.severity].replace('border-l-', 'border-t-')} bg-white rounded-xl p-2.5 border border-gray-100 flex flex-col gap-2`}>
+      <div>
+        <div className="flex items-center justify-between mb-0.5">
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${SEVERITY_TEXT[alert.severity]}`}>
+            {SEVERITY_LABELS[alert.severity]}
+          </span>
+          <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
+            {alert.ndviValue.toFixed(2)}
+          </span>
         </div>
+        <button
+          onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
+          className="text-[11px] font-semibold text-gray-900 hover:text-brand-700 transition-colors text-left leading-tight block w-full truncate"
+        >
+          {alert.parcelId?.name || 'Parcela'}
+        </button>
+        <p className="text-[10px] text-gray-400 truncate">{alert.parcelId?.province}</p>
       </div>
-
-      <div className="flex gap-1.5 mt-2.5">
+      <div className="flex gap-1">
         <button
           onClick={onService}
           disabled={loading}
-          className="flex-1 bg-terra-500 text-white text-[11px] px-2 py-1.5 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50 font-semibold"
+          className="flex-1 bg-terra-500 text-white text-[10px] px-1.5 py-1 rounded-md hover:bg-terra-600 transition-colors disabled:opacity-50 font-semibold truncate"
         >
-          Solicitar servicio
+          Solicitar
         </button>
         <button
           onClick={onAck}
           disabled={loading}
-          className="border border-gray-200 bg-white text-gray-500 text-[11px] px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="border border-brand-200 bg-brand-50 text-brand-700 text-[10px] px-1.5 py-1 rounded-md hover:bg-brand-100 transition-colors disabled:opacity-50"
         >
           Revisar
         </button>
@@ -227,10 +206,10 @@ export default function DashboardHome() {
       </div>
 
       {/* Main content: Map + Alert sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:items-stretch">
         {/* Map */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-sm font-semibold text-gray-700">Mapa de Parcelas</h2>
             <button
               onClick={() => navigate('/dashboard/parcels')}
@@ -240,14 +219,16 @@ export default function DashboardHome() {
             </button>
           </div>
           {parcels.length > 0 ? (
-            <ParcelMap
-              parcels={parcels}
-              height="420px"
-              showDetailLink
-              onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
-            />
+            <div className="flex-1 min-h-[420px]">
+              <ParcelMap
+                parcels={parcels}
+                height="100%"
+                showDetailLink
+                onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
+              />
+            </div>
           ) : (
-            <div className="h-[420px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <div className="flex-1 min-h-[420px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
               <p className="text-sm mb-3">Sin parcelas registradas</p>
               <button
                 onClick={() => navigate('/dashboard/parcels/new')}
@@ -314,7 +295,8 @@ export default function DashboardHome() {
                 <p className="text-xs text-gray-400 mt-1">Sin alertas activas</p>
               </div>
             ) : (
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-0.5">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
+                <div className="grid grid-cols-2 gap-2">
                 {activeAlerts.map((alert) => (
                   <AlertCard
                     key={alert._id}
@@ -324,11 +306,12 @@ export default function DashboardHome() {
                     onAck={() => ackMutation.mutate(alert._id)}
                   />
                 ))}
+                </div>
                 <button
                   onClick={() => navigate('/dashboard/alerts')}
-                  className="w-full text-xs text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-300 bg-brand-50 hover:bg-brand-100 py-2 rounded-lg text-center transition-colors font-medium mt-1"
+                  className="w-full text-xs text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-300 bg-brand-50 hover:bg-brand-100 py-2 rounded-lg text-center transition-colors font-medium mt-2"
                 >
-                  Ver historial completo de alertas →
+                  Ver historial completo →
                 </button>
               </div>
             )}
