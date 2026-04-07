@@ -194,7 +194,12 @@ export default function PilotDashboardHome() {
           <h1 className="text-2xl font-bold text-gray-900">
             Bienvenido, {user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Panel de piloto · FitoLink</p>
+          <p className="text-gray-500 text-sm mt-0.5">
+            {(user as { company?: string })?.company
+              ? <><span className="font-semibold text-brand-700">{(user as { company?: string }).company}</span> · Panel de piloto</>
+              : 'Panel de piloto · FitoLink'
+            }
+          </p>
         </div>
         {inProgress.length > 0 && (
           <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 text-sm font-medium px-4 py-2 rounded-xl">

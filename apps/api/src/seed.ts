@@ -77,6 +77,7 @@ async function seed() {
     role: 'pilot',
     phone: '+34 687 654 321',
     googleId: 'demo-pilot-001',
+    company: 'AgroXdron',
     location: { type: 'Point', coordinates: [-4.848, 37.293] },
     certifications: [
       { type: 'AESA A1/A3', number: 'ESP-2024-0001', expiry: new Date('2027-06-01') },
@@ -90,6 +91,29 @@ async function seed() {
     isVerified: true,
     rating: 4.8,
     ratingCount: 12,
+  });
+
+  const pilot2 = await User.create({
+    email: 'piloto2@demo.com',
+    name: 'Ana Gomez Ferrer',
+    role: 'pilot',
+    phone: '+34 612 345 678',
+    googleId: 'demo-pilot-002',
+    company: 'Drovinci',
+    location: { type: 'Point', coordinates: [-3.703, 38.241] },
+    certifications: [
+      { type: 'AESA A1/A3', number: 'ESP-2024-0088', expiry: new Date('2026-12-01') },
+      { type: 'AESA A2', number: 'ESP-2024-0089', expiry: new Date('2026-12-01') },
+      { type: 'ROPO Aplicador', number: 'ROPO-2024-5678', expiry: new Date('2027-06-01') },
+    ],
+    equipment: [
+      { model: 'DJI Agras T10', type: 'Aplicador fitosanitario', payloadKg: 10 },
+      { model: 'DJI Phantom 4 Multispectral', type: 'Inspeccion multiespectral', payloadKg: 1.4 },
+    ],
+    operationalRadiusKm: 80,
+    isVerified: true,
+    rating: 4.6,
+    ratingCount: 7,
   });
 
   // Aseguradora

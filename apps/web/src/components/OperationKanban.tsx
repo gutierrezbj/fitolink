@@ -27,7 +27,7 @@ export type Operation = {
   createdAt: string;
   completedAt?: string;
   parcelId?: { _id?: string; name: string; cropType: string; province: string; areaHa?: number };
-  pilotId?: { name: string; rating?: number };
+  pilotId?: { name: string; company?: string; rating?: number };
   farmerId?: { name: string; phone?: string };
   alertId?: { severity: string; ndviValue: number; ndviDelta?: number };
   rating?: { farmer?: number; pilot?: number };
@@ -125,7 +125,14 @@ function OperationCard({ op, role, onAccept, onReject, isLoading }: {
       {/* Pilot / farmer info */}
       {role === 'farmer' && op.pilotId && (
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-[11px] text-gray-400">Piloto: <span className="text-gray-700 font-medium">{op.pilotId.name}</span></span>
+          <div>
+            <span className="text-[11px] text-gray-700 font-medium">{op.pilotId.name}</span>
+            {op.pilotId.company && (
+              <span className="ml-1.5 text-[10px] bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded-full font-semibold">
+                {op.pilotId.company}
+              </span>
+            )}
+          </div>
           {op.pilotId.rating !== undefined && op.pilotId.rating > 0 && (
             <StarRating value={Math.round(op.pilotId.rating)} />
           )}

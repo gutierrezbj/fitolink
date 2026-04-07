@@ -87,10 +87,18 @@ function FitAllButton({ parcels }: { parcels: Parcel[] }) {
       onAdd() {
         const btn = L.DomUtil.create('button');
         btn.title = 'Ver todas las parcelas';
-        btn.innerHTML = '⊙ Ver todas';
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>Ver todas';
         btn.style.cssText =
-          'background:white;border:1px solid rgba(0,0,0,0.15);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#354b23;white-space:nowrap;border-radius:6px;margin:0;line-height:1.4;box-shadow:0 1px 4px rgba(0,0,0,0.15);';
+          'background:linear-gradient(135deg,#354b23 0%,#4a6b2f 100%);border:none;padding:7px 13px;font-size:11px;font-weight:700;cursor:pointer;color:white;white-space:nowrap;border-radius:20px;margin:0;line-height:1.4;box-shadow:0 3px 10px rgba(53,75,35,0.45),0 1px 3px rgba(0,0,0,0.2);letter-spacing:0.3px;transition:all 0.15s ease;';
         L.DomEvent.disableClickPropagation(btn);
+        L.DomEvent.on(btn, 'mouseover', () => {
+          btn.style.transform = 'translateY(-1px)';
+          btn.style.boxShadow = '0 5px 14px rgba(53,75,35,0.55),0 2px 4px rgba(0,0,0,0.2)';
+        });
+        L.DomEvent.on(btn, 'mouseout', () => {
+          btn.style.transform = '';
+          btn.style.boxShadow = '0 3px 10px rgba(53,75,35,0.45),0 1px 3px rgba(0,0,0,0.2)';
+        });
         L.DomEvent.on(btn, 'click', () => {
           const group = L.featureGroup(parcels.map((p) => L.geoJSON(p.geometry as GeoJSON.GeoJsonObject)));
           map.fitBounds(group.getBounds(), { padding: [32, 32] });

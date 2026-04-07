@@ -184,8 +184,17 @@ export default function OperationDetailPage() {
             </div>
           ) : isFarmer && op.pilotId ? (
             <div className="space-y-2">
+              {op.pilotId.company && (
+                <div className="flex items-center gap-2 mb-3 p-2.5 bg-blue-50 rounded-lg border border-blue-100">
+                  <span className="text-lg">🚁</span>
+                  <div>
+                    <p className="text-sm font-bold text-blue-800">{op.pilotId.company}</p>
+                    <p className="text-xs text-blue-500">Empresa certificada FitoLink</p>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Nombre</span>
+                <span className="text-sm text-gray-500">Piloto</span>
                 <span className="text-sm font-medium text-gray-900">{op.pilotId.name}</span>
               </div>
               <div className="flex justify-between">
