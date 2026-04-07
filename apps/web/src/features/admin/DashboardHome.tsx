@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
@@ -36,57 +36,33 @@ type Alert = {
   parcelId: { _id: string; name: string; cropType: string; province: string };
 };
 
-function AlertCard({ alert, onAck, onService, loading }: {
-  alert: Alert;
-  onAck: () => void;
-  onService: () => void;
-  loading: boolean;
-}) {
+function AlertCard({ alert }: { alert: Alert }) {
   const navigate = useNavigate();
   return (
-    <div className={`border-t-2 ${SEVERITY_COLORS[alert.severity].replace('border-l-', 'border-t-')} bg-white rounded-xl p-2.5 border border-gray-100 flex flex-col gap-2`}>
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <span className={`text-[9px] font-bold uppercase tracking-wider ${SEVERITY_TEXT[alert.severity]}`}>
-            {SEVERITY_LABELS[alert.severity]}
-          </span>
-          <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
-            {alert.ndviValue.toFixed(2)}
-          </span>
-        </div>
-        <button
-          onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
-          className="text-[11px] font-semibold text-gray-900 hover:text-brand-700 transition-colors text-left leading-tight block w-full truncate"
-        >
-          {alert.parcelId?.name || 'Parcela'}
-        </button>
-        <p className="text-[10px] text-gray-400 truncate">{alert.parcelId?.province}</p>
+    <button
+      onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
+      className={`border-t-2 ${SEVERITY_COLORS[alert.severity].replace('border-l-', 'border-t-')} bg-white rounded-xl p-2.5 border border-gray-100 flex flex-col gap-1.5 text-left hover:border-brand-200 hover:shadow-sm transition-all w-full`}
+    >
+      <div className="flex items-center justify-between">
+        <span className={`text-[9px] font-bold uppercase tracking-wider ${SEVERITY_TEXT[alert.severity]}`}>
+          {SEVERITY_LABELS[alert.severity]}
+        </span>
+        <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
+          {alert.ndviValue.toFixed(2)}
+        </span>
       </div>
-      <div className="flex gap-1">
-        <button
-          onClick={onService}
-          disabled={loading}
-          className="flex-1 bg-terra-500 text-white text-[10px] px-1.5 py-1 rounded-md hover:bg-terra-600 transition-colors disabled:opacity-50 font-semibold truncate"
-        >
-          Solicitar
-        </button>
-        <button
-          onClick={onAck}
-          disabled={loading}
-          className="border border-brand-200 bg-brand-50 text-brand-700 text-[10px] px-1.5 py-1 rounded-md hover:bg-brand-100 transition-colors disabled:opacity-50"
-        >
-          Revisar
-        </button>
-      </div>
-    </div>
+      <p className="text-[11px] font-semibold text-gray-900 leading-tight truncate">
+        {alert.parcelId?.name || 'Parcela'}
+      </p>
+      <p className="text-[10px] text-gray-400 truncate">{alert.parcelId?.province}</p>
+      <p className="text-[10px] text-brand-600 font-medium mt-0.5">Ver en mapa →</p>
+    </button>
   );
 }
 
 export default function DashboardHome() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
   if (user?.role === 'pilot') return <PilotDashboardHome />;
   if (user?.role === 'insurer') return <InsuranceDashboardHome />;
   if (user?.role === 'admin') return <AdminDashboardHome />;
@@ -111,24 +87,6 @@ export default function DashboardHome() {
     queryKey: ['operations', 'mine'],
     queryFn: async () => { const res = await api.get('/operations/mine'); return res.data.data; },
     enabled: isFarmer,
-  });
-
-  const requestServiceMutation = useMutation({
-    mutationFn: async (alert: Alert) => {
-      await api.post('/operations', { parcelId: alert.parcelId._id, type: 'phytosanitary', alertId: alert._id });
-      await api.patch(`/alerts/${alert._id}`, { status: 'acknowledged' });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
-      queryClient.invalidateQueries({ queryKey: ['operations', 'mine'] });
-    },
-  });
-
-  const ackMutation = useMutation({
-    mutationFn: async (alertId: string) => {
-      await api.patch(`/alerts/${alertId}`, { status: 'acknowledged' });
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] }),
   });
 
   const parcels = parcelsData || [];
@@ -304,9 +262,6 @@ export default function DashboardHome() {
                   <AlertCard
                     key={alert._id}
                     alert={alert}
-                    loading={requestServiceMutation.isPending || ackMutation.isPending}
-                    onService={() => requestServiceMutation.mutate(alert)}
-                    onAck={() => ackMutation.mutate(alert._id)}
                   />
                 ))}
                 </div>
