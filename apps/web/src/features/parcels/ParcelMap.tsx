@@ -28,6 +28,7 @@ interface Parcel {
 interface ParcelMapProps {
   parcels: Parcel[];
   selectedParcelId?: string;
+  focusParcelId?: string;
   onParcelClick?: (parcelId: string) => void;
   height?: string;
   showDetailLink?: boolean;
@@ -65,6 +66,16 @@ function FitBounds({ parcels }: { parcels: Parcel[] }) {
     const group = L.featureGroup(parcels.map((p) => L.geoJSON(p.geometry as GeoJSON.GeoJsonObject)));
     map.fitBounds(group.getBounds(), { padding: [40, 40] });
   }, [map, parcels]);
+  return null;
+}
+
+function FlyToParcel({ parcel }: { parcel: Parcel | undefined }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!parcel) return;
+    const layer = L.geoJSON(parcel.geometry as GeoJSON.GeoJsonObject);
+    map.flyToBounds(layer.getBounds(), { padding: [60, 60], duration: 0.8 });
+  }, [map, parcel]);
   return null;
 }
 
@@ -195,12 +206,14 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
 export default function ParcelMap({
   parcels,
   selectedParcelId,
+  focusParcelId,
   onParcelClick,
   height = '500px',
   showDetailLink = false,
   showLegend = false,
   children,
 }: ParcelMapProps) {
+  const focusParcel = focusParcelId ? parcels.find((p) => p._id === focusParcelId) : undefined;
   const alertParcels = parcels.filter((p) => {
     const latest = p.ndviHistory?.[p.ndviHistory.length - 1];
     return latest?.anomalyDetected || (latest && latest.mean < 0.3);
@@ -227,6 +240,7 @@ export default function ParcelMap({
 
       <FitBounds parcels={parcels} />
       <FitAllButton parcels={parcels} />
+      <FlyToParcel parcel={focusParcel} />
       {showLegend && <NdviLegend />}
 
       {parcels.map((parcel) => (

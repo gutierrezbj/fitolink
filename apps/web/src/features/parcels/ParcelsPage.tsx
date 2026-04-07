@@ -75,6 +75,7 @@ export default function ParcelsPage() {
             <ParcelMap
               parcels={parcels}
               selectedParcelId={selectedParcelId || undefined}
+              focusParcelId={selectedParcelId || undefined}
               onParcelClick={setSelectedParcelId}
               height="100%"
               showDetailLink
