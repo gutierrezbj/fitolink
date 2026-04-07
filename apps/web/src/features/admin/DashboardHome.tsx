@@ -287,8 +287,8 @@ export default function DashboardHome() {
           )}
 
           {/* Alerts panel */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex-1 min-h-0">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between mb-3 flex-shrink-0">
               <h2 className="text-sm font-semibold text-gray-700">
                 Alertas pendientes
                 {activeAlerts.length > 0 && (
@@ -297,18 +297,16 @@ export default function DashboardHome() {
                   </span>
                 )}
               </h2>
-              {activeAlerts.length > 0 && (
-                <button
-                  onClick={() => navigate('/dashboard/alerts')}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-medium"
-                >
-                  Ver todas →
-                </button>
-              )}
+              <button
+                onClick={() => navigate('/dashboard/alerts')}
+                className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+              >
+                Ver todas →
+              </button>
             </div>
 
             {activeAlerts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex flex-col items-center justify-center flex-1 text-center">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
                   <span className="text-green-600 text-lg">✓</span>
                 </div>
@@ -316,8 +314,8 @@ export default function DashboardHome() {
                 <p className="text-xs text-gray-400 mt-1">Sin alertas activas</p>
               </div>
             ) : (
-              <div className="space-y-2 overflow-y-auto max-h-72 pr-0.5">
-                {activeAlerts.slice(0, 6).map((alert) => (
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-0.5">
+                {activeAlerts.map((alert) => (
                   <AlertCard
                     key={alert._id}
                     alert={alert}
@@ -326,14 +324,12 @@ export default function DashboardHome() {
                     onAck={() => ackMutation.mutate(alert._id)}
                   />
                 ))}
-                {activeAlerts.length > 6 && (
-                  <button
-                    onClick={() => navigate('/dashboard/alerts')}
-                    className="w-full text-xs text-gray-400 hover:text-brand-600 py-2 text-center transition-colors"
-                  >
-                    +{activeAlerts.length - 6} mas alertas →
-                  </button>
-                )}
+                <button
+                  onClick={() => navigate('/dashboard/alerts')}
+                  className="w-full text-xs text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-300 bg-brand-50 hover:bg-brand-100 py-2 rounded-lg text-center transition-colors font-medium mt-1"
+                >
+                  Ver historial completo de alertas →
+                </button>
               </div>
             )}
           </div>
