@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 import { toast } from '@/stores/toastStore.js';
@@ -45,6 +46,7 @@ type Alert = {
 
 export default function AlertsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: alertsData, isLoading } = useQuery({
     queryKey: ['alerts', 'mine'],
@@ -52,6 +54,17 @@ export default function AlertsPage() {
       const res = await api.get('/alerts/mine');
       return res.data.data;
     },
+  });
+
+  const ackMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      await api.patch(`/alerts/${alertId}`, { status: 'acknowledged' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts', 'mine'] });
+      toast.info('Alerta marcada como revisada');
+    },
+    onError: () => toast.error('Error al actualizar la alerta'),
   });
 
   const falsePosiveMutation = useMutation({
@@ -89,6 +102,12 @@ export default function AlertsPage() {
   return (
     <div>
       <div className="mb-6">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-700 transition-colors mb-4"
+        >
+          ← Volver al inicio
+        </button>
         <h1 className="text-2xl font-bold text-gray-900">Alertas</h1>
         <p className="text-gray-500 text-sm mt-1">
           Anomalias detectadas por satelite en tus parcelas
@@ -154,11 +173,18 @@ export default function AlertsPage() {
                         {requestServiceMutation.isPending ? 'Solicitando...' : 'Solicitar servicio'}
                       </button>
                       <button
+                        onClick={() => ackMutation.mutate(alert._id)}
+                        disabled={ackMutation.isPending}
+                        className="border border-brand-200 text-brand-700 bg-brand-50 text-xs px-3 py-2 rounded-lg hover:bg-brand-100 transition-colors disabled:opacity-50"
+                      >
+                        Revisar
+                      </button>
+                      <button
                         onClick={() => falsePosiveMutation.mutate(alert._id)}
                         disabled={falsePosiveMutation.isPending}
-                        className="border border-gray-200 text-gray-500 text-xs px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="border border-gray-200 text-gray-400 text-xs px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
-                        {falsePosiveMutation.isPending ? '...' : 'Falso positivo'}
+                        ✕
                       </button>
                     </div>
                   </div>
