@@ -110,10 +110,10 @@ function OperationCard({ op, role, onAccept, onReject, isLoading }: {
       </p>
 
       {/* NDVI alert value */}
-      {op.alertId && (
+      {op.alertId?.ndviValue != null && (
         <div className="mt-2 flex items-baseline gap-1.5 bg-red-50 rounded-lg px-2 py-1.5">
           <span className="text-sm font-bold text-red-600">{op.alertId.ndviValue.toFixed(3)}</span>
-          {op.alertId.ndviDelta !== undefined && (
+          {op.alertId.ndviDelta != null && (
             <span className="text-[11px] text-red-400">
               {op.alertId.ndviDelta > 0 ? '+' : ''}{op.alertId.ndviDelta.toFixed(3)}
             </span>

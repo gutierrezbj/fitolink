@@ -78,7 +78,7 @@ function PendingCard({ op, onAccept, onReject, loading }: {
         {op.parcelId?.areaHa ? ` · ${op.parcelId.areaHa.toFixed(1)} ha` : ''}
       </p>
 
-      {op.alertId && (
+      {op.alertId?.ndviValue != null && (
         <div className="mt-2 flex items-center gap-1.5 text-xs">
           <span className="text-red-600 font-bold">{op.alertId.ndviValue.toFixed(3)}</span>
           <span className="text-gray-400">NDVI detectado</span>

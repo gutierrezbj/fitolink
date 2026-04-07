@@ -66,7 +66,8 @@ export async function getOperationsByPilot(pilotId: string): Promise<IOperation[
   return Operation.find({ pilotId })
     .sort({ createdAt: -1 })
     .populate('parcelId', 'name cropType province areaHa')
-    .populate('farmerId', 'name email phone');
+    .populate('farmerId', 'name email phone')
+    .populate('alertId', 'severity ndviValue ndviDelta');
 }
 
 export async function getOperationById(operationId: string, userId: string): Promise<IOperation> {
