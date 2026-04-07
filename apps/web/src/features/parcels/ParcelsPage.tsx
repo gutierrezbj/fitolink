@@ -60,27 +60,34 @@ export default function ParcelsPage() {
         </div>
         <button
           onClick={() => navigate('/dashboard/parcels/new')}
-          className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
+          className="bg-terra-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-terra-600 transition-colors"
         >
           + Nueva Parcela
         </button>
       </div>
 
-      {/* Map */}
-      <div className="mb-6">
-        <ParcelMap
-          parcels={parcels}
-          selectedParcelId={selectedParcelId || undefined}
-          onParcelClick={setSelectedParcelId}
-          height="380px"
-          showDetailLink
-        />
-      </div>
+      {/* Main layout: map left + list/detail right */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-      {/* List + Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Map — sticky, takes left 3 cols */}
+        <div className="lg:col-span-3 sticky top-6">
+          <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 'calc(100vh - 180px)' }}>
+            <ParcelMap
+              parcels={parcels}
+              selectedParcelId={selectedParcelId || undefined}
+              onParcelClick={setSelectedParcelId}
+              height="100%"
+              showDetailLink
+              showLegend
+            />
+          </div>
+        </div>
+
+        {/* Right panel: list + detail */}
+        <div className="lg:col-span-2 flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
+
         {/* Parcel list */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className="space-y-2">
           {parcels.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-gray-400 text-sm mb-3">Sin parcelas registradas</p>
@@ -143,7 +150,7 @@ export default function ParcelsPage() {
         </div>
 
         {/* Detail panel */}
-        <div className="lg:col-span-2">
+        <div>
           {selectedParcel ? (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               {/* Detail header */}
@@ -157,7 +164,7 @@ export default function ParcelsPage() {
                 </div>
                 <button
                   onClick={() => navigate(`/dashboard/parcels/${selectedParcel._id}`)}
-                  className="bg-brand-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors font-semibold flex-shrink-0"
+                  className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors font-semibold flex-shrink-0"
                 >
                   Ver detalle completo →
                 </button>
@@ -224,6 +231,8 @@ export default function ParcelsPage() {
             </div>
           )}
         </div>
+
+        </div>{/* end right panel */}
       </div>
     </div>
   );
