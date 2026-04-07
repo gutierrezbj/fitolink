@@ -48,7 +48,8 @@ export async function loginWithGoogle(credential: string): Promise<{ token: stri
 }
 
 export async function devLogin(googleId: string): Promise<{ token: string; user: IUser }> {
-  if (env.NODE_ENV === 'production') {
+  const allowDevLogin = env.NODE_ENV !== 'production' || process.env.ALLOW_DEV_LOGIN === 'true';
+  if (!allowDevLogin) {
     throw AppError.forbidden('Dev login no disponible en produccion');
   }
 
