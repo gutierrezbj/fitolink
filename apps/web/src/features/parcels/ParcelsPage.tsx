@@ -83,8 +83,16 @@ export default function ParcelsPage() {
           </div>
         </div>
 
-        {/* Right panel: list + detail */}
-        <div className="lg:col-span-2 flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
+        {/* Right panel: unified white card with list + detail */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+
+          {/* List header */}
+          <div className="px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{parcels.length} parcelas</p>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
 
         {/* Parcel list — mini cards 2-col grid */}
         <div className="grid grid-cols-2 gap-2">
@@ -136,10 +144,10 @@ export default function ParcelsPage() {
           )}
         </div>
 
-        {/* Detail panel */}
-        <div>
+        {/* Detail panel — inside the same white card, separated by divider */}
+        <div className="border-t border-gray-100 pt-4">
           {selectedParcel ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div>
               {/* Detail header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -209,7 +217,7 @@ export default function ParcelsPage() {
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 p-10 text-center h-full flex flex-col items-center justify-center">
+            <div className="py-8 text-center flex flex-col items-center justify-center">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                 <span className="text-gray-400 text-xl">🗺</span>
               </div>
@@ -219,6 +227,7 @@ export default function ParcelsPage() {
           )}
         </div>
 
+          </div>{/* end scrollable content */}
         </div>{/* end right panel */}
       </div>
     </div>
