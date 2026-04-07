@@ -31,6 +31,7 @@ interface ParcelMapProps {
   onParcelClick?: (parcelId: string) => void;
   height?: string;
   showDetailLink?: boolean;
+  showLegend?: boolean;
   children?: React.ReactNode;
 }
 
@@ -77,11 +78,11 @@ function FitAllButton({ parcels }: { parcels: Parcel[] }) {
         btn.title = 'Ver todas las parcelas';
         btn.innerHTML = '⊙ Ver todas';
         btn.style.cssText =
-          'background:white;border:2px solid rgba(0,0,0,0.2);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#16a34a;white-space:nowrap;border-radius:4px;margin:0;line-height:1.4;';
+          'background:white;border:1px solid rgba(0,0,0,0.15);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#354b23;white-space:nowrap;border-radius:6px;margin:0;line-height:1.4;box-shadow:0 1px 4px rgba(0,0,0,0.15);';
         L.DomEvent.disableClickPropagation(btn);
         L.DomEvent.on(btn, 'click', () => {
           const group = L.featureGroup(parcels.map((p) => L.geoJSON(p.geometry as GeoJSON.GeoJsonObject)));
-          map.fitBounds(group.getBounds(), { padding: [40, 40] });
+          map.fitBounds(group.getBounds(), { padding: [32, 32] });
         });
         return btn;
       },
@@ -90,6 +91,33 @@ function FitAllButton({ parcels }: { parcels: Parcel[] }) {
     control.addTo(map);
     return () => { control.remove(); };
   }, [map, parcels]);
+  return null;
+}
+
+function NdviLegend() {
+  const map = useMap();
+  useEffect(() => {
+    const LegendControl = L.Control.extend({
+      onAdd() {
+        const div = L.DomUtil.create('div');
+        div.style.cssText = 'background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.12);padding:7px 9px;border-radius:8px;font-size:10px;line-height:1.7;box-shadow:0 1px 4px rgba(0,0,0,0.12);backdrop-filter:blur(4px);';
+        div.innerHTML = `
+          <div style="font-weight:700;color:#354b23;margin-bottom:4px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase">NDVI</div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#ef4444;flex-shrink:0"></div><span style="color:#374151">&lt; 0.15 &nbsp;Sin vegetación</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#f97316;flex-shrink:0"></div><span style="color:#374151">0.15–0.25 &nbsp;Muy baja</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#eab308;flex-shrink:0"></div><span style="color:#374151">0.25–0.35 &nbsp;Estrés</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#84cc16;flex-shrink:0"></div><span style="color:#374151">0.35–0.45 &nbsp;Aceptable</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#22c55e;flex-shrink:0"></div><span style="color:#374151">0.45–0.55 &nbsp;Bueno</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#16a34a;flex-shrink:0"></div><span style="color:#374151">&gt; 0.55 &nbsp;&nbsp;&nbsp;&nbsp;Óptimo</span></div>
+        `;
+        L.DomEvent.disableClickPropagation(div);
+        return div;
+      },
+    });
+    const control = new LegendControl({ position: 'bottomright' });
+    control.addTo(map);
+    return () => { control.remove(); };
+  }, [map]);
   return null;
 }
 
@@ -139,7 +167,7 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
           </div>
         </div>
       ` : '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Sin datos NDVI</div>'}
-      ${showDetailLink ? `<a href="/dashboard/parcels/${parcel._id}" style="display:block;text-align:center;background:#16a34a;color:#fff;text-decoration:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px">Ver detalle →</a>` : ''}
+      ${showDetailLink ? `<a href="/dashboard/parcels/${parcel._id}" style="display:block;text-align:center;background:#46632e;color:#fff;text-decoration:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px">Ver detalle →</a>` : ''}
     </div>
   `;
 
@@ -149,9 +177,9 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
       data={parcel.geometry as GeoJSON.GeoJsonObject}
       style={{
         color: isSelected ? '#1d4ed8' : color,
-        weight: isSelected ? 3 : 2.5,
+        weight: isSelected ? 3 : 2,
         fillColor: color,
-        fillOpacity: isSelected ? 0.12 : 0.08,
+        fillOpacity: isSelected ? 0.45 : 0.30,
       }}
       eventHandlers={{
         click: () => onParcelClick?.(parcel._id),
@@ -170,6 +198,7 @@ export default function ParcelMap({
   onParcelClick,
   height = '500px',
   showDetailLink = false,
+  showLegend = false,
   children,
 }: ParcelMapProps) {
   const alertParcels = parcels.filter((p) => {
@@ -198,6 +227,7 @@ export default function ParcelMap({
 
       <FitBounds parcels={parcels} />
       <FitAllButton parcels={parcels} />
+      {showLegend && <NdviLegend />}
 
       {parcels.map((parcel) => (
         <ParcelLayer

@@ -224,6 +224,7 @@ export default function DashboardHome() {
                 parcels={parcels}
                 height="100%"
                 showDetailLink
+                showLegend
                 onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
               />
             </div>
