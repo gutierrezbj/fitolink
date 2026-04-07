@@ -219,14 +219,16 @@ export default function DashboardHome() {
             </button>
           </div>
           {parcels.length > 0 ? (
-            <div className="flex-1 min-h-[420px]">
-              <ParcelMap
-                parcels={parcels}
-                height="100%"
-                showDetailLink
-                showLegend
-                onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
-              />
+            <div className="flex-1 min-h-[420px] relative">
+              <div className="absolute inset-0">
+                <ParcelMap
+                  parcels={parcels}
+                  height="100%"
+                  showDetailLink
+                  showLegend
+                  onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex-1 min-h-[420px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
