@@ -1265,7 +1265,7 @@ async function seed() {
       ]],
     },
     areaHa: 3700.07,
-    cropType: 'ganaderia',
+    cropType: 'otro',
     province: 'Estado Sucre, Venezuela',
     isInsured: true,
     insurerId: insurer._id,
