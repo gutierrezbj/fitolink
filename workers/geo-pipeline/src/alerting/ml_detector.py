@@ -29,7 +29,7 @@ from typing import Optional
 import numpy as np
 
 from .detector import AnomalyResult, detect_anomaly as detect_anomaly_v1
-from .feature_extractor import NdviFeatures, extract_features
+from .feature_extractor import NdviFeatures, extract_features, seasonal_baseline, is_seasonally_normal
 
 logger = structlog.get_logger(__name__)
 
@@ -38,99 +38,106 @@ MODEL_PATH: str = os.getenv('ML_MODEL_PATH', '/app/models/anomaly_detector_v2.pk
 
 # ── Synthetic training data generation ───────────────────────────────────────
 
-def _make_healthy_series(length: int = 8) -> list[float]:
-    """Healthy parcel: NDVI 0.45–0.65, gentle seasonal oscillation."""
-    base = random.uniform(0.48, 0.62)
-    return [base + random.uniform(-0.05, 0.05) for _ in range(length)]
+def _make_seasonal_healthy(crop_type: str, month: int, length: int = 8) -> list[float]:
+    """Healthy series following the seasonal baseline for a given crop/month."""
+    lo, hi = seasonal_baseline(crop_type, month)
+    base = random.uniform(lo, hi)
+    noise = (hi - lo) * 0.12
+    return [max(0.05, base + random.uniform(-noise, noise)) for _ in range(length)]
 
 
-def _make_sudden_drop(severity: str, length: int = 8) -> list[float]:
+def _make_sudden_drop(crop_type: str, month: int, severity: str, length: int = 8) -> list[float]:
     """Sudden NDVI drop at the end: pest attack, hail, fire."""
+    lo, hi = seasonal_baseline(crop_type, month)
+    base = random.uniform((lo + hi) / 2, hi)
     if severity == 'medium':
-        base = random.uniform(0.50, 0.65)
-        drop_target = random.uniform(0.35, 0.44)
+        drop_target = random.uniform(lo * 0.6, lo * 0.95)
     elif severity == 'high':
-        base = random.uniform(0.50, 0.65)
-        drop_target = random.uniform(0.30, 0.39)
+        drop_target = random.uniform(lo * 0.4, lo * 0.75)
     else:  # critical
-        base = random.uniform(0.48, 0.65)
-        drop_target = random.uniform(0.15, 0.29)
+        drop_target = random.uniform(0.05, lo * 0.6)
 
-    stable = [base + random.uniform(-0.04, 0.04) for _ in range(length - 1)]
-    stable.append(drop_target)
+    noise = (hi - lo) * 0.08
+    stable = [max(0.05, base + random.uniform(-noise, noise)) for _ in range(length - 1)]
+    stable.append(max(0.05, drop_target))
     return stable
 
 
-def _make_sustained_decline(severity: str, length: int = 8) -> list[float]:
+def _make_sustained_decline(crop_type: str, month: int, severity: str, length: int = 8) -> list[float]:
     """Gradual NDVI decline over multiple periods: drought, soil depletion."""
+    lo, hi = seasonal_baseline(crop_type, month)
+    start = random.uniform((lo + hi) / 2, hi)
     if severity == 'medium':
-        start = random.uniform(0.52, 0.65)
-        end = random.uniform(0.38, 0.45)
+        end = random.uniform(lo * 0.6, lo * 0.9)
     elif severity == 'high':
-        start = random.uniform(0.52, 0.65)
-        end = random.uniform(0.30, 0.38)
+        end = random.uniform(lo * 0.4, lo * 0.7)
     else:  # critical
-        start = random.uniform(0.50, 0.65)
-        end = random.uniform(0.15, 0.29)
+        end = random.uniform(0.05, lo * 0.55)
 
     step = (end - start) / (length - 1)
-    return [start + step * i + random.uniform(-0.02, 0.02) for i in range(length)]
+    return [max(0.05, start + step * i + random.uniform(-0.02, 0.02)) for i in range(length)]
+
+
+# Crop types to sample during training (covers all phenological groups)
+_TRAINING_CROPS = [
+    ('olivo', 4), ('olivo', 8), ('olivo', 1),
+    ('vinedo', 4), ('vinedo', 7), ('vinedo', 1), ('vinedo', 2), ('vinedo', 11),
+    ('cereal', 3), ('cereal', 5), ('cereal', 8), ('cereal', 11),
+    ('girasol', 7), ('girasol', 1),
+    ('almendro', 4), ('almendro', 1),
+    ('otro', 6),
+]
 
 
 def _generate_synthetic_dataset() -> tuple[np.ndarray, np.ndarray]:
     """
-    Generate synthetic training dataset.
+    Generate synthetic training dataset with seasonal awareness.
 
     Returns:
         X: feature matrix (n_samples, n_features)
-        y: label array (n_samples,) — 0=no anomaly, 1=medium, 2=high, 3=critical
+        y: label array — 0=healthy, 1=medium anomaly, 2=high, 3=critical
     """
     random.seed(42)
     np.random.seed(42)
 
     samples: list[tuple[NdviFeatures, int]] = []
 
-    # Healthy (label=0)
-    for _ in range(80):
-        series = _make_healthy_series()
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 0))
+    for crop, month in _TRAINING_CROPS:
+        # Healthy — label 0
+        for _ in range(6):
+            series = _make_seasonal_healthy(crop, month)
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 0))
 
-    # Sudden drop — medium (label=1)
-    for _ in range(45):
-        series = _make_sudden_drop('medium')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 1))
+        # Sudden drop medium — label 1
+        for _ in range(4):
+            series = _make_sudden_drop(crop, month, 'medium')
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 1))
 
-    # Sudden drop — high (label=2)
-    for _ in range(35):
-        series = _make_sudden_drop('high')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 2))
+        # Sudden drop high — label 2
+        for _ in range(3):
+            series = _make_sudden_drop(crop, month, 'high')
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 2))
 
-    # Sudden drop — critical (label=3)
-    for _ in range(25):
-        series = _make_sudden_drop('critical')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 3))
+        # Sudden drop critical — label 3
+        for _ in range(2):
+            series = _make_sudden_drop(crop, month, 'critical')
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 3))
 
-    # Sustained decline — medium (label=1)
-    for _ in range(35):
-        series = _make_sustained_decline('medium')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 1))
+        # Sustained decline medium — label 1
+        for _ in range(3):
+            series = _make_sustained_decline(crop, month, 'medium')
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 1))
 
-    # Sustained decline — high (label=2)
-    for _ in range(25):
-        series = _make_sustained_decline('high')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 2))
-
-    # Sustained decline — critical (label=3)
-    for _ in range(20):
-        series = _make_sustained_decline('critical')
-        feat = extract_features(series[-1], series[:-1])
-        samples.append((feat, 3))
+        # Sustained decline critical — label 3
+        for _ in range(2):
+            series = _make_sustained_decline(crop, month, 'critical')
+            feat = extract_features(series[-1], series[:-1], month=month, crop_type=crop)
+            samples.append((feat, 3))
 
     random.shuffle(samples)
     X = np.array([s[0].to_array() for s in samples])
@@ -220,6 +227,8 @@ class MLAnomalyDetector:
         history: list[float],
         current_ndre: Optional[float] = None,
         prev_ndre: Optional[float] = None,
+        month: int = 6,
+        crop_type: str = 'otro',
     ) -> AnomalyResult:
         """
         Detect anomalies using the ML model with V1 fallback.
@@ -229,16 +238,33 @@ class MLAnomalyDetector:
             history: Previous NDVI readings, oldest → newest.
             current_ndre: Latest NDRE value if computed.
             prev_ndre: Previous NDRE value for delta.
+            month: Calendar month (1-12) for seasonal context.
+            crop_type: Parcel crop type for seasonal baseline.
 
         Returns:
             AnomalyResult compatible with V1 interface.
         """
+        # Seasonal guard: if NDVI is within expected range for this crop/month → healthy
+        if is_seasonally_normal(current_ndvi, crop_type, month):
+            delta = (current_ndvi - history[-1]) if history else 0.0
+            logger.info(
+                'seasonally_normal',
+                crop=crop_type, month=month, ndvi=current_ndvi,
+            )
+            return AnomalyResult(
+                is_anomaly=False,
+                alert_type='ndvi_drop',
+                severity='low',
+                confidence=0.0,
+                ndvi_delta=round(delta, 4),
+                reason=f'NDVI {current_ndvi:.2f} dentro del rango estacional normal para {crop_type} en mes {month}',
+            )
+
         if self._model is None or len(history) < 1:
-            # Fall back to V1
             return detect_anomaly_v1(current_ndvi, history)
 
         try:
-            features = extract_features(current_ndvi, history, current_ndre, prev_ndre)
+            features = extract_features(current_ndvi, history, current_ndre, prev_ndre, month, crop_type)
             x = features.to_array().reshape(1, -1)
 
             label = int(self._model.predict(x)[0])

@@ -9,12 +9,88 @@ Features are designed to capture:
 - Short-term change (delta vs last reading)
 - Medium-term trend (slope over 3-5 readings = 15-25 days)
 - Pattern type (sudden drop vs sustained decline)
+- Seasonality: expected NDVI for this crop type and month
 - Data quality (how many historical readings available)
 """
-from dataclasses import dataclass, field
+import math
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+
+# ── Seasonal NDVI baselines per crop type ─────────────────────────────────────
+# (min_normal, max_normal) per month group — values below min are "dormant normal"
+# Crops grouped by phenological behaviour:
+#   - evergreen:   olivo, citrico, almendro (semi)
+#   - deciduous:   vinedo, frutal
+#   - winter_annual: cereal, leguminosa, remolacha, patata
+#   - summer_annual: girasol, maiz, algodon, arroz
+#   - other:       hortaliza, otro
+
+_SEASONAL: dict[str, dict[int, tuple[float, float]]] = {
+    'evergreen': {
+        1: (0.32, 0.62), 2: (0.33, 0.63), 3: (0.35, 0.65),
+        4: (0.38, 0.68), 5: (0.40, 0.70), 6: (0.38, 0.68),
+        7: (0.35, 0.65), 8: (0.33, 0.63), 9: (0.34, 0.64),
+        10: (0.34, 0.64), 11: (0.32, 0.62), 12: (0.31, 0.61),
+    },
+    'deciduous': {
+        1: (0.08, 0.25), 2: (0.08, 0.28), 3: (0.10, 0.35),
+        4: (0.18, 0.48), 5: (0.38, 0.65), 6: (0.48, 0.72),
+        7: (0.52, 0.75), 8: (0.50, 0.73), 9: (0.42, 0.68),
+        10: (0.28, 0.58), 11: (0.12, 0.35), 12: (0.08, 0.26),
+    },
+    'winter_annual': {
+        1: (0.22, 0.50), 2: (0.30, 0.58), 3: (0.40, 0.68),
+        4: (0.45, 0.72), 5: (0.30, 0.62), 6: (0.12, 0.30),
+        7: (0.10, 0.22), 8: (0.10, 0.20), 9: (0.12, 0.25),
+        10: (0.15, 0.32), 11: (0.18, 0.40), 12: (0.20, 0.46),
+    },
+    'summer_annual': {
+        1: (0.08, 0.20), 2: (0.08, 0.20), 3: (0.10, 0.22),
+        4: (0.12, 0.30), 5: (0.22, 0.48), 6: (0.40, 0.65),
+        7: (0.48, 0.72), 8: (0.45, 0.70), 9: (0.30, 0.60),
+        10: (0.12, 0.30), 11: (0.08, 0.22), 12: (0.08, 0.20),
+    },
+    'other': {  # conservative — treat as evergreen
+        m: (0.20, 0.70) for m in range(1, 13)
+    },
+}
+
+_CROP_TO_GROUP: dict[str, str] = {
+    'olivo': 'evergreen',
+    'citrico': 'evergreen',
+    'almendro': 'deciduous',
+    'vinedo': 'deciduous',
+    'frutal': 'deciduous',
+    'cereal': 'winter_annual',
+    'leguminosa': 'winter_annual',
+    'remolacha': 'winter_annual',
+    'patata': 'winter_annual',
+    'girasol': 'summer_annual',
+    'maiz': 'summer_annual',
+    'algodon': 'summer_annual',
+    'arroz': 'summer_annual',
+    'hortaliza': 'other',
+    'otro': 'other',
+}
+
+# Integer ID per group for the feature vector
+_GROUP_ID: dict[str, int] = {
+    'evergreen': 0, 'deciduous': 1, 'winter_annual': 2, 'summer_annual': 3, 'other': 4
+}
+
+
+def seasonal_baseline(crop_type: str, month: int) -> tuple[float, float]:
+    """Return (min_normal, max_normal) NDVI for this crop type and month."""
+    group = _CROP_TO_GROUP.get(crop_type, 'other')
+    return _SEASONAL[group][month]
+
+
+def is_seasonally_normal(ndvi: float, crop_type: str, month: int) -> bool:
+    """True when NDVI is within the expected seasonal range — not an anomaly."""
+    lo, hi = seasonal_baseline(crop_type, month)
+    return lo <= ndvi <= hi
 
 
 @dataclass
@@ -22,38 +98,42 @@ class NdviFeatures:
     """Feature vector extracted from a parcel's NDVI time series."""
 
     # Absolute level
-    current_ndvi: float         # Current NDVI value
-    below_critical: float       # 1.0 if NDVI < 0.30 (critical threshold)
-    below_high: float           # 1.0 if NDVI < 0.40 (high concern threshold)
+    current_ndvi: float
+    below_critical: float       # 1.0 if NDVI < 0.30
 
-    # Short-term delta (vs 1 reading ago = ~5 days)
-    delta_1: float              # current - prev (negative = drop)
+    # Short-term delta
+    delta_1: float
 
-    # Medium-term delta (vs N readings ago)
-    delta_3: float              # current - reading 3 periods ago (~15 days)
-    delta_5: float              # current - reading 5 periods ago (~25 days)
+    # Medium-term deltas
+    delta_3: float
+    delta_5: float
 
-    # Trend (linear regression slope over recent readings)
-    slope_3: float              # slope over last 3 readings (negative = declining)
-    slope_5: float              # slope over last 5 readings
+    # Trend
+    slope_3: float
+    slope_5: float
 
-    # Pattern features
-    drop_from_recent_max: float  # how far below recent peak (0.0 if at or above)
-    consecutive_drops: int       # how many readings in a row declining
-    volatility: float            # std dev of last 5 readings (high = stressed)
+    # Pattern
+    drop_from_recent_max: float
+    consecutive_drops: int
+    volatility: float
 
-    # NDRE signal (chlorophyll stress, more sensitive than NDVI)
-    ndre_delta_1: float          # NDRE delta (0.0 if NDRE unavailable)
+    # NDRE
+    ndre_delta_1: float
+
+    # Seasonality (new)
+    seasonal_deviation: float   # current_ndvi - seasonal_mid (negative = below expected)
+    below_seasonal_min: float   # 1.0 if below seasonal minimum
+    month_sin: float            # cyclical month encoding
+    month_cos: float
+    crop_group_id: float        # 0-4 integer group
 
     # Data quality
-    history_length: int          # number of historical readings (capped at 10)
+    history_length: int
 
     def to_array(self) -> np.ndarray:
-        """Convert to numpy array for scikit-learn input."""
         return np.array([
             self.current_ndvi,
             self.below_critical,
-            self.below_high,
             self.delta_1,
             self.delta_3,
             self.delta_5,
@@ -63,17 +143,24 @@ class NdviFeatures:
             float(self.consecutive_drops),
             self.volatility,
             self.ndre_delta_1,
+            self.seasonal_deviation,
+            self.below_seasonal_min,
+            self.month_sin,
+            self.month_cos,
+            self.crop_group_id,
             float(min(self.history_length, 10)),
         ], dtype=np.float32)
 
     @classmethod
     def feature_names(cls) -> list[str]:
         return [
-            'current_ndvi', 'below_critical', 'below_high',
+            'current_ndvi', 'below_critical',
             'delta_1', 'delta_3', 'delta_5',
             'slope_3', 'slope_5',
             'drop_from_recent_max', 'consecutive_drops', 'volatility',
-            'ndre_delta_1', 'history_length',
+            'ndre_delta_1',
+            'seasonal_deviation', 'below_seasonal_min', 'month_sin', 'month_cos',
+            'crop_group_id', 'history_length',
         ]
 
 
@@ -109,6 +196,8 @@ def extract_features(
     history: list[float],
     current_ndre: Optional[float] = None,
     prev_ndre: Optional[float] = None,
+    month: int = 6,
+    crop_type: str = 'otro',
 ) -> NdviFeatures:
     """
     Extract ML features from a parcel's NDVI time series.
@@ -129,7 +218,6 @@ def extract_features(
 
     # ── Absolute level ──────────────────────────────────────────────────────
     below_critical = 1.0 if current_ndvi < 0.30 else 0.0
-    below_high = 1.0 if current_ndvi < 0.40 else 0.0
 
     # ── Deltas ──────────────────────────────────────────────────────────────
     delta_1 = current_ndvi - history[-1] if len(history) >= 1 else 0.0
@@ -158,10 +246,19 @@ def extract_features(
     if current_ndre is not None and prev_ndre is not None:
         ndre_delta_1 = current_ndre - prev_ndre
 
+    # ── Seasonal features ────────────────────────────────────────────────────
+    s_lo, s_hi = seasonal_baseline(crop_type, month)
+    s_mid = (s_lo + s_hi) / 2.0
+    seasonal_deviation = current_ndvi - s_mid
+    below_seasonal_min = 1.0 if current_ndvi < s_lo else 0.0
+    month_sin = math.sin(2 * math.pi * month / 12)
+    month_cos = math.cos(2 * math.pi * month / 12)
+    group = _CROP_TO_GROUP.get(crop_type, 'other')
+    crop_group_id = float(_GROUP_ID[group])
+
     return NdviFeatures(
         current_ndvi=current_ndvi,
         below_critical=below_critical,
-        below_high=below_high,
         delta_1=delta_1,
         delta_3=delta_3,
         delta_5=delta_5,
@@ -171,5 +268,10 @@ def extract_features(
         consecutive_drops=cons_drops,
         volatility=volatility,
         ndre_delta_1=ndre_delta_1,
+        seasonal_deviation=seasonal_deviation,
+        below_seasonal_min=below_seasonal_min,
+        month_sin=month_sin,
+        month_cos=month_cos,
+        crop_group_id=crop_group_id,
         history_length=len(history),
     )

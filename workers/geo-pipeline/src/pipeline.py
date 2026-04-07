@@ -249,7 +249,7 @@ def run_pipeline() -> None:
                 scene=scene_id,
             )
 
-            # Anomaly detection V2 (ML) with V1 fallback
+            # Anomaly detection V2 (ML) with seasonal context
             ndvi_history = parcel.get('ndviHistory', [])
             previous_means = [r['mean'] for r in ndvi_history[-5:]]
             prev_ndre = ndvi_history[-1].get('ndreValue') if ndvi_history else None
@@ -258,6 +258,8 @@ def run_pipeline() -> None:
                 history=previous_means,
                 current_ndre=stats.ndre_mean,
                 prev_ndre=prev_ndre,
+                month=datetime.now().month,
+                crop_type=parcel.get('cropType', 'otro'),
             )
 
             if anomaly.is_anomaly:
