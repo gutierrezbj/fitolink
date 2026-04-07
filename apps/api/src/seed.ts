@@ -1381,7 +1381,15 @@ async function seed() {
     return { parcelId, date, resolution: 20, points, bbox, pixelCount: points.length };
   }
 
-  // Estepa Sur — stress SE (zona sur con más estrés hídrico)
+  // parcel1 — Estepa Norte — saludable, gradiente norte-sur leve
+  await NdviSnapshot.create(makeGrid(
+    [-4.8530, 37.2870, -4.8360, 37.2980],
+    0.54, 'sw',
+    new Date('2026-02-24'),
+    parcel1._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel2 — Estepa Sur — stress SE
   await NdviSnapshot.create(makeGrid(
     [-4.8449, 37.2171, -4.8374, 37.2237],
     0.38, 'se',
@@ -1389,12 +1397,52 @@ async function seed() {
     parcel2._id as mongoose.Types.ObjectId,
   ));
 
-  // Olivar Cerro Negro (Montilla, Córdoba) — stress NW
+  // parcel3 — Olivar Los Toros (Martos, Jaén) — saludable
+  await NdviSnapshot.create(makeGrid(
+    [-2.680552, 38.340783, -2.674105, 38.343241],
+    0.63, 'none',
+    new Date('2026-02-24'),
+    parcel3._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel4 — Olivar Monte Lope (Baeza, Jaén) — saludable uniforme
+  await NdviSnapshot.create(makeGrid(
+    [-3.796057, 38.140825, -3.783172, 38.149081],
+    0.70, 'none',
+    new Date('2026-02-24'),
+    parcel4._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel5 — Olivar Cerro Negro (Montilla, Córdoba) — stress NW
   await NdviSnapshot.create(makeGrid(
     [-4.599849, 37.509688, -4.596414, 37.513241],
     0.44, 'nw',
     new Date('2026-02-24'),
     parcel5._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel6 — Olivar Sierra Sur (Priego, Córdoba) — saludable
+  await NdviSnapshot.create(makeGrid(
+    [-4.172957, 37.554960, -4.168732, 37.558711],
+    0.63, 'none',
+    new Date('2026-02-24'),
+    parcel6._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel7 — Viñedo El Quemado (Tomelloso, Ciudad Real) — saludable
+  await NdviSnapshot.create(makeGrid(
+    [-2.947773, 39.337485, -2.942652, 39.340942],
+    0.46, 'none',
+    new Date('2026-02-24'),
+    parcel7._id as mongoose.Types.ObjectId,
+  ));
+
+  // parcel8 — Olivar La Veredilla (Manzanares, Ciudad Real)
+  await NdviSnapshot.create(makeGrid(
+    [-3.841736, 39.191949, -3.837154, 39.194912],
+    0.52, 'ne',
+    new Date('2026-02-24'),
+    parcel8._id as mongoose.Types.ObjectId,
   ));
 
   // Olivar Marchena (ASAJA) — critical stress SW
@@ -1418,7 +1466,7 @@ async function seed() {
     parcels: 13,
     alerts: 4,
     operations: 5,
-    snapshots: 4,
+    snapshots: 10,
   }, 'Seed completed — 13 parcelas SIGPAC reales, 7 provincias');
 
   await mongoose.disconnect();
