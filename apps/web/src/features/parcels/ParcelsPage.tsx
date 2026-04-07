@@ -86,14 +86,14 @@ export default function ParcelsPage() {
         {/* Right panel: list + detail */}
         <div className="lg:col-span-2 flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
 
-        {/* Parcel list */}
-        <div className="space-y-2">
+        {/* Parcel list — mini cards 2-col grid */}
+        <div className="grid grid-cols-2 gap-2">
           {parcels.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-gray-400 text-sm mb-3">Sin parcelas registradas</p>
               <button
                 onClick={() => navigate('/dashboard/parcels/new')}
-                className="bg-brand-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors font-medium"
+                className="bg-terra-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-terra-600 transition-colors font-medium"
               >
                 Registrar primera parcela
               </button>
@@ -103,46 +103,33 @@ export default function ParcelsPage() {
               const latestNdvi = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
               const isSelected = parcel._id === selectedParcelId;
               const hasAlert = latestNdvi?.anomalyDetected || (latestNdvi && latestNdvi.mean < 0.3);
+              const ndviColor = latestNdvi ? (latestNdvi.mean < 0.3 ? '#ef4444' : latestNdvi.mean < 0.4 ? '#f97316' : latestNdvi.mean < 0.55 ? '#eab308' : '#22c55e') : '#94a3b8';
 
               return (
                 <button
                   key={parcel._id}
                   onClick={() => setSelectedParcelId(parcel._id)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                    isSelected ? 'border-brand-500 bg-brand-50' : 'border-gray-100 bg-white hover:border-gray-200'
+                  className={`text-left p-2.5 rounded-xl border-2 transition-all ${
+                    isSelected ? 'border-brand-500 bg-brand-50' : 'border-gray-100 bg-white hover:border-gray-300'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">{parcel.name}</h3>
-                        {hasAlert && (
-                          <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0">
-                            Alerta
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {parcel.cropType} · {parcel.areaHa} ha · {parcel.province}
-                      </p>
-                      {latestNdvi ? (
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <div
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{
-                              background: latestNdvi.mean < 0.3 ? '#ef4444' : latestNdvi.mean < 0.4 ? '#f97316' : latestNdvi.mean < 0.55 ? '#eab308' : '#22c55e',
-                            }}
-                          />
-                          <span className={`text-xs font-semibold ${getHealthColor(latestNdvi.mean)}`}>
-                            NDVI {latestNdvi.mean.toFixed(3)}
-                          </span>
-                          <span className="text-[10px] text-gray-400">{formatDate(latestNdvi.date)}</span>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-400 mt-1">Sin lecturas NDVI</p>
-                      )}
-                    </div>
+                  <div className="flex items-start justify-between gap-1 mb-1">
+                    <h3 className="font-semibold text-gray-900 text-[11px] leading-tight truncate flex-1">{parcel.name}</h3>
+                    {hasAlert && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-0.5" />
+                    )}
                   </div>
+                  <p className="text-[10px] text-gray-400 truncate">{parcel.province} · {parcel.areaHa} ha</p>
+                  {latestNdvi ? (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: ndviColor }} />
+                      <span className="text-[11px] font-bold" style={{ color: ndviColor }}>
+                        {latestNdvi.mean.toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-300 mt-1">Sin NDVI</p>
+                  )}
                 </button>
               );
             })
