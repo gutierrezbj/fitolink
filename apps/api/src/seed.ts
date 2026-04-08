@@ -127,16 +127,6 @@ async function seed() {
     isVerified: true,
   });
 
-  // Agricultor Venezuela
-  const venezuelaFarmer = await User.create({
-    email: 'quetepe@demo.com',
-    name: 'Ricardo Gutierrez Peña',
-    role: 'farmer',
-    googleId: 'demo-farmer-ve-001',
-    location: { type: 'Point', coordinates: [-64.029, 10.405] },
-    isVerified: true,
-  });
-
   // ═══════════════════════════════════════
   // PARCELAS — AGRICULTOR SUR (Antonio)
   // Todas con geometría real SIGPAC
@@ -1249,51 +1239,6 @@ async function seed() {
   });
 
   // ═══════════════════════════════════════
-  // FINCA VENEZUELA — Quetepe La Soledad (Estado Sucre)
-  // Poligono real 78 vertices — 3700 ha
-  // ═══════════════════════════════════════
-
-  const parcelQuetepe = await Parcel.create({
-    ownerId: venezuelaFarmer._id,
-    name: 'Quetepe - La Soledad',
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [-64.052066, 10.413751],[-64.058175, 10.391269],[-64.047291, 10.367612],[-64.045195, 10.366488],
-        [-64.040608, 10.365726],[-64.02206, 10.369357],[-64.001397, 10.374115],[-64.000094, 10.37506],
-        [-63.999896, 10.376091],[-64.000244, 10.425122],[-64.017335, 10.444402],[-64.032447, 10.444923],
-        [-64.032803, 10.444723],[-64.033806, 10.444132],[-64.034816, 10.443107],[-64.0375, 10.439571],
-        [-64.042682, 10.432049],[-64.052066, 10.413751],
-      ]],
-    },
-    areaHa: 3700.07,
-    cropType: 'otro',
-    province: 'Estado Sucre, Venezuela',
-    isInsured: true,
-    insurerId: insurer._id,
-    ndviHistory: [
-      { date: new Date('2025-10-15'), mean: 0.72, min: 0.58, max: 0.84, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2025-11-05'), mean: 0.74, min: 0.60, max: 0.86, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2025-11-25'), mean: 0.71, min: 0.56, max: 0.83, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2025-12-15'), mean: 0.68, min: 0.52, max: 0.81, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2026-01-04'), mean: 0.63, min: 0.48, max: 0.77, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2026-01-24'), mean: 0.58, min: 0.42, max: 0.72, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2026-02-13'), mean: 0.54, min: 0.38, max: 0.69, anomalyDetected: false, source: 'sentinel2' },
-      { date: new Date('2026-03-05'), mean: 0.48, min: 0.31, max: 0.64, anomalyDetected: true,  source: 'sentinel2' },
-      { date: new Date('2026-03-25'), mean: 0.43, min: 0.27, max: 0.59, anomalyDetected: true,  source: 'sentinel2' },
-    ],
-  });
-
-  // Snapshot heatmap — Quetepe (paso amplio por el tamaño 3700ha)
-  await NdviSnapshot.create(makeGrid(
-    [-64.058175, 10.365726, -63.999896, 10.444923],
-    0.43, 'sw',
-    new Date('2026-03-25'),
-    parcelQuetepe._id as mongoose.Types.ObjectId,
-    0.0012,
-  ));
-
-  // ═══════════════════════════════════════
   // ALERTAS
   // ═══════════════════════════════════════
 
@@ -1534,12 +1479,12 @@ async function seed() {
   ));
 
   logger.info({
-    users: 7,
-    parcels: 14,
+    users: 6,
+    parcels: 13,
     alerts: 4,
     operations: 5,
     snapshots: 11,
-  }, 'Seed completed — 13 parcelas España + 1 finca Venezuela (3700ha)');
+  }, 'Seed completed — 13 parcelas España');
 
   await mongoose.disconnect();
 }
