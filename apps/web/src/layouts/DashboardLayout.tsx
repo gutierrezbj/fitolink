@@ -8,17 +8,20 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/location.svg' },
     { to: '/dashboard/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/operations', label: 'Operaciones', icon: '/operational-system.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
   ],
   pilot: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
     { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/drone-pilot.svg' },
     { to: '/dashboard/operations', label: 'Historial', icon: '/operational-system.svg' },
+    { to: '/dashboard/marketplace', label: 'Red de Pilotos', icon: '/location.svg' },
   ],
   insurer: [
     { to: '/dashboard', label: 'Inicio', icon: '🏠' },
     { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/insurance2.svg' },
     { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/b2b/inspections', label: 'Inspecciones', icon: '🔍' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
   ],
   admin: [
     { to: '/dashboard', label: 'Inicio', icon: '/system-administration.svg' },

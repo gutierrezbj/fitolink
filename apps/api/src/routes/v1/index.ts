@@ -5,6 +5,7 @@ import alertRoutes from './alerts.js';
 import operationRoutes from './operations.js';
 import adminRoutes from './admin.js';
 import sigpacRoutes from './sigpac.js';
+import marketplaceRoutes from './marketplace.js';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/alerts', alertRoutes);
 router.use('/operations', operationRoutes);
 router.use('/admin', adminRoutes);
 router.use('/sigpac', sigpacRoutes);
+router.use('/marketplace', marketplaceRoutes);
 
 export default router;
