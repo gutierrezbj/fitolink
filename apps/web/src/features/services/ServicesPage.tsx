@@ -228,6 +228,17 @@ function RequestModal({
               {service.dji && <p>📲 Trazabilidad DJI automática incluida</p>}
             </div>
           )}
+
+          {/* Expert contact banner */}
+          <div className="flex items-center gap-3 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+              <span className="text-white text-sm">👨‍🌾</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-800">Un experto FitoLink te contactará en breve</p>
+              <p className="text-[11px] text-brand-600 mt-0.5">Coordinamos la visita y te confirmamos disponibilidad en menos de 24h</p>
+            </div>
+          </div>
         </div>
 
         <div className="p-6 pt-0 flex gap-3">
