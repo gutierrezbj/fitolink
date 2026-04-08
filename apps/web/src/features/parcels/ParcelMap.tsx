@@ -33,6 +33,7 @@ interface ParcelMapProps {
   height?: string;
   showDetailLink?: boolean;
   showLegend?: boolean;
+  mapStyle?: 'satellite' | 'light';
   children?: React.ReactNode;
 }
 
@@ -219,6 +220,7 @@ export default function ParcelMap({
   height = '500px',
   showDetailLink = false,
   showLegend = false,
+  mapStyle = 'satellite',
   children,
 }: ParcelMapProps) {
   const focusParcel = focusParcelId ? parcels.find((p) => p._id === focusParcelId) : undefined;
@@ -234,17 +236,28 @@ export default function ParcelMap({
       style={{ height, width: '100%' }}
       className="rounded-xl border border-gray-200"
     >
-      <TileLayer
-        attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        maxZoom={19}
-      />
-      <TileLayer
-        attribution=""
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-        maxZoom={19}
-        opacity={0.6}
-      />
+      {mapStyle === 'satellite' ? (
+        <>
+          <TileLayer
+            attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            maxZoom={19}
+          />
+          <TileLayer
+            attribution=""
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+            maxZoom={19}
+            opacity={0.6}
+          />
+        </>
+      ) : (
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
+        />
+      )}
 
       <FitBounds parcels={parcels} />
       <FitAllButton parcels={parcels} />

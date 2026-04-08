@@ -119,8 +119,9 @@ export default function InsuranceDashboardHome() {
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Mapa de riesgo — Cartera</h2>
           <ParcelMap
             parcels={parcels}
-            height="380px"
+            height="340px"
             showDetailLink={false}
+            mapStyle="light"
           />
         </div>
 
