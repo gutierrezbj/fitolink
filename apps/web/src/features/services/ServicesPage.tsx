@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { toast } from '@/stores/toastStore.js';
 
@@ -263,6 +264,7 @@ function RequestModal({
 
 export default function ServicesPage() {
   const [activeService, setActiveService] = useState<Service | null>(null);
+  const navigate = useNavigate();
 
   const { data: parcelsData } = useQuery({
     queryKey: ['parcels', 'mine'],
@@ -279,6 +281,7 @@ export default function ServicesPage() {
     onSuccess: () => {
       toast.success('Solicitud enviada — te asignaremos un piloto en breve');
       setActiveService(null);
+      navigate('/dashboard/operations');
     },
     onError: () => toast.error('Error al enviar la solicitud'),
   });
