@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
@@ -43,6 +44,8 @@ type User = {
 };
 
 export default function AdminUsersPage() {
+  const [activeRole, setActiveRole] = useState<string | null>(null);
+
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: async () => { const res = await api.get('/admin/users'); return res.data.data ?? []; },
@@ -50,9 +53,20 @@ export default function AdminUsersPage() {
   });
 
   const farmers = users.filter((u: User) => u.role === 'farmer');
-  const pilots = users.filter((u: User) => u.role === 'pilot');
+  const pilots  = users.filter((u: User) => u.role === 'pilot');
   const insurers = users.filter((u: User) => u.role === 'insurer');
-  const others = users.filter((u: User) => !['farmer', 'pilot', 'insurer'].includes(u.role));
+  const others  = users.filter((u: User) => !['farmer', 'pilot', 'insurer'].includes(u.role));
+
+  const sections = [
+    { role: 'pilot',   label: 'Pilotos de Drones', icon: '/drone-pilot.svg',           list: pilots },
+    { role: 'farmer',  label: 'Agricultores',       icon: '/farmer.svg',                list: farmers },
+    { role: 'insurer', label: 'Aseguradoras',       icon: '/insurance2.svg',            list: insurers },
+    { role: 'admin',   label: 'Otros',              icon: '/system-administration.svg', list: others },
+  ].filter(s => s.list.length > 0);
+
+  const visibleSections = activeRole
+    ? sections.filter(s => s.role === activeRole)
+    : sections;
 
   return (
     <div className="space-y-6">
@@ -61,74 +75,56 @@ export default function AdminUsersPage() {
         <p className="text-sm text-gray-500">{users.length} usuarios registrados en la plataforma</p>
       </div>
 
-      {/* Summary pills */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Filter pills */}
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={() => setActiveRole(null)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+            activeRole === null
+              ? 'bg-gray-900 text-white border-gray-900'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+          }`}
+        >
+          Todos ({users.length})
+        </button>
         {(['farmer', 'pilot', 'insurer', 'admin'] as const).map((role) => {
           const count = users.filter((u: User) => u.role === role).length;
+          if (count === 0) return null;
+          const isActive = activeRole === role;
           return (
-            <span key={role} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${ROLE_BADGE[role]}`}>
+            <button
+              key={role}
+              onClick={() => setActiveRole(isActive ? null : role)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                isActive
+                  ? `${ROLE_BADGE[role]} border-transparent shadow-sm scale-105`
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+              }`}
+            >
               <img src={ROLE_ICON[role]} alt="" className="w-4 h-4" />
               {ROLE_LABELS[role]} ({count})
-            </span>
+            </button>
           );
         })}
       </div>
 
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-36 rounded-xl bg-gray-100 animate-pulse" />
-          ))}
+          {[1,2,3,4].map(i => <div key={i} className="h-36 rounded-xl bg-gray-100 animate-pulse" />)}
         </div>
       )}
 
-      {/* Pilots */}
-      {pilots.length > 0 && (
-        <section>
+      {visibleSections.map(section => (
+        <section key={section.role}>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <img src="/drone-pilot.svg" alt="" className="w-5 h-5" /> Pilotos de Drones ({pilots.length})
+            <img src={section.icon} alt="" className="w-5 h-5" />
+            {section.label} ({section.list.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pilots.map((user: User) => <UserCard key={user._id} user={user} />)}
+            {section.list.map((user: User) => <UserCard key={user._id} user={user} />)}
           </div>
         </section>
-      )}
-
-      {/* Farmers */}
-      {farmers.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <img src="/farmer.svg" alt="" className="w-5 h-5" /> Agricultores ({farmers.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {farmers.map((user: User) => <UserCard key={user._id} user={user} />)}
-          </div>
-        </section>
-      )}
-
-      {/* Insurers */}
-      {insurers.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <img src="/insurance2.svg" alt="" className="w-5 h-5" /> Aseguradoras ({insurers.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {insurers.map((user: User) => <UserCard key={user._id} user={user} />)}
-          </div>
-        </section>
-      )}
-
-      {/* Others */}
-      {others.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <img src="/system-administration.svg" alt="" className="w-5 h-5" /> Otros ({others.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {others.map((user: User) => <UserCard key={user._id} user={user} />)}
-          </div>
-        </section>
-      )}
+      ))}
 
       {!isLoading && users.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
