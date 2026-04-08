@@ -6,32 +6,25 @@ import { formatDate } from '@/lib/utils.js';
 
 const TYPE_LABELS: Record<string, string> = {
   phytosanitary: 'Fitosanitario',
-  inspection: 'Inspeccion',
-  diagnosis: 'Diagnostico',
+  inspection: 'Inspección',
+  diagnosis: 'Diagnóstico',
+  herbicide: 'Herbicida',
+  fertilization: 'Abonado',
+  seeding: 'Siembra',
 };
-
 const TYPE_ICONS: Record<string, string> = {
-  phytosanitary: '🌿',
-  inspection: '🔍',
-  diagnosis: '🧬',
+  phytosanitary: '💊', inspection: '📡', diagnosis: '🔬',
+  herbicide: '🌿', fertilization: '🌱', seeding: '🌾',
 };
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  low: 'bg-blue-100 text-blue-700 border-blue-200',
+const SEV_DOT: Record<string, string> = {
+  critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-yellow-400', low: 'bg-blue-400',
 };
 
 type Operation = {
-  _id: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  completedAt?: string;
-  parcelId?: { name: string; cropType: string; province: string; areaHa?: number };
+  _id: string; type: string; status: string; createdAt: string; completedAt?: string;
+  parcelId?: { _id?: string; name: string; cropType: string; province: string; areaHa?: number };
   farmerId?: { name: string; phone?: string };
-  alertId?: { severity: string; ndviValue: number };
+  alertId?: { severity: string; ndviValue?: number };
   rating?: { farmer?: number };
   flightLog?: { areaHa?: number };
 };
@@ -39,101 +32,11 @@ type Operation = {
 function StarRating({ value }: { value: number }) {
   return (
     <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <span key={s} className={`text-sm ${s <= value ? 'text-yellow-400' : 'text-gray-200'}`}>★</span>
+      {[1,2,3,4,5].map(s => (
+        <svg key={s} className={`w-3 h-3 ${s <= value ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
       ))}
-    </div>
-  );
-}
-
-function PendingCard({ op, onAccept, onReject, loading }: {
-  op: Operation;
-  onAccept: () => void;
-  onReject: () => void;
-  loading: boolean;
-}) {
-  const navigate = useNavigate();
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-blue-400 p-4">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <span>{TYPE_ICONS[op.type] || '📋'}</span>
-          <span className="text-xs text-gray-500">{TYPE_LABELS[op.type] || op.type}</span>
-        </div>
-        {op.alertId && (
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${SEVERITY_COLORS[op.alertId.severity] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-            {op.alertId.severity}
-          </span>
-        )}
-      </div>
-
-      <button
-        onClick={() => navigate(`/dashboard/operations/${op._id}`)}
-        className="font-semibold text-gray-900 text-sm hover:text-brand-700 transition-colors text-left block"
-      >
-        {op.parcelId?.name || 'Parcela'}
-      </button>
-      <p className="text-xs text-gray-500 mt-0.5">
-        {op.parcelId?.cropType}{op.parcelId?.province ? ` · ${op.parcelId.province}` : ''}
-        {op.parcelId?.areaHa ? ` · ${op.parcelId.areaHa.toFixed(1)} ha` : ''}
-      </p>
-
-      {op.alertId?.ndviValue != null && (
-        <div className="mt-2 flex items-center gap-1.5 text-xs">
-          <span className="text-red-600 font-bold">{op.alertId.ndviValue.toFixed(3)}</span>
-          <span className="text-gray-400">NDVI detectado</span>
-        </div>
-      )}
-
-      {op.farmerId && (
-        <p className="text-xs text-gray-400 mt-1">
-          Agricultor: <span className="font-medium text-gray-600">{op.farmerId.name}</span>
-          {op.farmerId.phone && <span className="ml-1">· {op.farmerId.phone}</span>}
-        </p>
-      )}
-
-      <p className="text-[11px] text-gray-400 mt-1">{formatDate(op.createdAt)}</p>
-
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={onAccept}
-          disabled={loading}
-          className="flex-1 bg-brand-600 text-white text-xs py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-semibold"
-        >
-          Aceptar
-        </button>
-        <button
-          onClick={onReject}
-          disabled={loading}
-          className="border border-gray-200 text-gray-500 text-xs px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          Rechazar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function InProgressCard({ op }: { op: Operation }) {
-  const navigate = useNavigate();
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-purple-400 p-4">
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-        <span className="text-xs font-semibold text-purple-700">En vuelo</span>
-      </div>
-      <p className="font-semibold text-gray-900 text-sm">{op.parcelId?.name || 'Parcela'}</p>
-      <p className="text-xs text-gray-500 mt-0.5">
-        {op.parcelId?.cropType}{op.parcelId?.province ? ` · ${op.parcelId.province}` : ''}
-      </p>
-      <div className="mt-3">
-        <button
-          onClick={() => navigate(`/dashboard/operations/${op._id}`)}
-          className="w-full bg-purple-600 text-white text-xs py-2 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-        >
-          Completar operacion →
-        </button>
-      </div>
     </div>
   );
 }
@@ -145,55 +48,39 @@ export default function PilotDashboardHome() {
 
   const { data: operationsData } = useQuery({
     queryKey: ['operations', 'assignments'],
-    queryFn: async () => {
-      const res = await api.get('/operations/assignments');
-      return res.data.data;
-    },
+    queryFn: async () => { const res = await api.get('/operations/assignments'); return res.data.data; },
     refetchInterval: 30_000,
   });
 
   const acceptMutation = useMutation({
-    mutationFn: async (opId: string) => {
-      await api.patch(`/operations/${opId}/status`, { status: 'in_progress' });
-    },
+    mutationFn: async (opId: string) => { await api.patch(`/operations/${opId}/status`, { status: 'in_progress' }); },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['operations', 'assignments'] }),
   });
-
   const rejectMutation = useMutation({
-    mutationFn: async (opId: string) => {
-      await api.patch(`/operations/${opId}/status`, { status: 'cancelled' });
-    },
+    mutationFn: async (opId: string) => { await api.patch(`/operations/${opId}/status`, { status: 'cancelled' }); },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['operations', 'assignments'] }),
   });
 
   const operations: Operation[] = operationsData || [];
-  const pending = operations.filter((op) => op.status === 'assigned');
-  const inProgress = operations.filter((op) => op.status === 'in_progress');
-  const completedAll = operations.filter((op) => op.status === 'completed');
-  const completedThisMonth = completedAll.filter((op) => {
-    if (!op.completedAt) return false;
-    const d = new Date(op.completedAt);
-    const now = new Date();
+  const pending     = operations.filter(o => o.status === 'assigned');
+  const inProgress  = operations.filter(o => o.status === 'in_progress');
+  const completedAll = operations.filter(o => o.status === 'completed');
+  const completedMonth = completedAll.filter(o => {
+    if (!o.completedAt) return false;
+    const d = new Date(o.completedAt); const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-
-  const totalHaFlown = completedAll.reduce((s, op) => s + (op.flightLog?.areaHa || 0), 0);
-  const ratingsWithValue = completedAll.filter((op) => op.rating?.farmer !== undefined);
-  const avgRating = ratingsWithValue.length > 0
-    ? ratingsWithValue.reduce((s, op) => s + (op.rating!.farmer! ), 0) / ratingsWithValue.length
-    : null;
-
-  const isLoading = acceptMutation.isPending || rejectMutation.isPending;
-  const hasActive = pending.length > 0 || inProgress.length > 0;
+  const totalHa    = completedAll.reduce((s, o) => s + (o.flightLog?.areaHa || 0), 0);
+  const ratings    = completedAll.filter(o => o.rating?.farmer !== undefined);
+  const avgRating  = ratings.length ? ratings.reduce((s, o) => s + o.rating!.farmer!, 0) / ratings.length : null;
+  const isLoading  = acceptMutation.isPending || rejectMutation.isPending;
 
   return (
-    <div>
+    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 64px)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Bienvenido, {user?.name?.split(' ')[0]}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bienvenido, {user?.name?.split(' ')[0]}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             {(user as { company?: string })?.company
               ? <><span className="font-semibold text-brand-700">{(user as { company?: string }).company}</span> · Panel de piloto</>
@@ -207,176 +94,164 @@ export default function PilotDashboardHome() {
             {inProgress.length} operacion{inProgress.length > 1 ? 'es' : ''} en vuelo
           </div>
         )}
+        {pending.length > 0 && inProgress.length === 0 && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium px-4 py-2 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            {pending.length} asignacion{pending.length > 1 ? 'es' : ''} nueva{pending.length > 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
-      {/* Stats */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 mb-1">Pendientes</p>
-          <p className={`text-3xl font-bold ${pending.length > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
-            {pending.length}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            {pending.length === 0 ? 'Al dia' : 'Esperan tu aceptacion'}
-          </p>
+          <p className={`text-3xl font-bold ${pending.length > 0 ? 'text-blue-600' : 'text-gray-400'}`}>{pending.length}</p>
+          <p className="text-xs text-gray-400 mt-1">{pending.length === 0 ? 'Al día' : 'Esperan aceptación'}</p>
         </div>
-
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 mb-1">Completadas</p>
-          <p className="text-3xl font-bold text-green-600">{completedThisMonth.length}</p>
+          <p className="text-3xl font-bold text-green-600">{completedMonth.length}</p>
           <p className="text-xs text-gray-400 mt-1">{completedAll.length} totales</p>
         </div>
-
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 mb-1">Ha tratadas</p>
-          <p className="text-3xl font-bold text-brand-600">
-            {totalHaFlown > 0 ? totalHaFlown.toFixed(1) : '—'}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">hectareas acumuladas</p>
+          <p className="text-3xl font-bold text-brand-600">{totalHa > 0 ? totalHa.toFixed(1) : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">hectáreas acumuladas</p>
         </div>
-
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-2">Valoracion media</p>
+          <p className="text-xs text-gray-500 mb-2">Valoración media</p>
           {avgRating !== null ? (
             <>
               <p className="text-3xl font-bold text-yellow-500">{avgRating.toFixed(1)}</p>
               <StarRating value={Math.round(avgRating)} />
             </>
           ) : (
-            <>
-              <p className="text-3xl font-bold text-gray-400">—</p>
-              <p className="text-xs text-gray-400 mt-1">Sin valoraciones aun</p>
-            </>
+            <><p className="text-3xl font-bold text-gray-400">—</p><p className="text-xs text-gray-400 mt-1">Sin valoraciones</p></>
           )}
         </div>
       </div>
 
-      {/* Active operations */}
-      {hasActive ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Pending */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">
-                Pendientes de aceptar
-                {pending.length > 0 && (
-                  <span className="ml-1.5 bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {pending.length}
-                  </span>
-                )}
-              </h2>
-              {pending.length > 3 && (
-                <button
-                  onClick={() => navigate('/dashboard/assignments')}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-medium"
-                >
-                  Ver todas →
-                </button>
-              )}
+      {/* Main: operations left + history right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 lg:items-stretch">
+
+        {/* Left — active operations (2/3) */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">Operaciones activas</h2>
+            <button onClick={() => navigate('/dashboard/assignments')} className="text-xs text-brand-600 font-medium">Ver todas →</button>
+          </div>
+
+          {pending.length === 0 && inProgress.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+              <div className="text-5xl mb-4">🚁</div>
+              <p className="text-gray-600 font-semibold">Todo al día</p>
+              <p className="text-gray-400 text-sm mt-2 max-w-xs">Cuando un agricultor solicite un servicio aparecerá aquí para que lo aceptes.</p>
             </div>
-
-            {pending.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400 text-sm">
-                Sin pendientes
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pending.slice(0, 3).map((op) => (
-                  <PendingCard
-                    key={op._id}
-                    op={op}
-                    loading={isLoading}
-                    onAccept={() => acceptMutation.mutate(op._id)}
-                    onReject={() => rejectMutation.mutate(op._id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* In progress */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">
-                En curso
-                {inProgress.length > 0 && (
-                  <span className="ml-1.5 bg-purple-100 text-purple-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {inProgress.length}
-                  </span>
-                )}
-              </h2>
-            </div>
-
-            {inProgress.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400 text-sm">
-                Ninguna en vuelo
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {inProgress.map((op) => (
-                  <InProgressCard key={op._id} op={op} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center mb-6">
-          <div className="text-5xl mb-4">🚁</div>
-          <p className="text-gray-600 font-semibold text-lg">Todo al dia</p>
-          <p className="text-gray-400 text-sm mt-2 max-w-xs mx-auto">
-            Cuando un agricultor solicite un servicio, aparecera aqui para que lo aceptes.
-          </p>
-          <button
-            onClick={() => navigate('/dashboard/assignments')}
-            className="mt-4 text-brand-600 text-sm font-medium hover:text-brand-700 transition-colors"
-          >
-            Ver historial completo →
-          </button>
-        </div>
-      )}
-
-      {/* Recent completed */}
-      {completedAll.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-700">Ultimas completadas</h2>
-            <button
-              onClick={() => navigate('/dashboard/operations')}
-              className="text-xs text-brand-600 hover:text-brand-700 font-medium"
-            >
-              Ver historial →
-            </button>
-          </div>
-          <div className="space-y-2">
-            {completedAll.slice(0, 4).map((op) => (
-              <button
-                key={op._id}
-                onClick={() => navigate(`/dashboard/operations/${op._id}`)}
-                className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-left border border-transparent hover:border-gray-100"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-base">{TYPE_ICONS[op.type] || '📋'}</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{op.parcelId?.name || 'Parcela'}</p>
-                    <p className="text-xs text-gray-400">
-                      {op.parcelId?.cropType}{op.parcelId?.province ? ` · ${op.parcelId.province}` : ''}
-                    </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto flex-1">
+              {/* In progress first */}
+              {inProgress.map(op => (
+                <div key={op._id} className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                    <span className="text-xs font-bold text-purple-700">En vuelo</span>
                   </div>
+                  <p className="font-semibold text-gray-900 text-sm">{op.parcelId?.name}</p>
+                  <p className="text-xs text-gray-500">{op.parcelId?.cropType} · {op.parcelId?.province}</p>
+                  <button onClick={() => navigate(`/dashboard/operations/${op._id}`)}
+                    className="mt-3 w-full bg-purple-600 text-white text-xs py-2 rounded-lg hover:bg-purple-700 font-semibold transition-colors">
+                    Completar vuelo →
+                  </button>
                 </div>
-                <div className="text-right">
-                  {op.rating?.farmer !== undefined && (
-                    <div className="flex justify-end mb-0.5">
-                      <StarRating value={op.rating.farmer} />
+              ))}
+              {/* Pending */}
+              {pending.map(op => (
+                <div key={op._id} className="bg-white border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{TYPE_ICONS[op.type] || '📋'}</span>
+                      <span className="text-xs text-gray-500 font-medium">{TYPE_LABELS[op.type] || op.type}</span>
+                    </div>
+                    {op.alertId?.severity && (
+                      <span className={`w-2 h-2 rounded-full ${SEV_DOT[op.alertId.severity]}`} />
+                    )}
+                  </div>
+                  <button onClick={() => navigate(`/dashboard/operations/${op._id}`)}
+                    className="font-semibold text-gray-900 text-sm hover:text-brand-700 transition-colors text-left block">
+                    {op.parcelId?.name}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {op.parcelId?.cropType} · {op.parcelId?.province}{op.parcelId?.areaHa ? ` · ${op.parcelId.areaHa.toFixed(1)} ha` : ''}
+                  </p>
+                  {op.alertId?.ndviValue != null && (
+                    <div className="mt-2 inline-flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
+                      <span className="text-xs font-bold text-red-600">{op.alertId.ndviValue.toFixed(2)}</span>
+                      <span className="text-[10px] text-gray-400">NDVI</span>
                     </div>
                   )}
-                  <p className="text-xs text-gray-400">{op.completedAt ? formatDate(op.completedAt) : ''}</p>
+                  {op.farmerId && (
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      👤 <span className="font-medium text-gray-600">{op.farmerId.name}</span>
+                      {op.farmerId.phone && <span className="ml-1">{op.farmerId.phone}</span>}
+                    </p>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => acceptMutation.mutate(op._id)} disabled={isLoading}
+                      className="flex-1 bg-brand-600 text-white text-xs py-2 rounded-lg hover:bg-brand-700 font-semibold transition-colors disabled:opacity-50">
+                      Aceptar
+                    </button>
+                    <button onClick={() => rejectMutation.mutate(op._id)} disabled={isLoading}
+                      className="border border-gray-200 text-gray-500 text-xs px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+                      ✕
+                    </button>
+                  </div>
                 </div>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right — recent completed */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">Últimas completadas</h2>
+            <button onClick={() => navigate('/dashboard/operations')} className="text-xs text-brand-600 font-medium">Historial →</button>
+          </div>
+
+          {completedAll.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+              <p className="text-3xl mb-2">📋</p>
+              <p className="text-sm text-gray-400">Sin operaciones completadas aún</p>
+            </div>
+          ) : (
+            <div className="space-y-2 overflow-y-auto flex-1">
+              {completedAll.slice(0, 8).map(op => (
+                <button key={op._id} onClick={() => navigate(`/dashboard/operations/${op._id}`)}
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-left border border-transparent hover:border-gray-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-base flex-shrink-0">{TYPE_ICONS[op.type] || '📋'}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{op.parcelId?.name}</p>
+                      <p className="text-[11px] text-gray-400 truncate">
+                        {op.parcelId?.cropType}{op.parcelId?.province ? ` · ${op.parcelId.province}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    {op.rating?.farmer !== undefined && (
+                      <div className="flex justify-end mb-0.5">
+                        <StarRating value={op.rating.farmer} />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400">{op.completedAt ? formatDate(op.completedAt) : ''}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
