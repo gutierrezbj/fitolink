@@ -8,6 +8,7 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/location.svg' },
     { to: '/dashboard/alerts', label: 'Alertas', icon: '/siren.svg' },
     { to: '/dashboard/operations', label: 'Operaciones', icon: '/operational-system.svg' },
+    { to: '/dashboard/services', label: 'Servicios', icon: '/operational-system.svg' },
     { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
   ],
   pilot: [

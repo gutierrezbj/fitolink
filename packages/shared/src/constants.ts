@@ -3,7 +3,7 @@ export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin'] 
 export type UserRole = (typeof USER_ROLES)[number];
 
 // Operation types
-export const OPERATION_TYPES = ['phytosanitary', 'inspection', 'diagnosis'] as const;
+export const OPERATION_TYPES = ['phytosanitary', 'inspection', 'diagnosis', 'herbicide', 'fertilization', 'seeding'] as const;
 export type OperationType = (typeof OPERATION_TYPES)[number];
 
 // Operation statuses

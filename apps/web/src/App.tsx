@@ -13,6 +13,7 @@ import AssignmentsPage from '@/features/pilot/AssignmentsPage.js';
 import OperationDetailPage from '@/features/operations/OperationDetailPage.js';
 import ParcelDetailPage from '@/features/parcels/ParcelDetailPage.js';
 import MarketplacePage from '@/features/marketplace/MarketplacePage.js';
+import ServicesPage from '@/features/services/ServicesPage.js';
 import B2BParcelsPage from '@/features/insurer/B2BParcelsPage.js';
 import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
 import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="operations" element={<OperationsPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="services" element={<ServicesPage />} />
         <Route path="b2b/parcels" element={<B2BParcelsPage />} />
         <Route path="b2b/alerts" element={<B2BAlertsPage />} />
         <Route path="b2b/inspections" element={<PlaceholderPage title="Inspecciones" />} />
