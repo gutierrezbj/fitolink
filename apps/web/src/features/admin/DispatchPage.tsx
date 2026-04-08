@@ -4,46 +4,56 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 
-const STATUS_LABELS: Record<string, string> = {
-  requested: 'Solicitada',
-  assigned: 'Asignada',
-  in_progress: 'En curso',
-  completed: 'Completada',
-  cancelled: 'Cancelada',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  requested: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  assigned: 'bg-blue-100 text-blue-800 border-blue-200',
-  in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
-  completed: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-gray-100 text-gray-500 border-gray-200',
-};
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-500',
-};
-
 const TYPE_LABELS: Record<string, string> = {
   phytosanitary: 'Fitosanitario',
-  inspection: 'Inspeccion',
-  diagnosis: 'Diagnostico',
+  inspection: 'Inspección',
+  diagnosis: 'Diagnóstico',
+  herbicide: 'Herbicida',
+  fertilization: 'Abonado',
+  seeding: 'Siembra',
 };
 
-type Pilot = { _id: string; name: string; email: string; phone?: string; rating?: number };
+const TYPE_ICONS: Record<string, string> = {
+  phytosanitary: '💊',
+  inspection: '📡',
+  diagnosis: '🔬',
+  herbicide: '🌿',
+  fertilization: '🌱',
+  seeding: '🌾',
+};
+
+const SEVERITY_RING: Record<string, string> = {
+  critical: 'ring-2 ring-red-400',
+  high: 'ring-2 ring-orange-400',
+  medium: 'ring-1 ring-yellow-300',
+  low: 'ring-1 ring-blue-300',
+};
+
+const SEVERITY_DOT: Record<string, string> = {
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-400',
+  low: 'bg-blue-400',
+};
+
+type Pilot = { _id: string; name: string; company?: string; phone?: string; rating?: number };
 type Operation = {
   _id: string;
   status: string;
   type: string;
   createdAt: string;
   parcelId: { _id: string; name: string; cropType: string; province: string; areaHa: number; sigpacRef?: string };
-  farmerId: { name: string; email: string; phone?: string };
-  pilotId?: { name: string; email: string; phone?: string; rating?: number };
-  alertId?: { type: string; severity: string; ndviValue: number; ndviDelta: number; aiConfidence: number };
+  farmerId: { name: string; phone?: string };
+  pilotId?: { name: string; company?: string; phone?: string; rating?: number };
+  alertId?: { severity: string; ndviValue: number; ndviDelta: number };
 };
+
+const COLUMNS = [
+  { status: 'requested',   label: 'Pendientes',  accent: 'border-t-yellow-400', dot: 'bg-yellow-400', empty: 'Sin solicitudes pendientes' },
+  { status: 'assigned',    label: 'Asignadas',   accent: 'border-t-blue-400',   dot: 'bg-blue-400',   empty: 'Ninguna asignada' },
+  { status: 'in_progress', label: 'En vuelo',    accent: 'border-t-purple-400', dot: 'bg-purple-500', empty: 'Ninguna en curso' },
+  { status: 'completed',   label: 'Completadas', accent: 'border-t-green-400',  dot: 'bg-green-500',  empty: 'Sin completadas hoy' },
+];
 
 function AssignModal({ operation, pilots, onClose, onAssign }: {
   operation: Operation;
@@ -53,39 +63,56 @@ function AssignModal({ operation, pilots, onClose, onAssign }: {
 }) {
   const [selected, setSelected] = useState('');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">Asignar operador</h3>
-        <p className="text-sm text-gray-500 mb-4">{operation.parcelId?.name} · {TYPE_LABELS[operation.type]}</p>
-        <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-          {pilots.map((p) => (
-            <button
-              key={p._id}
-              onClick={() => setSelected(p._id)}
-              className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
-                selected === p._id
-                  ? 'border-brand-500 bg-brand-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <p className="text-sm font-medium text-gray-900">{p.name}</p>
-              <p className="text-xs text-gray-400">{p.email}{p.phone ? ` · ${p.phone}` : ''}{p.rating ? ` · ★ ${p.rating}` : ''}</p>
-            </button>
-          ))}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+        <div className="p-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{TYPE_ICONS[operation.type] || '📋'}</span>
+            <div>
+              <h3 className="font-bold text-gray-900">{operation.parcelId?.name}</h3>
+              <p className="text-xs text-gray-500">{TYPE_LABELS[operation.type]} · {operation.parcelId?.areaHa} ha</p>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 border border-gray-200 text-gray-600 text-sm py-2 rounded-lg hover:bg-gray-50"
-          >
+        <div className="p-5">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Seleccionar operador</p>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {pilots.map(p => (
+              <button
+                key={p._id}
+                onClick={() => setSelected(p._id)}
+                className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                  selected === p._id ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{p.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {p.company && (
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{p.company}</span>
+                      )}
+                      {p.phone && <span className="text-[11px] text-gray-400">{p.phone}</span>}
+                    </div>
+                  </div>
+                  {p.rating && (
+                    <span className="text-xs text-yellow-500 font-bold">★ {p.rating.toFixed(1)}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="p-5 pt-0 flex gap-2">
+          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm py-2.5 rounded-xl hover:bg-gray-50">
             Cancelar
           </button>
           <button
             onClick={() => selected && onAssign(selected)}
             disabled={!selected}
-            className="flex-1 bg-terra-500 text-white text-sm py-2 rounded-lg hover:bg-terra-600 disabled:opacity-40"
+            className="flex-1 bg-brand-600 text-white text-sm py-2.5 rounded-xl hover:bg-brand-700 disabled:opacity-40 font-semibold"
           >
-            Asignar
+            Asignar →
           </button>
         </div>
       </div>
@@ -93,17 +120,108 @@ function AssignModal({ operation, pilots, onClose, onAssign }: {
   );
 }
 
-export default function DispatchPage() {
+function DispatchCard({ op, onAssign, onCancel, onReassign }: {
+  op: Operation;
+  onAssign: () => void;
+  onCancel: () => void;
+  onReassign: () => void;
+}) {
   const navigate = useNavigate();
+  const sev = op.alertId?.severity;
+
+  return (
+    <div
+      className={`bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer group ${sev ? SEVERITY_RING[sev] : ''}`}
+      onClick={() => navigate(`/dashboard/operations/${op._id}`)}
+    >
+      {/* Top row */}
+      <div className="flex items-start justify-between mb-2.5">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{TYPE_ICONS[op.type] || '📋'}</span>
+          <span className="text-[11px] font-semibold text-gray-500">{TYPE_LABELS[op.type] || op.type}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {sev && <span className={`w-2 h-2 rounded-full ${SEVERITY_DOT[sev]}`} title={sev} />}
+          <span className="text-[10px] text-gray-400">{formatDate(op.createdAt)}</span>
+        </div>
+      </div>
+
+      {/* Parcel */}
+      <p className="font-bold text-gray-900 text-sm leading-tight group-hover:text-brand-700 transition-colors">
+        {op.parcelId?.name}
+      </p>
+      <p className="text-[11px] text-gray-500 mt-0.5">
+        {op.parcelId?.cropType} · {op.parcelId?.province} · {op.parcelId?.areaHa} ha
+      </p>
+
+      {/* NDVI pill */}
+      {op.alertId?.ndviValue != null && (
+        <div className="mt-2 inline-flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1">
+          <span className="text-xs font-bold text-red-600">{op.alertId.ndviValue.toFixed(2)}</span>
+          <span className="text-[10px] text-red-400">
+            {op.alertId.ndviDelta > 0 ? '+' : ''}{op.alertId.ndviDelta?.toFixed(2)} NDVI
+          </span>
+        </div>
+      )}
+
+      {/* People */}
+      <div className="mt-2.5 space-y-1">
+        <p className="text-[11px] text-gray-500">
+          👤 <span className="font-medium text-gray-700">{op.farmerId?.name}</span>
+          {op.farmerId?.phone && <span className="text-gray-400"> · {op.farmerId.phone}</span>}
+        </p>
+        {op.pilotId ? (
+          <p className="text-[11px] text-blue-600">
+            🚁 <span className="font-medium">{op.pilotId.name}</span>
+            {op.pilotId.company && <span className="ml-1 text-[10px] font-bold bg-blue-50 px-1.5 py-0.5 rounded-full">{op.pilotId.company}</span>}
+          </p>
+        ) : (
+          <p className="text-[11px] text-yellow-600 font-semibold">⚠ Sin operador asignado</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      {(op.status === 'requested' || op.status === 'assigned') && (
+        <div
+          className="mt-3 flex gap-1.5"
+          onClick={e => e.stopPropagation()}
+        >
+          {op.status === 'requested' && (
+            <button
+              onClick={onAssign}
+              className="flex-1 bg-brand-600 text-white text-[11px] py-1.5 rounded-lg hover:bg-brand-700 font-semibold transition-colors"
+            >
+              Asignar →
+            </button>
+          )}
+          {op.status === 'assigned' && (
+            <button
+              onClick={onReassign}
+              className="flex-1 border border-brand-300 text-brand-600 text-[11px] py-1.5 rounded-lg hover:bg-brand-50 font-semibold transition-colors"
+            >
+              Reasignar
+            </button>
+          )}
+          <button
+            onClick={onCancel}
+            className="border border-gray-200 text-gray-400 text-[11px] px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function DispatchPage() {
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState('');
   const [assigningOp, setAssigningOp] = useState<Operation | null>(null);
 
   const { data: operations = [], isLoading } = useQuery<Operation[]>({
-    queryKey: ['admin', 'operations', statusFilter],
+    queryKey: ['admin', 'operations'],
     queryFn: async () => {
-      const params = statusFilter ? `?status=${statusFilter}` : '';
-      const res = await api.get(`/admin/operations${params}`);
+      const res = await api.get('/admin/operations');
       return res.data.data;
     },
     refetchInterval: 30000,
@@ -127,16 +245,17 @@ export default function DispatchPage() {
     },
   });
 
-  const statusMutation = useMutation({
-    mutationFn: async ({ opId, status }: { opId: string; status: string }) => {
-      await api.patch(`/admin/operations/${opId}/status`, { status });
+  const cancelMutation = useMutation({
+    mutationFn: async (opId: string) => {
+      await api.patch(`/admin/operations/${opId}/status`, { status: 'cancelled' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'operations'] }),
   });
 
-  const pending = operations.filter((o) => o.status === 'requested').length;
-  const inProgress = operations.filter((o) => o.status === 'in_progress').length;
-  const assigned = operations.filter((o) => o.status === 'assigned').length;
+  const pending  = operations.filter(o => o.status === 'requested').length;
+  const assigned = operations.filter(o => o.status === 'assigned').length;
+  const flying   = operations.filter(o => o.status === 'in_progress').length;
+  const done     = operations.filter(o => o.status === 'completed').length;
 
   return (
     <div>
@@ -147,146 +266,82 @@ export default function DispatchPage() {
           <p className="text-sm text-gray-500 mt-0.5">Gestiona y coordina todas las operaciones</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
           Actualiza cada 30s
         </div>
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Pendientes', value: pending, color: 'text-yellow-600', bg: 'bg-yellow-50', status: 'requested' },
-          { label: 'Asignadas', value: assigned, color: 'text-blue-600', bg: 'bg-blue-50', status: 'assigned' },
-          { label: 'En curso', value: inProgress, color: 'text-purple-600', bg: 'bg-purple-50', status: 'in_progress' },
-          { label: 'Total', value: operations.length, color: 'text-gray-900', bg: 'bg-white', status: '' },
-        ].map((kpi) => (
-          <button
-            key={kpi.label}
-            onClick={() => setStatusFilter(statusFilter === kpi.status ? '' : kpi.status)}
-            className={`${kpi.bg} rounded-xl border p-4 text-left transition-all ${
-              statusFilter === kpi.status ? 'border-brand-400 ring-1 ring-brand-300' : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
-          </button>
+          { label: 'Pendientes',  value: pending,            color: 'text-yellow-600', bg: 'bg-yellow-50',  border: 'border-yellow-200' },
+          { label: 'Asignadas',   value: assigned,           color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200' },
+          { label: 'En vuelo',    value: flying,             color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200' },
+          { label: 'Completadas', value: done,               color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200' },
+        ].map(k => (
+          <div key={k.label} className={`${k.bg} border ${k.border} rounded-xl p-4`}>
+            <p className="text-xs text-gray-500 mb-1">{k.label}</p>
+            <p className={`text-3xl font-bold ${k.color}`}>{k.value}</p>
+          </div>
         ))}
       </div>
 
-      {/* Operations table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Solicitudes {statusFilter ? `· ${STATUS_LABELS[statusFilter]}` : '· Todas'}
-          </h2>
-          {statusFilter && (
-            <button onClick={() => setStatusFilter('')} className="text-xs text-brand-600 hover:underline">
-              Ver todas
-            </button>
-          )}
+      {/* Kanban */}
+      {isLoading ? (
+        <div className="grid grid-cols-4 gap-4">
+          {COLUMNS.map(col => (
+            <div key={col.status} className="space-y-3">
+              {[...Array(2)].map((_, i) => <div key={i} className="h-40 bg-gray-100 rounded-xl animate-pulse" />)}
+            </div>
+          ))}
         </div>
-
-        {isLoading ? (
-          <div className="p-10 text-center text-gray-400 text-sm">Cargando...</div>
-        ) : operations.length === 0 ? (
-          <div className="p-10 text-center text-gray-400 text-sm">No hay operaciones</div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {operations.map((op) => (
-              <div key={op._id} className="px-5 py-4 flex items-start gap-4 hover:bg-gray-50 transition-colors">
-                {/* Alert severity dot */}
-                <div className="mt-1 flex-shrink-0">
-                  {op.alertId ? (
-                    <div className={`w-3 h-3 rounded-full ${SEVERITY_COLORS[op.alertId.severity] || 'bg-gray-300'}`} title={op.alertId.severity} />
-                  ) : (
-                    <div className="w-3 h-3 rounded-full bg-gray-200" />
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          {COLUMNS.map(col => {
+            const colOps = operations.filter(o => o.status === col.status);
+            return (
+              <div key={col.status}>
+                {/* Column header */}
+                <div className={`flex items-center gap-2 mb-3 pb-2 border-b-2 ${col.accent.replace('border-t-', 'border-b-')}`}>
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{col.label}</span>
+                  {colOps.length > 0 && (
+                    <span className="ml-auto bg-white border border-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {colOps.length}
+                    </span>
                   )}
                 </div>
 
-                {/* Main info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <button
-                      onClick={() => navigate(`/dashboard/operations/${op._id}`)}
-                      className="text-sm font-semibold text-gray-900 hover:text-brand-600 transition-colors"
-                    >
-                      {op.parcelId?.name || 'Parcela desconocida'}
-                    </button>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_COLORS[op.status]}`}>
-                      {STATUS_LABELS[op.status]}
-                    </span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                      {TYPE_LABELS[op.type]}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {op.parcelId?.cropType} · {op.parcelId?.province} · {op.parcelId?.areaHa} ha
-                    {op.parcelId?.sigpacRef && ` · ${op.parcelId.sigpacRef}`}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <span className="text-xs text-gray-500">
-                      👤 <span className="font-medium">{op.farmerId?.name}</span>
-                      {op.farmerId?.phone && <span className="text-gray-400"> · {op.farmerId.phone}</span>}
-                    </span>
-                    {op.pilotId ? (
-                      <span className="text-xs text-blue-600">
-                        🚁 <span className="font-medium">{op.pilotId.name}</span>
-                        {op.pilotId.phone && <span className="text-blue-400"> · {op.pilotId.phone}</span>}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-yellow-600 font-medium">⚠ Sin operador asignado</span>
-                    )}
-                    {op.alertId && (
-                      <span className="text-xs text-gray-400">
-                        NDVI {op.alertId.ndviValue?.toFixed(3)} ({op.alertId.ndviDelta > 0 ? '+' : ''}{op.alertId.ndviDelta?.toFixed(3)})
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Date + actions */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <span className="text-xs text-gray-400">{formatDate(op.createdAt)}</span>
-                  <div className="flex gap-2">
-                    {op.status === 'requested' && (
-                      <button
-                        onClick={() => setAssigningOp(op)}
-                        className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 font-medium whitespace-nowrap"
-                      >
-                        Asignar operador
-                      </button>
-                    )}
-                    {op.status === 'assigned' && (
-                      <button
-                        onClick={() => setAssigningOp(op)}
-                        className="border border-brand-300 text-brand-600 text-xs px-3 py-1.5 rounded-lg hover:bg-brand-50 font-medium whitespace-nowrap"
-                      >
-                        Reasignar
-                      </button>
-                    )}
-                    {(op.status === 'requested' || op.status === 'assigned') && (
-                      <button
-                        onClick={() => statusMutation.mutate({ opId: op._id, status: 'cancelled' })}
-                        className="border border-gray-200 text-gray-400 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-50 whitespace-nowrap"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                  </div>
+                {/* Cards */}
+                <div className="space-y-3">
+                  {colOps.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                      <p className="text-xs text-gray-400">{col.empty}</p>
+                    </div>
+                  ) : (
+                    colOps.map(op => (
+                      <DispatchCard
+                        key={op._id}
+                        op={op}
+                        onAssign={() => setAssigningOp(op)}
+                        onReassign={() => setAssigningOp(op)}
+                        onCancel={() => cancelMutation.mutate(op._id)}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Assign modal */}
       {assigningOp && (
         <AssignModal
           operation={assigningOp}
           pilots={pilots}
           onClose={() => setAssigningOp(null)}
-          onAssign={(pilotId) => assignMutation.mutate({ opId: assigningOp._id, pilotId })}
+          onAssign={pilotId => assignMutation.mutate({ opId: assigningOp._id, pilotId })}
         />
       )}
     </div>
