@@ -161,7 +161,7 @@ export default function MarketplacePage() {
   const companies = [...new Set(pilots.map(p => p.company).filter(Boolean))] as string[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -173,7 +173,7 @@ export default function MarketplacePage() {
       </div>
 
       {/* Company cards row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {companies.map(company => {
           const c = getColor(company);
           const companyPilots = pilots.filter(p => p.company === company);
@@ -207,7 +207,7 @@ export default function MarketplacePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Map — 2/3 width */}
         <div className="lg:col-span-2">
-          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: '420px' }}>
+          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: '340px' }}>
             {isLoading ? (
               <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center">
                 <p className="text-gray-400 text-sm">Cargando mapa...</p>
@@ -270,7 +270,7 @@ export default function MarketplacePage() {
         </div>
 
         {/* Pilot list — 1/3 width */}
-        <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '420px' }}>
+        <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '340px' }}>
           {isLoading
             ? [...Array(2)].map((_, i) => <div key={i} className="h-56 bg-gray-100 rounded-2xl animate-pulse" />)
             : pilots.map(pilot => (
