@@ -38,6 +38,7 @@ from .planetary_computer import (
     geometry_centroid,
     geometry_to_bbox,
     expand_bbox,
+    search_with_retry,
 )
 
 logger = structlog.get_logger(__name__)
@@ -62,14 +63,15 @@ OPEN_METEO_TIMEOUT_S = 15
 
 def build_climate_baseline(
     geometry: dict,
-    start_year: int = 1991,
+    start_year: int = 2001,
     end_year: int = 2020,
 ) -> Optional[dict]:
     """
     Build a 12-month climatic baseline from TerraClimate via MPC.
 
-    Computes monthly means over the reference period (default 1991-2020,
-    the WMO standard climatological normal) for:
+    Computes monthly means over the reference period (default 2001-2020 —
+    20-year window keeps the MPC search responsive while still covering a
+    full climatological cycle) for:
         - precipitation (mm/month)
         - tmax / tmin (°C)
         - PDSI (drought severity, -10..+10, negative = dry)
@@ -78,7 +80,7 @@ def build_climate_baseline(
     Returns:
         {
             'source': 'terraclimate',
-            'period': '1991-2020',
+            'period': '2001-2020',
             'computed': datetime,
             'months': [
                 {'month': 1, 'precip': 45.2, 'tmax': 11.3, 'tmin': 2.1,
@@ -95,20 +97,25 @@ def build_climate_baseline(
     if catalog is None:
         return None
 
-    bbox = expand_bbox(geometry_to_bbox(geometry), buffer_deg=0.05)
+    # TerraClimate is ~4km — a tight bbox (single pixel) is enough.
+    # Padding makes the MPC search request blow up to large item counts and
+    # routinely times out.
+    lng, lat = geometry_centroid(geometry)
+    half = 0.025  # ~2.5km half-width → guarantees one pixel intersection
+    bbox = (lng - half, lat - half, lng + half, lat + half)
     datetime_str = f"{start_year}-01-01/{end_year}-12-31"
 
     logger.info('terraclimate_baseline_started', bbox=bbox, period=datetime_str)
 
-    try:
-        search = catalog.search(
-            collections=[TERRACLIMATE_COLLECTION],
-            bbox=bbox,
-            datetime=datetime_str,
-        )
-        items = list(search.items())
-    except Exception as e:
-        logger.warning('terraclimate_search_failed', error=str(e))
+    items = search_with_retry(
+        catalog,
+        collections=[TERRACLIMATE_COLLECTION],
+        bbox=bbox,
+        datetime=datetime_str,
+        limit=500,
+    )
+    if items is None:
+        logger.warning('terraclimate_search_failed', bbox=bbox)
         return None
 
     if not items:

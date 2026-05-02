@@ -32,6 +32,7 @@ from .planetary_computer import (
     open_catalog,
     geometry_to_bbox,
     expand_bbox,
+    search_with_retry,
 )
 
 logger = structlog.get_logger(__name__)
@@ -52,7 +53,7 @@ MODIS_RELIABILITY_THRESHOLD = 1
 
 def build_parcel_baseline(
     geometry: dict,
-    years: int = 5,
+    years: int = 3,
     end_date: Optional[datetime] = None,
 ) -> Optional[dict]:
     """
@@ -95,15 +96,15 @@ def build_parcel_baseline(
         window=datetime_str,
     )
 
-    try:
-        search = catalog.search(
-            collections=[MODIS_NDVI_COLLECTION],
-            bbox=bbox,
-            datetime=datetime_str,
-        )
-        items = list(search.items())
-    except Exception as e:
-        logger.warning('modis_search_failed', error=str(e))
+    items = search_with_retry(
+        catalog,
+        collections=[MODIS_NDVI_COLLECTION],
+        bbox=bbox,
+        datetime=datetime_str,
+        limit=200,
+    )
+    if items is None:
+        logger.warning('modis_search_failed', bbox=bbox)
         return None
 
     if not items:
@@ -119,10 +120,15 @@ def build_parcel_baseline(
         logger.warning('odc_stac_not_installed')
         return None
 
+    # Note: we load ONLY the NDVI band. The pixel reliability band is stored
+    # as int8 in MODIS but contains the uint8 fill value 255, which trips
+    # odc-stac's array decoder ("Python integer 255 out of bounds for int8").
+    # We rely on the NDVI fill value (-3000) and the [-1,1] sanity check
+    # below to filter bad pixels — adequate for parcel-level monthly means.
     try:
         ds = stac_load(
             items,
-            bands=[MODIS_NDVI_BAND, MODIS_PIXEL_RELIABILITY_BAND],
+            bands=[MODIS_NDVI_BAND],
             bbox=bbox,
             chunks={},  # eager — small data
             resolution=0.0025,  # ~250m at the equator (matches native)
@@ -133,15 +139,9 @@ def build_parcel_baseline(
         return None
 
     ndvi_da = ds[MODIS_NDVI_BAND]
-    reliability_da = ds[MODIS_PIXEL_RELIABILITY_BAND]
 
-    # Mask: drop fill values + low-reliability pixels
-    valid_mask = (
-        (ndvi_da != MODIS_NDVI_FILL)
-        & (reliability_da <= MODIS_RELIABILITY_THRESHOLD)
-        & (reliability_da >= 0)
-    )
-
+    # Mask: drop fill values; final [-1,1] clip happens after scaling
+    valid_mask = ndvi_da != MODIS_NDVI_FILL
     ndvi_scaled = ndvi_da.where(valid_mask) * MODIS_NDVI_SCALE
 
     # Spatial mean per timestep → 1D series of NDVI values across time

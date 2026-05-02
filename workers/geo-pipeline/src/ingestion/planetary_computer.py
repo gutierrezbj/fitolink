@@ -87,6 +87,35 @@ def geometry_centroid(geometry: dict) -> tuple[float, float]:
     return (lng, lat)
 
 
+def search_with_retry(catalog, *, max_attempts: int = 3, **search_kwargs):
+    """
+    Run a STAC search with one retry pass when MPC's server-side timeout
+    fires ("The request exceeded the maximum allowed time"). MPC is
+    notoriously bursty under anonymous load — a brief backoff usually
+    succeeds.
+
+    Returns a list of pystac items (possibly empty), or None on hard fail.
+    """
+    import time
+    last_err: Optional[str] = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            search = catalog.search(**search_kwargs)
+            return list(search.items())
+        except Exception as e:
+            last_err = str(e)
+            if 'maximum allowed time' not in last_err and 'timeout' not in last_err.lower():
+                # not a timeout — fail fast
+                logger.warning('stac_search_failed', error=last_err)
+                return None
+            if attempt < max_attempts:
+                wait = 2 ** attempt
+                logger.info('stac_search_retry', attempt=attempt, wait_s=wait)
+                time.sleep(wait)
+    logger.warning('stac_search_exhausted', error=last_err)
+    return None
+
+
 def expand_bbox(bbox: tuple[float, float, float, float], buffer_deg: float = 0.01
                 ) -> tuple[float, float, float, float]:
     """
