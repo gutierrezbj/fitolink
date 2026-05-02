@@ -9,6 +9,7 @@ import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import ParcelMap from './ParcelMap.js';
 import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
+import MpcContextWidget from './MpcContextWidget.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
 
 // ── Seasonal baselines per crop group ───────────────────────────────────────
@@ -129,6 +130,42 @@ type Alert = {
 
 type NdviReading = { date: string; mean: number; min: number; max: number; anomalyDetected: boolean; source?: string };
 
+type ModisBaseline = {
+  source: string;
+  years: number;
+  computed: string;
+  months: { month: number; mean: number; std: number; n: number }[];
+  allTimeMean: number;
+  observationCount: number;
+};
+
+type ClimateBaseline = {
+  source: string;
+  period: string;
+  computed: string;
+  months: { month: number; precip: number; tmax: number; tmin: number; pdsi?: number; pet?: number }[];
+  annualPrecip: number;
+  annualPet?: number;
+  aridityIndex?: number;
+};
+
+type RecentClimate = {
+  source: string;
+  days: number;
+  fetched: string;
+  precipTotalMm: number;
+  tempMeanC?: number;
+  tempMaxC?: number;
+  tempMinC?: number;
+  et0TotalMm?: number;
+  daysWithRain: number;
+  lastRainDaysAgo?: number;
+  precipPctOfNormal?: number;
+  precipAnomalyMm?: number;
+  tempAnomalyC?: number;
+  droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe';
+};
+
 type Parcel = {
   _id: string;
   name: string;
@@ -139,6 +176,9 @@ type Parcel = {
   geometry: GeoJSON.Polygon;
   ndviHistory: NdviReading[];
   isInsured: boolean;
+  modisBaseline?: ModisBaseline;
+  climateBaseline?: ClimateBaseline;
+  recentClimate?: RecentClimate;
 };
 
 function StatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
@@ -491,6 +531,21 @@ export default function ParcelDetailPage() {
             Sin datos NDVI disponibles aun
           </div>
         )}
+      </div>
+
+      {/* MPC long-term context — Sprint MPC */}
+      <div className="mb-4">
+        <MpcContextWidget
+          currentNdvi={
+            parcel.ndviHistory?.length
+              ? parcel.ndviHistory[parcel.ndviHistory.length - 1].mean
+              : null
+          }
+          currentMonth={new Date().getMonth() + 1}
+          modisBaseline={parcel.modisBaseline}
+          climateBaseline={parcel.climateBaseline}
+          recentClimate={parcel.recentClimate}
+        />
       </div>
 
       {/* Alerts */}

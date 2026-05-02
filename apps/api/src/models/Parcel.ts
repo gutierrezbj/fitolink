@@ -10,6 +10,59 @@ export interface INdviReading {
   source: NdviSource;
 }
 
+export interface IModisBaselineMonth {
+  month: number;
+  mean: number;
+  std: number;
+  n: number;
+}
+
+export interface IModisBaseline {
+  source: string;
+  years: number;
+  computed: Date;
+  months: IModisBaselineMonth[];
+  allTimeMean: number;
+  observationCount: number;
+}
+
+export interface IClimateBaselineMonth {
+  month: number;
+  precip: number;
+  tmax: number;
+  tmin: number;
+  pdsi?: number | null;
+  pet?: number | null;
+}
+
+export interface IClimateBaseline {
+  source: string;
+  period: string;
+  computed: Date;
+  months: IClimateBaselineMonth[];
+  annualPrecip: number;
+  annualPet?: number | null;
+  aridityIndex?: number | null;
+}
+
+export interface IRecentClimate {
+  source: string;
+  days: number;
+  fetched: Date;
+  precipTotalMm: number;
+  tempMeanC?: number | null;
+  tempMaxC?: number | null;
+  tempMinC?: number | null;
+  et0TotalMm?: number | null;
+  daysWithRain: number;
+  lastRainDaysAgo?: number | null;
+  // Derived anomaly (vs climateBaseline) — refreshed each pipeline run
+  precipPctOfNormal?: number | null;
+  precipAnomalyMm?: number | null;
+  tempAnomalyC?: number | null;
+  droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe' | null;
+}
+
 export interface IParcel extends Document {
   ownerId: mongoose.Types.ObjectId;
   name: string;
@@ -21,6 +74,10 @@ export interface IParcel extends Document {
   isInsured: boolean;
   insurerId?: mongoose.Types.ObjectId;
   ndviHistory: INdviReading[];
+  // MPC-sourced enrichments (Sprint MPC) — optional, never block core flow
+  modisBaseline?: IModisBaseline;
+  climateBaseline?: IClimateBaseline;
+  recentClimate?: IRecentClimate;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +91,74 @@ const ndviReadingSchema = new Schema<INdviReading>(
     max: { type: Number, required: true },
     anomalyDetected: { type: Boolean, default: false },
     source: { type: String, enum: NDVI_SOURCES, required: true },
+  },
+  { _id: false },
+);
+
+// MPC enrichment subdocs — optional, populated by geo-pipeline workers
+const modisBaselineMonthSchema = new Schema<IModisBaselineMonth>(
+  {
+    month: { type: Number, required: true, min: 1, max: 12 },
+    mean: { type: Number, required: true },
+    std: { type: Number, required: true },
+    n: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
+const modisBaselineSchema = new Schema<IModisBaseline>(
+  {
+    source: { type: String, required: true },
+    years: { type: Number, required: true },
+    computed: { type: Date, required: true },
+    months: [modisBaselineMonthSchema],
+    allTimeMean: { type: Number, required: true },
+    observationCount: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
+const climateBaselineMonthSchema = new Schema<IClimateBaselineMonth>(
+  {
+    month: { type: Number, required: true, min: 1, max: 12 },
+    precip: { type: Number, required: true },
+    tmax: { type: Number, required: true },
+    tmin: { type: Number, required: true },
+    pdsi: { type: Number, default: null },
+    pet: { type: Number, default: null },
+  },
+  { _id: false },
+);
+
+const climateBaselineSchema = new Schema<IClimateBaseline>(
+  {
+    source: { type: String, required: true },
+    period: { type: String, required: true },
+    computed: { type: Date, required: true },
+    months: [climateBaselineMonthSchema],
+    annualPrecip: { type: Number, required: true },
+    annualPet: { type: Number, default: null },
+    aridityIndex: { type: Number, default: null },
+  },
+  { _id: false },
+);
+
+const recentClimateSchema = new Schema<IRecentClimate>(
+  {
+    source: { type: String, required: true },
+    days: { type: Number, required: true },
+    fetched: { type: Date, required: true },
+    precipTotalMm: { type: Number, required: true },
+    tempMeanC: { type: Number, default: null },
+    tempMaxC: { type: Number, default: null },
+    tempMinC: { type: Number, default: null },
+    et0TotalMm: { type: Number, default: null },
+    daysWithRain: { type: Number, required: true },
+    lastRainDaysAgo: { type: Number, default: null },
+    precipPctOfNormal: { type: Number, default: null },
+    precipAnomalyMm: { type: Number, default: null },
+    tempAnomalyC: { type: Number, default: null },
+    droughtFlag: { type: String, enum: ['none', 'mild', 'moderate', 'severe', null], default: null },
   },
   { _id: false },
 );
@@ -53,6 +178,10 @@ const parcelSchema = new Schema<IParcel>(
     isInsured: { type: Boolean, default: false },
     insurerId: { type: Schema.Types.ObjectId, ref: 'User' },
     ndviHistory: [ndviReadingSchema],
+    // Sprint MPC: long-term context from Microsoft Planetary Computer
+    modisBaseline: { type: modisBaselineSchema, default: undefined },
+    climateBaseline: { type: climateBaselineSchema, default: undefined },
+    recentClimate: { type: recentClimateSchema, default: undefined },
     isActive: { type: Boolean, default: true },
   },
   {

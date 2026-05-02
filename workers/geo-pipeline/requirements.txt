@@ -10,3 +10,8 @@ schedule>=1.2.0
 openeo>=0.26.0
 scikit-learn>=1.4.0
 scipy>=1.11.0
+# Microsoft Planetary Computer — historical NDVI baseline (MODIS) + climate (ERA5)
+planetary-computer>=1.0.0
+pystac-client>=0.7.0
+odc-stac>=0.3.10
+xarray>=2024.1.0

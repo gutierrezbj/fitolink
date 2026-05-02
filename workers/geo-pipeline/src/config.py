@@ -32,3 +32,8 @@ NDVI_GRID_RESOLUTION: int = int(os.getenv('NDVI_GRID_RESOLUTION', '20'))
 
 # Schedule
 PROCESSING_INTERVAL_DAYS: int = 5
+
+# Sprint MPC — Microsoft Planetary Computer enrichment
+# Refresh 30-day climate snapshot on every pipeline run (cheap HTTP fetch).
+# Set MPC_CLIMATE_REFRESH=false to disable (e.g. if Open-Meteo is rate-limited).
+MPC_CLIMATE_REFRESH: bool = os.getenv('MPC_CLIMATE_REFRESH', 'true').lower() != 'false'

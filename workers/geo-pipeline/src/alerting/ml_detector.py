@@ -229,6 +229,8 @@ class MLAnomalyDetector:
         prev_ndre: Optional[float] = None,
         month: int = 6,
         crop_type: str = 'otro',
+        modis_baseline_ndvi: Optional[float] = None,
+        drought_flag: Optional[str] = None,
     ) -> AnomalyResult:
         """
         Detect anomalies using the ML model with V1 fallback.
@@ -240,16 +242,40 @@ class MLAnomalyDetector:
             prev_ndre: Previous NDRE value for delta.
             month: Calendar month (1-12) for seasonal context.
             crop_type: Parcel crop type for seasonal baseline.
+            modis_baseline_ndvi: 5-yr MODIS NDVI mean for THIS parcel + month
+                                 (Sprint MPC). Adds parcel-specific calibration
+                                 on top of the generic crop-type heuristic.
+            drought_flag: 'none'|'mild'|'moderate'|'severe' from TerraClimate
+                          + Open-Meteo (Sprint MPC). Provides physical context
+                          to disambiguate biotic vs abiotic stress.
 
         Returns:
-            AnomalyResult compatible with V1 interface.
+            AnomalyResult compatible with V1 interface, with reason text
+            enriched by MPC signals when available.
         """
+        # MPC enrichment for the reason string (used in multiple branches)
+        def _enrich_reason(base: str) -> str:
+            extras: list[str] = []
+            if modis_baseline_ndvi is not None:
+                dev = current_ndvi - modis_baseline_ndvi
+                pct = (dev / modis_baseline_ndvi * 100) if modis_baseline_ndvi else 0
+                if abs(dev) >= 0.05:
+                    sign = '+' if dev > 0 else ''
+                    extras.append(
+                        f'baseline 5a MODIS={modis_baseline_ndvi:.2f} '
+                        f'(desviacion {sign}{pct:.0f}%)'
+                    )
+            if drought_flag and drought_flag != 'none':
+                extras.append(f'sequia {drought_flag}')
+            return base + (' · ' + ' · '.join(extras) if extras else '')
+
         # Seasonal guard: if NDVI is within expected range for this crop/month → healthy
         if is_seasonally_normal(current_ndvi, crop_type, month):
             delta = (current_ndvi - history[-1]) if history else 0.0
             logger.info(
                 'seasonally_normal',
                 crop=crop_type, month=month, ndvi=current_ndvi,
+                modis_baseline=modis_baseline_ndvi, drought=drought_flag,
             )
             return AnomalyResult(
                 is_anomaly=False,
@@ -257,7 +283,10 @@ class MLAnomalyDetector:
                 severity='low',
                 confidence=0.0,
                 ndvi_delta=round(delta, 4),
-                reason=f'NDVI {current_ndvi:.2f} dentro del rango estacional normal para {crop_type} en mes {month}',
+                reason=_enrich_reason(
+                    f'NDVI {current_ndvi:.2f} dentro del rango estacional normal '
+                    f'para {crop_type} en mes {month}'
+                ),
             )
 
         if self._model is None or len(history) < 1:
@@ -273,6 +302,26 @@ class MLAnomalyDetector:
             is_anomaly = label > 0
             severity = _LABEL_TO_SEVERITY[label]
             confidence = round(float(proba[label]), 3)
+
+            # ── Sprint MPC: parcel-specific MODIS baseline override ─────────
+            # If we have 5 years of history for THIS parcel and current NDVI
+            # is within ±15% of that historical mean, treat as normal even
+            # when the generic crop heuristic disagrees.
+            if (
+                is_anomaly
+                and modis_baseline_ndvi is not None
+                and modis_baseline_ndvi > 0
+            ):
+                pct_dev = abs(current_ndvi - modis_baseline_ndvi) / modis_baseline_ndvi
+                if pct_dev <= 0.15:
+                    logger.info(
+                        'modis_baseline_override',
+                        ndvi=current_ndvi,
+                        baseline=modis_baseline_ndvi,
+                        pct_dev=round(pct_dev * 100, 1),
+                    )
+                    is_anomaly = False
+                    severity = 'low'
 
             # Determine alert type: stress_pattern if sustained decline
             alert_type = 'ndvi_drop'
@@ -291,7 +340,7 @@ class MLAnomalyDetector:
                     severity='low',
                     confidence=confidence,
                     ndvi_delta=round(delta, 4),
-                    reason='NDVI estable o mejorando (modelo V2)',
+                    reason=_enrich_reason('NDVI estable o mejorando (modelo V2)'),
                 )
 
             reason = (
@@ -301,6 +350,7 @@ class MLAnomalyDetector:
             )
             if current_ndre is not None:
                 reason += f' · NDRE={current_ndre:.3f}'
+            reason = _enrich_reason(reason)
 
             logger.info(
                 'ml_anomaly_detected',
@@ -309,6 +359,8 @@ class MLAnomalyDetector:
                 delta=delta,
                 confidence=confidence,
                 ndre=current_ndre,
+                modis_baseline=modis_baseline_ndvi,
+                drought=drought_flag,
             )
 
             return AnomalyResult(

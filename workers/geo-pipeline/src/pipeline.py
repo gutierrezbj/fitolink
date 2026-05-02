@@ -18,9 +18,13 @@ from typing import Optional
 from .config import (
     MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR,
     USE_OPENEO, NDVI_GRID_ENABLED, NDVI_GRID_RESOLUTION,
+    MPC_CLIMATE_REFRESH,
 )
 from .ingestion.copernicus import CopernicusClient
 from .ingestion.openeo_client import OpenEOClient
+from .ingestion.climate_context import (
+    fetch_recent_climate, compute_climate_anomaly,
+)
 from .processing.ndvi import (
     NdviResult, extract_bands_from_safe, compute_ndvi, compute_parcel_stats,
 )
@@ -249,10 +253,71 @@ def run_pipeline() -> None:
                 scene=scene_id,
             )
 
-            # Anomaly detection V2 (ML) with seasonal context
+            # Sprint MPC — refresh 30-day climate snapshot + anomaly vs baseline
+            climate_anomaly: Optional[dict] = None
+            if MPC_CLIMATE_REFRESH:
+                try:
+                    recent = fetch_recent_climate(parcel['geometry'], days=30)
+                    if recent is not None:
+                        climate_baseline = parcel.get('climateBaseline')
+                        anomaly_summary = compute_climate_anomaly(
+                            recent=recent,
+                            baseline=climate_baseline,
+                            month=datetime.now().month,
+                        )
+                        if anomaly_summary:
+                            recent.update({
+                                'precipPctOfNormal': anomaly_summary['precip_pct_of_normal'],
+                                'precipAnomalyMm': anomaly_summary['precip_anomaly_mm'],
+                                'tempAnomalyC': anomaly_summary['temp_anomaly_c'],
+                                'droughtFlag': anomaly_summary['drought_flag'],
+                            })
+                            climate_anomaly = anomaly_summary
+                        # snake_case → camelCase for the schema
+                        recent_camel = {
+                            'source': recent['source'],
+                            'days': recent['days'],
+                            'fetched': recent['fetched'],
+                            'precipTotalMm': recent['precip_total_mm'],
+                            'tempMeanC': recent['temp_mean_c'],
+                            'tempMaxC': recent['temp_max_c'],
+                            'tempMinC': recent['temp_min_c'],
+                            'et0TotalMm': recent['et0_total_mm'],
+                            'daysWithRain': recent['days_with_rain'],
+                            'lastRainDaysAgo': recent['last_rain_days_ago'],
+                            'precipPctOfNormal': recent.get('precipPctOfNormal'),
+                            'precipAnomalyMm': recent.get('precipAnomalyMm'),
+                            'tempAnomalyC': recent.get('tempAnomalyC'),
+                            'droughtFlag': recent.get('droughtFlag'),
+                        }
+                        db.parcels.update_one(
+                            {'_id': parcel['_id']},
+                            {'$set': {'recentClimate': recent_camel}},
+                        )
+                        logger.info(
+                            'climate_refreshed',
+                            parcel=parcel_name,
+                            precip_30d=recent['precip_total_mm'],
+                            drought=recent.get('droughtFlag'),
+                        )
+                except Exception as e:
+                    logger.warning('climate_refresh_failed', parcel=parcel_name, error=str(e))
+
+            # Anomaly detection V2 (ML) with seasonal context + MODIS baseline
             ndvi_history = parcel.get('ndviHistory', [])
             previous_means = [r['mean'] for r in ndvi_history[-5:]]
             prev_ndre = ndvi_history[-1].get('ndreValue') if ndvi_history else None
+
+            # MODIS baseline NDVI for this month (from MPC, cached on parcel doc)
+            modis_baseline_ndvi: Optional[float] = None
+            modis_baseline = parcel.get('modisBaseline')
+            if modis_baseline and 'months' in modis_baseline:
+                current_month = datetime.now().month
+                for entry in modis_baseline['months']:
+                    if entry.get('month') == current_month:
+                        modis_baseline_ndvi = entry.get('mean')
+                        break
+
             anomaly = detector.detect(
                 current_ndvi=stats.mean,
                 history=previous_means,
@@ -260,6 +325,8 @@ def run_pipeline() -> None:
                 prev_ndre=prev_ndre,
                 month=datetime.now().month,
                 crop_type=parcel.get('cropType', 'otro'),
+                modis_baseline_ndvi=modis_baseline_ndvi,
+                drought_flag=climate_anomaly.get('drought_flag') if climate_anomaly else None,
             )
 
             if anomaly.is_anomaly:
