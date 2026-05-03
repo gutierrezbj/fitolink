@@ -123,14 +123,45 @@ def _baseline_from_openmeteo(
         lat=lat, lng=lng, period=f'{start_year}-{end_year}',
     )
 
-    try:
-        resp = requests.get(
-            OPEN_METEO_ARCHIVE_URL, params=params, timeout=60,
+    # Open-Meteo rate-limits anonymous traffic to a few requests per second.
+    # Walk through 429 responses with exponential backoff before declaring failure.
+    import time
+    data = None
+    last_err: Optional[str] = None
+    for attempt in range(1, 5):
+        try:
+            resp = requests.get(
+                OPEN_METEO_ARCHIVE_URL, params=params, timeout=60,
+            )
+            if resp.status_code == 429:
+                wait = 5 * attempt
+                logger.info(
+                    'open_meteo_rate_limited_backing_off',
+                    attempt=attempt, wait_s=wait,
+                )
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except Exception as e:
+            last_err = str(e)
+            if '429' in last_err:
+                wait = 5 * attempt
+                logger.info(
+                    'open_meteo_rate_limited_backing_off',
+                    attempt=attempt, wait_s=wait,
+                )
+                time.sleep(wait)
+                continue
+            logger.warning('open_meteo_baseline_fetch_failed', error=last_err)
+            return None
+
+    if data is None:
+        logger.warning(
+            'open_meteo_baseline_fetch_exhausted',
+            error=last_err or 'rate-limited',
         )
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        logger.warning('open_meteo_baseline_fetch_failed', error=str(e))
         return None
 
     daily = data.get('daily') or {}

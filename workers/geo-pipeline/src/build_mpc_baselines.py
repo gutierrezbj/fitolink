@@ -128,7 +128,8 @@ def main() -> int:
 
     summary = {'built': 0, 'skipped': 0, 'no_data': 0, 'error': 0}
 
-    for parcel in parcels:
+    import time as _time
+    for idx, parcel in enumerate(parcels):
         status = process_parcel(db, parcel, refresh=args.refresh)
         logger.info('parcel_processed', **status)
         for key in ('modis', 'climate'):
@@ -141,6 +142,9 @@ def main() -> int:
                 summary['no_data'] += 1
             elif v.startswith('error'):
                 summary['error'] += 1
+        # Polite pacing — Open-Meteo and MPC anonymous tiers throttle bursts.
+        if idx < len(parcels) - 1:
+            _time.sleep(2)
 
     logger.info('mpc_baseline_batch_completed', **summary)
     client.close()
