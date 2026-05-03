@@ -63,11 +63,181 @@ OPEN_METEO_TIMEOUT_S = 15
 
 def build_climate_baseline(
     geometry: dict,
+    start_year: int = 1995,
+    end_year: int = 2024,
+) -> Optional[dict]:
+    """
+    Build a 12-month climatic baseline.
+
+    Tries Open-Meteo historical archive first (ERA5 reanalysis, 30-yr window
+    by default — WMO standard for climate normals). If Open-Meteo fails,
+    falls back to TerraClimate via MPC (legacy path, kept for resilience).
+
+    Open-Meteo wins for our use case:
+        - Same data source as our 30-day "actual" fetcher → consistent units
+        - No STAC index quirks, no Zarr decoders, no server-side timeouts
+        - 1940-present coverage globally
+        - One HTTP call per parcel (~500KB JSON, ~10s)
+
+    Returns the same canonical schema regardless of source — the rest of
+    the pipeline (UI widget, anomaly detector) stays agnostic.
+    """
+    result = _baseline_from_openmeteo(geometry, start_year, end_year)
+    if result is not None:
+        return result
+    logger.info('climate_baseline_openmeteo_failed_trying_terraclimate')
+    return _baseline_from_terraclimate(geometry)
+
+
+def _baseline_from_openmeteo(
+    geometry: dict,
+    start_year: int = 1995,
+    end_year: int = 2024,
+) -> Optional[dict]:
+    """
+    Compute monthly climate normals from Open-Meteo historical archive.
+
+    Aggregation:
+      For each (year, month): sum daily precipitation, mean daily tmax/tmin/tmean.
+      For each month 1..12: average across all years → climatological normal.
+
+    Returns the same shape as _baseline_from_terraclimate so callers can
+    treat them interchangeably.
+    """
+    lng, lat = geometry_centroid(geometry)
+    start = f'{start_year}-01-01'
+    end = f'{end_year}-12-31'
+
+    params = {
+        'latitude': round(lat, 4),
+        'longitude': round(lng, 4),
+        'start_date': start,
+        'end_date': end,
+        'daily': 'temperature_2m_mean,temperature_2m_max,temperature_2m_min,'
+                 'precipitation_sum,et0_fao_evapotranspiration',
+        'timezone': 'UTC',
+    }
+
+    logger.info(
+        'climate_baseline_openmeteo_started',
+        lat=lat, lng=lng, period=f'{start_year}-{end_year}',
+    )
+
+    try:
+        resp = requests.get(
+            OPEN_METEO_ARCHIVE_URL, params=params, timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logger.warning('open_meteo_baseline_fetch_failed', error=str(e))
+        return None
+
+    daily = data.get('daily') or {}
+    times = daily.get('time') or []
+    if not times:
+        logger.info('open_meteo_baseline_empty')
+        return None
+
+    precip_arr = daily.get('precipitation_sum') or []
+    tmean_arr = daily.get('temperature_2m_mean') or []
+    tmax_arr = daily.get('temperature_2m_max') or []
+    tmin_arr = daily.get('temperature_2m_min') or []
+    et0_arr = daily.get('et0_fao_evapotranspiration') or []
+
+    # Per (year, month) accumulators
+    by_ym: dict[tuple[int, int], dict] = {}
+    for i, time_str in enumerate(times):
+        try:
+            d = datetime.fromisoformat(time_str)
+        except ValueError:
+            continue
+        key = (d.year, d.month)
+        bucket = by_ym.setdefault(key, {
+            'precip': 0.0, 'et0': 0.0,
+            'tmean': [], 'tmax': [], 'tmin': [],
+        })
+        if i < len(precip_arr) and precip_arr[i] is not None:
+            bucket['precip'] += float(precip_arr[i])
+        if i < len(et0_arr) and et0_arr[i] is not None:
+            bucket['et0'] += float(et0_arr[i])
+        if i < len(tmean_arr) and tmean_arr[i] is not None:
+            bucket['tmean'].append(float(tmean_arr[i]))
+        if i < len(tmax_arr) and tmax_arr[i] is not None:
+            bucket['tmax'].append(float(tmax_arr[i]))
+        if i < len(tmin_arr) and tmin_arr[i] is not None:
+            bucket['tmin'].append(float(tmin_arr[i]))
+
+    # Aggregate across years for each month 1..12
+    by_month: dict[int, dict] = {m: {
+        'precip_totals': [], 'et0_totals': [],
+        'tmean_means': [], 'tmax_means': [], 'tmin_means': [],
+    } for m in range(1, 13)}
+
+    for (_y, m), bucket in by_ym.items():
+        by_month[m]['precip_totals'].append(bucket['precip'])
+        by_month[m]['et0_totals'].append(bucket['et0'])
+        if bucket['tmean']:
+            by_month[m]['tmean_means'].append(float(np.mean(bucket['tmean'])))
+        if bucket['tmax']:
+            by_month[m]['tmax_means'].append(float(np.mean(bucket['tmax'])))
+        if bucket['tmin']:
+            by_month[m]['tmin_means'].append(float(np.mean(bucket['tmin'])))
+
+    months_out: list[dict] = []
+    annual_precip = 0.0
+    annual_pet = 0.0
+    for m in range(1, 13):
+        agg = by_month[m]
+        if not agg['precip_totals']:
+            continue
+        precip = round(float(np.mean(agg['precip_totals'])), 1)
+        pet = round(float(np.mean(agg['et0_totals'])), 1) if agg['et0_totals'] else None
+        months_out.append({
+            'month': m,
+            'precip': precip,
+            'tmax': round(float(np.mean(agg['tmax_means'])), 1) if agg['tmax_means'] else None,
+            'tmin': round(float(np.mean(agg['tmin_means'])), 1) if agg['tmin_means'] else None,
+            'pdsi': None,  # Open-Meteo doesn't provide PDSI; left null for schema parity
+            'pet': pet,
+        })
+        annual_precip += precip
+        if pet is not None:
+            annual_pet += pet
+
+    if not months_out:
+        return None
+
+    aridity = round(annual_precip / annual_pet, 3) if annual_pet > 0 else None
+
+    result = {
+        'source': 'open-meteo-era5-archive',
+        'period': f'{start_year}-{end_year}',
+        'computed': datetime.now(timezone.utc),
+        'months': months_out,
+        'annual_precip': round(annual_precip, 1),
+        'annual_pet': round(annual_pet, 1) if annual_pet > 0 else None,
+        'aridity_index': aridity,
+    }
+
+    logger.info(
+        'climate_baseline_openmeteo_built',
+        months=len(months_out),
+        annual_precip=result['annual_precip'],
+        aridity_index=aridity,
+        years=end_year - start_year + 1,
+    )
+
+    return result
+
+
+def _baseline_from_terraclimate(
+    geometry: dict,
     start_year: int = 2001,
     end_year: int = 2020,
 ) -> Optional[dict]:
     """
-    Build a 12-month climatic baseline from TerraClimate via MPC.
+    Legacy MPC TerraClimate baseline (kept as fallback).
 
     Computes monthly means over the reference period (default 2001-2020 —
     20-year window keeps the MPC search responsive while still covering a
