@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Building outline -->
+  <rect x="18" y="18" width="20" height="32" fill="#fff" rx="1.2"/>
+  <!-- Tall right wing -->
+  <rect x="38" y="24" width="12" height="26" fill="#bbf7d0" rx="1.2"/>
+  <!-- Roof line -->
+  <line x1="18" y1="18" x2="38" y2="18" stroke="#46632e" stroke-width="0.6" stroke-linecap="round"/>
+  <!-- Windows in main block (3 columns × 4 rows) -->
+  <g fill="#46632e">
+    <rect x="21" y="22" width="3" height="3" rx="0.4"/>
+    <rect x="27" y="22" width="3" height="3" rx="0.4"/>
+    <rect x="33" y="22" width="3" height="3" rx="0.4"/>
+    <rect x="21" y="28" width="3" height="3" rx="0.4"/>
+    <rect x="27" y="28" width="3" height="3" rx="0.4"/>
+    <rect x="33" y="28" width="3" height="3" rx="0.4"/>
+    <rect x="21" y="34" width="3" height="3" rx="0.4"/>
+    <rect x="27" y="34" width="3" height="3" rx="0.4"/>
+    <rect x="33" y="34" width="3" height="3" rx="0.4"/>
+  </g>
+  <!-- Windows in right wing -->
+  <g fill="#46632e" opacity="0.7">
+    <rect x="41" y="28" width="2.5" height="2.5" rx="0.3"/>
+    <rect x="45" y="28" width="2.5" height="2.5" rx="0.3"/>
+    <rect x="41" y="33" width="2.5" height="2.5" rx="0.3"/>
+    <rect x="45" y="33" width="2.5" height="2.5" rx="0.3"/>
+    <rect x="41" y="38" width="2.5" height="2.5" rx="0.3"/>
+    <rect x="45" y="38" width="2.5" height="2.5" rx="0.3"/>
+  </g>
+  <!-- Door -->
+  <rect x="27" y="42" width="4" height="8" fill="#46632e" rx="0.5"/>
+  <!-- Telemetry signal arc above building (FitoLink touch) -->
+  <path d="M40 16 Q50 16 50 8" stroke="#fbbf24" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <circle cx="50" cy="8" r="1.5" fill="#fbbf24"/>
+</svg>

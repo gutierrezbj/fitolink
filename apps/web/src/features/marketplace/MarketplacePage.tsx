@@ -32,10 +32,24 @@ function getColor(company?: string) {
 function makeMarkerIcon(company?: string, selected = false) {
   const c = getColor(company);
   const r = selected ? 18 : 14;
+  // Stylised drone silhouette inside the marker — top-down 4-rotor outline,
+  // mirrors `service-multispectral.svg` so the visual language stays unified.
+  const arm = r * 0.55;
+  const rotor = r * 0.28;
   const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${r*3}" height="${r*3}" viewBox="0 0 ${r*3} ${r*3}">
     <circle cx="${r*1.5}" cy="${r*1.5}" r="${r*1.4}" fill="${c.primary}" opacity="0.18"/>
     <circle cx="${r*1.5}" cy="${r*1.5}" r="${r}" fill="${c.primary}" stroke="white" stroke-width="2.5"/>
-    <text x="${r*1.5}" y="${r*2}" text-anchor="middle" font-size="${r}" fill="white">🚁</text>
+    <g stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none">
+      <line x1="${r*1.5 - arm}" y1="${r*1.5 - arm}" x2="${r*1.5 + arm}" y2="${r*1.5 + arm}"/>
+      <line x1="${r*1.5 + arm}" y1="${r*1.5 - arm}" x2="${r*1.5 - arm}" y2="${r*1.5 + arm}"/>
+    </g>
+    <g fill="white">
+      <circle cx="${r*1.5 - arm}" cy="${r*1.5 - arm}" r="${rotor}"/>
+      <circle cx="${r*1.5 + arm}" cy="${r*1.5 - arm}" r="${rotor}"/>
+      <circle cx="${r*1.5 - arm}" cy="${r*1.5 + arm}" r="${rotor}"/>
+      <circle cx="${r*1.5 + arm}" cy="${r*1.5 + arm}" r="${rotor}"/>
+    </g>
+    <circle cx="${r*1.5}" cy="${r*1.5}" r="${rotor*0.7}" fill="${c.primary}" stroke="white" stroke-width="0.8"/>
   </svg>`);
   const size = r * 3;
   return L.divIcon({
@@ -82,13 +96,15 @@ function PilotCard({ pilot, selected, onClick }: { pilot: Pilot; selected: boole
           <div>
             <p className="font-bold text-gray-900 text-[15px] leading-tight">{pilot.name}</p>
             {pilot.company ? (
-              <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
+              <span className="inline-flex items-center gap-1.5 mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
                 style={{ background: c.light, color: c.text }}>
-                🏢 {pilot.company}
+                <img src="/company.svg" alt="" className="w-3.5 h-3.5" />
+                {pilot.company}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                🧑‍✈️ Autónomo
+              <span className="inline-flex items-center gap-1.5 mt-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                <img src="/drone-pilot.svg" alt="" className="w-3.5 h-3.5" />
+                Autónomo
               </span>
             )}
           </div>
@@ -105,7 +121,7 @@ function PilotCard({ pilot, selected, onClick }: { pilot: Pilot; selected: boole
         <div className="mt-3 space-y-1.5">
           {applicator && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-lg px-3 py-1.5">
-              <span className="text-sm">💊</span>
+              <img src="/service-phytosanitary.svg" alt="" className="w-6 h-6 flex-shrink-0" />
               <div>
                 <p className="text-[11px] font-semibold text-green-800">{applicator.model}</p>
                 <p className="text-[10px] text-green-600">Aplicación fitosanitaria{applicator.payloadKg ? ` · ${applicator.payloadKg}kg` : ''}</p>
@@ -114,7 +130,7 @@ function PilotCard({ pilot, selected, onClick }: { pilot: Pilot; selected: boole
           )}
           {multispectral && (
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
-              <span className="text-sm">📡</span>
+              <img src="/service-multispectral.svg" alt="" className="w-6 h-6 flex-shrink-0" />
               <div>
                 <p className="text-[11px] font-semibold text-blue-800">{multispectral.model}</p>
                 <p className="text-[10px] text-blue-600">Inspección multiespectral</p>
@@ -180,9 +196,9 @@ export default function MarketplacePage() {
           const avgRating = companyPilots.reduce((s, p) => s + (p.rating || 0), 0) / companyPilots.length;
           return (
             <div key={company} className="bg-white rounded-2xl border border-gray-200 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: c.light }}>
-                🏢
+                <img src="/company.svg" alt="" className="w-9 h-9" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900">{company}</p>
@@ -194,7 +210,9 @@ export default function MarketplacePage() {
           );
         })}
         <div className="bg-white rounded-2xl border border-gray-200 p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">🧑‍✈️</div>
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <img src="/drone-pilot.svg" alt="" className="w-9 h-9" />
+          </div>
           <div className="flex-1">
             <p className="font-bold text-gray-900">Autónomos</p>
             <p className="text-xs text-gray-400 mt-0.5">Pilotos independientes</p>
@@ -248,12 +266,14 @@ export default function MarketplacePage() {
                           <div style={{ minWidth: 180 }}>
                             <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{pilot.name}</p>
                             {pilot.company && (
-                              <p style={{ fontSize: 11, fontWeight: 700, color: c.primary, marginBottom: 6 }}>
-                                🏢 {pilot.company}
+                              <p style={{ fontSize: 11, fontWeight: 700, color: c.primary, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <img src="/company.svg" alt="" style={{ width: 14, height: 14 }} />
+                                {pilot.company}
                               </p>
                             )}
-                            <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
-                              ⭐ {pilot.rating?.toFixed(1)} · {pilot.operationalRadiusKm} km radio
+                            <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <svg width="11" height="11" viewBox="0 0 20 20" fill="#fbbf24"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                              {pilot.rating?.toFixed(1)} · {pilot.operationalRadiusKm} km radio
                             </p>
                             {pilot.equipment.map((e, i) => (
                               <p key={i} style={{ fontSize: 11, color: '#374151', marginBottom: 1 }}>• {e.model}</p>
