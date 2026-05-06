@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import { toast } from '@/stores/toastStore.js';
 import ParcelMap from './ParcelMap.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
@@ -29,7 +30,9 @@ function getHealthColor(ndvi: number | undefined) {
 
 export default function ParcelsPage() {
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: parcelsData, isLoading } = useQuery({
     queryKey: ['parcels', 'mine'],
@@ -41,6 +44,25 @@ export default function ParcelsPage() {
 
   const parcels: Parcel[] = parcelsData || [];
   const selectedParcel = parcels.find((p) => p._id === selectedParcelId);
+  const parcelToDelete = parcels.find((p) => p._id === confirmDeleteId);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/parcels/${id}`);
+      return id;
+    },
+    onSuccess: (deletedId) => {
+      toast.success('Parcela eliminada');
+      if (selectedParcelId === deletedId) setSelectedParcelId(null);
+      setConfirmDeleteId(null);
+      void queryClient.invalidateQueries({ queryKey: ['parcels'] });
+    },
+    onError: (e: { response?: { data?: { error?: { message?: string } } }; message?: string }) => {
+      const msg = e.response?.data?.error?.message ?? e.message ?? 'No se ha podido eliminar';
+      toast.error(msg);
+      setConfirmDeleteId(null);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -150,20 +172,34 @@ export default function ParcelsPage() {
           {selectedParcel ? (
             <div>
               {/* Detail header */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedParcel.name}</h2>
+              <div className="flex items-start justify-between mb-4 gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-gray-900 truncate">{selectedParcel.name}</h2>
                   <p className="text-gray-500 text-sm mt-0.5">
                     {selectedParcel.cropType} · {selectedParcel.areaHa} ha · {selectedParcel.province}
                     {selectedParcel.sigpacRef && ` · SIGPAC: ${selectedParcel.sigpacRef}`}
                   </p>
                 </div>
-                <button
-                  onClick={() => navigate(`/dashboard/parcels/${selectedParcel._id}`)}
-                  className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors font-semibold flex-shrink-0"
-                >
-                  Ver detalle completo →
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => navigate(`/dashboard/parcels/${selectedParcel._id}`)}
+                    className="bg-terra-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-terra-600 transition-colors font-semibold"
+                  >
+                    Ver detalle →
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(selectedParcel._id)}
+                    title="Eliminar parcela"
+                    className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-2.5 py-1.5 rounded-lg transition-colors font-medium"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h14" />
+                      <path d="M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2" />
+                      <path d="M5 6l1 10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-10" />
+                      <path d="M9 10v5M11 10v5" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Gauge + chart */}
@@ -231,6 +267,52 @@ export default function ParcelsPage() {
           </div>{/* end scrollable content */}
         </div>{/* end right panel */}
       </div>
+
+      {/* Delete confirmation */}
+      {parcelToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => deleteMutation.isPending ? null : setConfirmDeleteId(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h14" />
+                  <path d="M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2" />
+                  <path d="M5 6l1 10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-10" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">¿Eliminar esta parcela?</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  <span className="font-semibold text-gray-700">{parcelToDelete.name}</span> dejará de
+                  monitorizarse. Su histórico NDVI se conserva pero ya no aparecerá en el panel.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleteMutation.isPending}
+                className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(parcelToDelete._id)}
+                disabled={deleteMutation.isPending}
+                className="bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

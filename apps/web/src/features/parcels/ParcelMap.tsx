@@ -62,21 +62,32 @@ function getPolygonCenter(geometry: GeoJSON.Polygon): [number, number] {
 
 function FitBounds({ parcels }: { parcels: Parcel[] }) {
   const map = useMap();
+  // Sign by sorted IDs so the effect re-runs only when the set of parcels
+  // actually changes (added/removed), not on every parent re-render. Without
+  // this, "Ver todas" snaps back because FitBounds re-fires constantly.
+  const idsKey = parcels.map((p) => p._id).sort().join(',');
   useEffect(() => {
     if (parcels.length === 0) return;
     const group = L.featureGroup(parcels.map((p) => L.geoJSON(p.geometry as GeoJSON.GeoJsonObject)));
     map.fitBounds(group.getBounds(), { padding: [40, 40] });
-  }, [map, parcels]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, idsKey]);
   return null;
 }
 
 function FlyToParcel({ parcel }: { parcel: Parcel | undefined }) {
   const map = useMap();
+  // Depend on the parcel ID, not the object reference. The parent recomputes
+  // `parcel = parcels.find(...)` on every render, producing a new ref each
+  // time even if the selection hasn't changed — that previously caused
+  // flyToBounds to fire constantly and undo any zoom-out the user did.
+  const id = parcel?._id;
   useEffect(() => {
     if (!parcel) return;
     const layer = L.geoJSON(parcel.geometry as GeoJSON.GeoJsonObject);
     map.flyToBounds(layer.getBounds(), { padding: [60, 60], duration: 0.8 });
-  }, [map, parcel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, id]);
   return null;
 }
 
