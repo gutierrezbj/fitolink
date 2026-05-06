@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Spray nozzle (top) -->
+  <rect x="29" y="12" width="6" height="6" rx="1" fill="#fff"/>
+  <line x1="32" y1="18" x2="32" y2="22" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Spray cone -->
+  <path d="M32 22 L18 50 L46 50 Z" fill="#bbf7d0" opacity="0.35"/>
+  <!-- Spray droplets -->
+  <circle cx="22" cy="38" r="1.4" fill="#fff"/>
+  <circle cx="32" cy="42" r="1.6" fill="#fff"/>
+  <circle cx="42" cy="38" r="1.4" fill="#fff"/>
+  <circle cx="26" cy="46" r="1.2" fill="#fff" opacity="0.85"/>
+  <circle cx="38" cy="46" r="1.2" fill="#fff" opacity="0.85"/>
+  <!-- Plant being treated (small leaves at base) -->
+  <line x1="32" y1="58" x2="32" y2="52" stroke="#bbf7d0" stroke-width="1.5" stroke-linecap="round"/>
+  <ellipse cx="28" cy="54" rx="3" ry="1.5" fill="#bbf7d0" transform="rotate(-30 28 54)"/>
+  <ellipse cx="36" cy="54" rx="3" ry="1.5" fill="#bbf7d0" transform="rotate(30 36 54)"/>
+</svg>

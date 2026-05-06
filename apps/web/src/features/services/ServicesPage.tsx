@@ -22,7 +22,7 @@ type Service = {
 const SERVICES: Service[] = [
   {
     id: 'inspection',
-    icon: '📡',
+    icon: '/service-multispectral.svg',
     name: 'Mapeo Multiespectral',
     tagline: 'Ve lo que el ojo no ve',
     description: 'Vuelo con dron equipado con cámara multiespectral. Genera índices NDVI, NDRE y RGB con resolución de 5cm/pixel. Identifica zonas de estrés antes de que sean visibles.',
@@ -34,7 +34,7 @@ const SERVICES: Service[] = [
   },
   {
     id: 'phytosanitary',
-    icon: '💊',
+    icon: '/service-phytosanitary.svg',
     name: 'Tratamiento Fitosanitario',
     tagline: 'Precisión milimétrica, cero deriva',
     description: 'Aplicación aérea de fungicidas, insecticidas o acaricidas con dron agrícola. Cobertura uniforme, registro de dosis y trazabilidad completa del tratamiento.',
@@ -45,7 +45,7 @@ const SERVICES: Service[] = [
   },
   {
     id: 'herbicide',
-    icon: '🌿',
+    icon: '/service-herbicide.svg',
     name: 'Tratamiento Herbicida',
     tagline: 'Solo donde hace falta',
     description: 'Aplicación variable de herbicidas basada en mapa de malas hierbas previo. Reduce el uso de producto hasta un 40% respecto a la aplicación convencional.',
@@ -56,7 +56,7 @@ const SERVICES: Service[] = [
   },
   {
     id: 'fertilization',
-    icon: '🌱',
+    icon: '/service-fertilization.svg',
     name: 'Abonado Foliar',
     tagline: 'Nutrición directa a la hoja',
     description: 'Aplicación aérea de micronutrientes, bioestimulantes o fertilizantes foliares. Máxima eficiencia de absorción con mínimo impacto en el suelo.',
@@ -67,7 +67,7 @@ const SERVICES: Service[] = [
   },
   {
     id: 'seeding',
-    icon: '🌾',
+    icon: '/service-seeding.svg',
     name: 'Siembra de Precisión',
     tagline: 'Resiembra rápida y exacta',
     description: 'Resiembra de zonas con fallos de nascencia o parcelas de difícil acceso. El dron deposita la semilla con sistema de dispersión controlado.',
@@ -78,7 +78,7 @@ const SERVICES: Service[] = [
   },
   {
     id: 'diagnosis',
-    icon: '🔬',
+    icon: '/service-diagnosis.svg',
     name: 'Diagnóstico Agronómico',
     tagline: 'Informe técnico con recomendaciones',
     description: 'Visita de agrónomo certificado combinada con vuelo multiespectral. Obtienes un informe PDF con diagnóstico del cultivo, causas probables y plan de acción.',
@@ -105,7 +105,7 @@ function ServiceCard({ service, onRequest }: { service: Service; onRequest: (s: 
       )}
 
       <div className="mt-4 mb-3">
-        <span className="text-4xl">{service.icon}</span>
+        <img src={service.icon} alt="" className="w-14 h-14" />
       </div>
 
       <h3 className="text-lg font-bold text-gray-900 mb-0.5">{service.name}</h3>
@@ -165,7 +165,7 @@ function RequestModal({
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{service.icon}</span>
+              <img src={service.icon} alt="" className="w-10 h-10" />
               <div>
                 <h2 className="font-bold text-gray-900">{service.name}</h2>
                 <p className="text-sm text-brand-600">{service.tagline}</p>

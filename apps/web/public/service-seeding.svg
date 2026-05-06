@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Soil ground line -->
+  <path d="M8 48 Q32 44 56 48 L56 56 L8 56 Z" fill="#fff" opacity="0.18"/>
+  <line x1="10" y1="48" x2="54" y2="48" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+  <!-- Seed dispenser dropping seeds in pattern (top hopper hint) -->
+  <rect x="28" y="10" width="8" height="6" rx="1" fill="#fff"/>
+  <line x1="32" y1="16" x2="32" y2="20" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Seeds falling at calibrated spacing (vertical trajectories) -->
+  <ellipse cx="20" cy="34" rx="2" ry="2.8" fill="#fbbf24"/>
+  <ellipse cx="32" cy="32" rx="2" ry="2.8" fill="#fbbf24"/>
+  <ellipse cx="44" cy="34" rx="2" ry="2.8" fill="#fbbf24"/>
+  <!-- Seed motion lines -->
+  <line x1="20" y1="22" x2="20" y2="30" stroke="#fff" stroke-width="1" opacity="0.55" stroke-dasharray="1.5 1.5"/>
+  <line x1="32" y1="20" x2="32" y2="28" stroke="#fff" stroke-width="1" opacity="0.55" stroke-dasharray="1.5 1.5"/>
+  <line x1="44" y1="22" x2="44" y2="30" stroke="#fff" stroke-width="1" opacity="0.55" stroke-dasharray="1.5 1.5"/>
+  <!-- Sprout emerging from already-planted seed (left of soil) -->
+  <line x1="14" y1="48" x2="14" y2="44" stroke="#bbf7d0" stroke-width="1.5" stroke-linecap="round"/>
+  <ellipse cx="12" cy="43" rx="2" ry="1" fill="#bbf7d0" transform="rotate(-30 12 43)"/>
+  <!-- Mature sprout on right -->
+  <line x1="50" y1="48" x2="50" y2="42" stroke="#bbf7d0" stroke-width="1.5" stroke-linecap="round"/>
+  <ellipse cx="48" cy="41" rx="2.2" ry="1.2" fill="#bbf7d0" transform="rotate(-30 48 41)"/>
+  <ellipse cx="52" cy="41" rx="2.2" ry="1.2" fill="#bbf7d0" transform="rotate(30 52 41)"/>
+</svg>
