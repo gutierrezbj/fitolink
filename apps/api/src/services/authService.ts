@@ -62,6 +62,50 @@ export async function devLogin(googleId: string): Promise<{ token: string; user:
   return { token, user };
 }
 
+/**
+ * Email-based dev login. Finds an existing user by email or creates a new
+ * farmer-role demo user on the fly. Used by the demo entry form on the
+ * login page so prospects can self-onboard with their own email without
+ * waiting for a Google OAuth setup.
+ *
+ * IMPORTANT: this MUST stay gated behind the same dev-login flag as
+ * `devLogin()`. In real production it should be replaced by passwordless
+ * email auth with one-time codes.
+ */
+export async function devLoginByEmail(
+  email: string,
+  name?: string,
+): Promise<{ token: string; user: IUser }> {
+  const allowDevLogin = env.NODE_ENV !== 'production' || process.env.ALLOW_DEV_LOGIN === 'true';
+  if (!allowDevLogin) {
+    throw AppError.forbidden('Dev login no disponible en produccion');
+  }
+
+  const normalized = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw AppError.badRequest('Email no valido');
+  }
+
+  let user = await User.findOne({ email: normalized });
+  if (!user) {
+    // Auto-provision a farmer demo user. googleId is synthesized from email
+    // to satisfy the unique-required field on User without colliding with
+    // real Google OAuth subjects (which are numeric ids).
+    const derivedName = name?.trim() || normalized.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    user = await User.create({
+      email: normalized,
+      name: derivedName,
+      role: 'farmer',
+      googleId: `demo-email-${normalized}`,
+      isVerified: true,
+      avatar: '/farmer.svg',
+    });
+  }
+
+  const token = generateToken(user._id.toString());
+  return { token, user };
+}
+
 export async function registerWithGoogle(
   credential: string,
   role: UserRole,

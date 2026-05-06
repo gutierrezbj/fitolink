@@ -35,3 +35,13 @@ export async function devLogin(req: Request, res: Response, next: NextFunction):
     next(error);
   }
 }
+
+export async function devLoginByEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { email, name } = req.body as { email: string; name?: string };
+    const result = await authService.devLoginByEmail(email, name);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}

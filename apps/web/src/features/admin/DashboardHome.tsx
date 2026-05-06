@@ -116,9 +116,9 @@ export default function DashboardHome() {
     : null;
 
   return (
-    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Bienvenido, {user?.name?.split(' ')[0]}
@@ -134,13 +134,13 @@ export default function DashboardHome() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4 flex-shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">Parcelas</p>
           <p className="text-3xl font-bold text-gray-900">{parcels.length}</p>
           <p className="text-xs text-gray-400 mt-1">{totalHa.toFixed(1)} ha monitorizadas</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">Alertas activas</p>
           <p className={`text-3xl font-bold ${activeAlerts.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
             {activeAlerts.length}
@@ -149,14 +149,14 @@ export default function DashboardHome() {
             {activeAlerts.length === 0 ? 'Todo en orden' : `${criticalAlerts.length} criticas`}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">NDVI Promedio</p>
           <p className={`text-3xl font-bold ${avgNdvi === null ? 'text-gray-400' : avgNdvi < 0.3 ? 'text-red-600' : avgNdvi < 0.5 ? 'text-yellow-600' : 'text-green-600'}`}>
             {avgNdvi !== null ? avgNdvi.toFixed(2) : '—'}
           </p>
           <p className="text-xs text-gray-400 mt-1">Sentinel-2 · cada 5 dias</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">Operaciones</p>
           <p className="text-3xl font-bold text-gray-900">{thisMonthOps.length}</p>
           <p className="text-xs text-gray-400 mt-1">Este mes</p>
@@ -164,7 +164,7 @@ export default function DashboardHome() {
       </div>
 
       {/* Main content: Map + Alert sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 lg:items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 lg:items-stretch">
         {/* Map */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-shrink-0">

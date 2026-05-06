@@ -16,6 +16,7 @@ const DEMO_ACCOUNTS = [
   { label: 'Admin', googleId: 'demo-admin-001', icon: '/system-administration.svg', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
   { label: 'ASAJA', googleId: 'demo-farmer-002', icon: '/farmer.svg', color: 'bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100' },
   { label: 'Sergio · ASAJA', googleId: 'demo-sergio-asaja', icon: '/system-administration.svg', color: 'bg-yellow-100 border-yellow-300 text-yellow-900 hover:bg-yellow-200 ring-2 ring-yellow-300' },
+  { label: 'John · Pistacho', googleId: 'demo-john-pistacho', icon: '/farmer.svg', color: 'bg-emerald-100 border-emerald-300 text-emerald-900 hover:bg-emerald-200 ring-2 ring-emerald-300' },
 ];
 
 export default function LoginPage() {
@@ -51,6 +52,27 @@ export default function LoginPage() {
       login(res.data.data.token, res.data.data.user);
       navigate('/dashboard');
     } catch {
+      setLoading(null);
+    }
+  };
+
+  const [demoEmail, setDemoEmail] = useState('');
+  const [demoEmailError, setDemoEmailError] = useState<string | null>(null);
+
+  const handleDevLoginByEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoEmail.trim()) return;
+    setDemoEmailError(null);
+    setLoading('email');
+    try {
+      const res = await api.post('/auth/login/dev/email', { email: demoEmail.trim() });
+      login(res.data.data.token, res.data.data.user);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          .response?.data?.error?.message ?? 'No se ha podido entrar';
+      setDemoEmailError(msg);
       setLoading(null);
     }
   };
@@ -128,6 +150,39 @@ export default function LoginPage() {
                   )}
                 </button>
               ))}
+            </div>
+
+            {/* Email-based demo entry — for prospects bringing their own KMZ */}
+            <div className="mt-5 pt-5 border-t border-gray-100">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                O entra con tu email
+              </p>
+              <form onSubmit={handleDevLoginByEmail} className="flex gap-2">
+                <input
+                  type="email"
+                  value={demoEmail}
+                  onChange={(e) => {
+                    setDemoEmail(e.target.value);
+                    setDemoEmailError(null);
+                  }}
+                  placeholder="tu@email.com"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  disabled={loading !== null}
+                />
+                <button
+                  type="submit"
+                  disabled={!demoEmail.trim() || loading !== null}
+                  className="bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading === 'email' ? '...' : 'Entrar'}
+                </button>
+              </form>
+              {demoEmailError && (
+                <p className="text-xs text-red-600 mt-2">{demoEmailError}</p>
+              )}
+              <p className="text-[10px] text-gray-400 mt-2 text-left leading-relaxed">
+                Si es la primera vez, se crea una cuenta demo de agricultor. Modo validación, sin contraseña.
+              </p>
             </div>
           </div>
         )}
