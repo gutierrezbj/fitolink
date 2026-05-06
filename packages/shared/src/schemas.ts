@@ -80,6 +80,10 @@ export const createParcelSchema = z.object({
 
 export const updateParcelSchema = createParcelSchema.partial();
 
+export const bulkCreateParcelSchema = z.object({
+  parcels: z.array(createParcelSchema).min(1).max(100),
+});
+
 // === Operations ===
 
 export const productSchema = z.object({
@@ -155,6 +159,7 @@ export type CreateUser = z.infer<typeof createUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type CreateParcel = z.infer<typeof createParcelSchema>;
 export type UpdateParcel = z.infer<typeof updateParcelSchema>;
+export type BulkCreateParcel = z.infer<typeof bulkCreateParcelSchema>;
 export type CreateOperation = z.infer<typeof createOperationSchema>;
 export type CompleteOperation = z.infer<typeof completeOperationSchema>;
 export type CreateAlert = z.infer<typeof createAlertSchema>;

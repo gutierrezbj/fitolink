@@ -4,6 +4,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import ParcelDrawMap from './ParcelDrawMap.js';
 import SigpacLookup from './SigpacLookup.js';
+import KmzImporter from './KmzImporter.js';
+
+type CreateMode = 'draw' | 'import';
 
 const CROP_TYPES = [
   { value: 'olivo', label: 'Olivo' },
@@ -15,6 +18,7 @@ const CROP_TYPES = [
   { value: 'hortaliza', label: 'Hortaliza' },
   { value: 'citrico', label: 'Citrico' },
   { value: 'almendro', label: 'Almendro' },
+  { value: 'pistacho', label: 'Pistacho' },
   { value: 'arroz', label: 'Arroz' },
   { value: 'maiz', label: 'Maiz' },
   { value: 'remolacha', label: 'Remolacha' },
@@ -36,6 +40,8 @@ const PROVINCES = [
 export default function CreateParcelPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [mode, setMode] = useState<CreateMode>('draw');
 
   const [name, setName] = useState('');
   const [cropType, setCropType] = useState('');
@@ -70,10 +76,35 @@ export default function CreateParcelPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Nueva Parcela</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Dibuja el contorno de tu parcela en el mapa y completa los datos
+          {mode === 'draw'
+            ? 'Dibuja el contorno de tu parcela en el mapa y completa los datos'
+            : 'Importa una o varias parcelas desde un archivo KMZ, KML, GPX o GeoJSON'}
         </p>
       </div>
 
+      {/* Mode tabs */}
+      <div className="mb-6 inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+        <button
+          onClick={() => setMode('draw')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            mode === 'draw' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          ✏️ Dibujar en mapa
+        </button>
+        <button
+          onClick={() => setMode('import')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            mode === 'import' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          📁 Importar archivo
+        </button>
+      </div>
+
+      {mode === 'import' && <KmzImporter />}
+
+      {mode === 'draw' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Map */}
         <div>
@@ -176,6 +207,7 @@ export default function CreateParcelPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

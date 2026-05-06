@@ -62,6 +62,7 @@ _CROP_TO_GROUP: dict[str, str] = {
     'olivo': 'evergreen',
     'citrico': 'evergreen',
     'almendro': 'deciduous',
+    'pistacho': 'deciduous',
     'vinedo': 'deciduous',
     'frutal': 'deciduous',
     'cereal': 'winter_annual',

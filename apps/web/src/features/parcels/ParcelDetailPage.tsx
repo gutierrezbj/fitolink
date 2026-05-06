@@ -34,7 +34,7 @@ const SEASONAL_RANGE: Record<string, [number, number][]> = {
 };
 
 const CROP_GROUP: Record<string, keyof typeof SEASONAL_RANGE> = {
-  olivo: 'evergreen', citrico: 'evergreen', almendro: 'deciduous',
+  olivo: 'evergreen', citrico: 'evergreen', almendro: 'deciduous', pistacho: 'deciduous',
   vinedo: 'deciduous', frutal: 'deciduous',
   cereal: 'winter_annual', leguminosa: 'winter_annual', remolacha: 'winter_annual', patata: 'winter_annual',
   girasol: 'summer_annual', maiz: 'summer_annual', algodon: 'summer_annual', arroz: 'summer_annual',
@@ -42,7 +42,7 @@ const CROP_GROUP: Record<string, keyof typeof SEASONAL_RANGE> = {
 
 const CROP_LABELS: Record<string, string> = {
   olivo: 'Olivar', vinedo: 'Viñedo', cereal: 'Cereal', girasol: 'Girasol',
-  almendro: 'Almendro', frutal: 'Frutal', citrico: 'Cítrico', maiz: 'Maíz',
+  almendro: 'Almendro', pistacho: 'Pistacho', frutal: 'Frutal', citrico: 'Cítrico', maiz: 'Maíz',
   algodon: 'Algodón', arroz: 'Arroz', leguminosa: 'Leguminosa',
   remolacha: 'Remolacha', patata: 'Patata', hortaliza: 'Hortaliza', otro: 'Cultivo',
 };

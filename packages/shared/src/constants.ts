@@ -41,6 +41,7 @@ export const CROP_TYPES = [
   'hortaliza',
   'citrico',
   'almendro',
+  'pistacho',
   'arroz',
   'maiz',
   'remolacha',

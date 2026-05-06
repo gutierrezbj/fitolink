@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as parcelController from '../../controllers/parcelController.js';
 import { protect, authorize } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
-import { createParcelSchema, updateParcelSchema } from '@fitolink/shared';
+import { createParcelSchema, updateParcelSchema, bulkCreateParcelSchema } from '@fitolink/shared';
 
 const router = Router();
 
@@ -11,6 +11,7 @@ router.use(protect());
 
 // Farmer routes
 router.post('/', authorize('farmer'), validate(createParcelSchema), parcelController.create);
+router.post('/bulk', authorize('farmer'), validate(bulkCreateParcelSchema), parcelController.createBulk);
 router.get('/mine', authorize('farmer'), parcelController.getMyParcels);
 router.get('/:id', parcelController.getById);
 router.put('/:id', authorize('farmer'), validate(updateParcelSchema), parcelController.update);

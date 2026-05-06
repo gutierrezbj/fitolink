@@ -12,6 +12,19 @@ export async function create(req: AuthRequest, res: Response, next: NextFunction
   }
 }
 
+export async function createBulk(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { parcels } = req.body as { parcels: Parameters<typeof parcelService.createParcelsBulk>[1] };
+    const created = await parcelService.createParcelsBulk(
+      req.user!._id.toString(),
+      parcels,
+    );
+    res.status(201).json({ success: true, data: created, meta: { count: created.length } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getMyParcels(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const parcels = await parcelService.getParcelsByOwner(req.user!._id.toString());

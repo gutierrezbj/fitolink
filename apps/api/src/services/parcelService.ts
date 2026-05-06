@@ -10,6 +10,17 @@ export async function createParcel(ownerId: string, data: CreateParcel): Promise
   return parcel;
 }
 
+export async function createParcelsBulk(
+  ownerId: string,
+  parcels: CreateParcel[],
+): Promise<IParcel[]> {
+  // insertMany is a single round-trip and atomic at the DB level. If one
+  // doc fails validation, none are inserted (ordered: true is the default).
+  const docs = parcels.map((p) => ({ ...p, ownerId }));
+  const created = await Parcel.insertMany(docs, { ordered: true });
+  return created as unknown as IParcel[];
+}
+
 export async function getParcelsByOwner(ownerId: string): Promise<IParcel[]> {
   return Parcel.find({ ownerId, isActive: true }).sort({ createdAt: -1 });
 }
