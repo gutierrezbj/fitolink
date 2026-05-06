@@ -214,7 +214,7 @@ export default function KmzImporter() {
                 key={polygons.length}
                 bounds={bounds!}
                 style={{ height: '100%', width: '100%' }}
-                scrollWheelZoom={false}
+                scrollWheelZoom
               >
                 <TileLayer
                   attribution="Tiles &copy; Esri"
