@@ -9,6 +9,7 @@
 
 import { kml, gpx } from '@tmcw/togeojson';
 import JSZip from 'jszip';
+import polygonClipping from 'polygon-clipping';
 
 export type MissionType = 'kml' | 'kmz' | 'gpx' | 'geojson';
 
@@ -208,6 +209,45 @@ function strip2D(coords: GeoJSON.Position[]): [number, number][] {
   return coords.map((c) => [c[0], c[1]] as [number, number]);
 }
 
+/**
+ * Clean a polygon ring set so MongoDB's 2dsphere index will accept it.
+ *
+ * KML exports from Google Earth often:
+ *  - List vertices starting in the middle of an edge (not at a corner) →
+ *    the closing edge crosses the opening edge → "Edges N and 0 cross"
+ *  - Use clockwise winding for the outer ring (2dsphere wants CCW)
+ *  - Have near-duplicate vertices that produce zero-length edges
+ *
+ * `polygon-clipping.union([rings])` re-builds a topologically clean
+ * polygon: resolves self-intersections, normalises winding, deduplicates.
+ * If the input is genuinely broken (e.g. degenerate to a line) it returns
+ * an empty MultiPolygon and we drop the parcel rather than ship garbage.
+ *
+ * Returns either a clean Polygon (single-piece input) or null if the
+ * cleanup couldn't recover anything usable. Callers can fall back to the
+ * raw rings if they prefer to surface the validation error to the user.
+ */
+function cleanPolygonRings(rings: [number, number][][]): GeoJSON.Polygon | null {
+  if (rings.length === 0 || rings[0].length < 4) return null;
+  try {
+    // polygon-clipping: input shape Polygon = Pair[][] (rings).
+    // Wrap as MultiPolygon-style argument: Geom[] = Pair[][][].
+    const result = polygonClipping.union([rings] as Parameters<typeof polygonClipping.union>[0]);
+    if (!result || result.length === 0) return null;
+    // For a single source polygon the union returns one piece; if it
+    // produced multiple, take the largest by ring length (proxy for area).
+    const largest = result.reduce((best, poly) =>
+      poly[0].length > best[0].length ? poly : best,
+    );
+    return {
+      type: 'Polygon',
+      coordinates: largest.map((ring) => ring.map((p) => [p[0], p[1]])),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function extractPolygons(fc: ParsedMission): PolygonFeature[] {
   const out: PolygonFeature[] = [];
   fc.features.forEach((f, idx) => {
@@ -219,11 +259,12 @@ export function extractPolygons(fc: ParsedMission): PolygonFeature[] {
         : '') || `Parcela ${idx + 1}`;
 
     if (g.type === 'Polygon') {
-      const cleaned: GeoJSON.Polygon = {
-        type: 'Polygon',
-        coordinates: g.coordinates.map(strip2D),
+      const stripped = g.coordinates.map(strip2D) as [number, number][][];
+      const cleaned = cleanPolygonRings(stripped) ?? {
+        type: 'Polygon' as const,
+        coordinates: stripped.map((r) => r.map((p) => [p[0], p[1]])),
       };
-      const ring = cleaned.coordinates[0];
+      const ring = cleaned.coordinates[0] as [number, number][];
       out.push({
         name,
         geometry: cleaned,
@@ -233,11 +274,15 @@ export function extractPolygons(fc: ParsedMission): PolygonFeature[] {
     } else if (g.type === 'MultiPolygon') {
       // Split multi-polygons into one parcel per ring (common in cadastral KMZs)
       g.coordinates.forEach((poly, i) => {
-        const cleanedPoly = poly.map(strip2D);
-        const ring = cleanedPoly[0];
+        const stripped = poly.map(strip2D) as [number, number][][];
+        const cleaned = cleanPolygonRings(stripped) ?? {
+          type: 'Polygon' as const,
+          coordinates: stripped.map((r) => r.map((p) => [p[0], p[1]])),
+        };
+        const ring = cleaned.coordinates[0] as [number, number][];
         out.push({
           name: g.coordinates.length > 1 ? `${name} (${i + 1})` : name,
-          geometry: { type: 'Polygon', coordinates: cleanedPoly },
+          geometry: cleaned,
           areaHa: Number(polygonAreaHa(ring).toFixed(2)),
           centroid: polygonCentroid(ring),
         });
