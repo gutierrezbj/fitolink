@@ -198,6 +198,16 @@ export interface PolygonFeature {
   centroid: [number, number];
 }
 
+/**
+ * Force every coordinate to a 2-element [lon, lat] tuple. KML/KMZ files
+ * exported from Google Earth ship `[lon, lat, altitude]` (altitude is
+ * typically 0). FitoLink's GeoJSON model is 2D; the API schema rejects
+ * tuples longer than 2. Strip altitude here so callers get clean data.
+ */
+function strip2D(coords: GeoJSON.Position[]): [number, number][] {
+  return coords.map((c) => [c[0], c[1]] as [number, number]);
+}
+
 export function extractPolygons(fc: ParsedMission): PolygonFeature[] {
   const out: PolygonFeature[] = [];
   fc.features.forEach((f, idx) => {
@@ -209,20 +219,25 @@ export function extractPolygons(fc: ParsedMission): PolygonFeature[] {
         : '') || `Parcela ${idx + 1}`;
 
     if (g.type === 'Polygon') {
-      const ring = g.coordinates[0];
+      const cleaned: GeoJSON.Polygon = {
+        type: 'Polygon',
+        coordinates: g.coordinates.map(strip2D),
+      };
+      const ring = cleaned.coordinates[0];
       out.push({
         name,
-        geometry: g,
+        geometry: cleaned,
         areaHa: Number(polygonAreaHa(ring).toFixed(2)),
         centroid: polygonCentroid(ring),
       });
     } else if (g.type === 'MultiPolygon') {
       // Split multi-polygons into one parcel per ring (common in cadastral KMZs)
       g.coordinates.forEach((poly, i) => {
-        const ring = poly[0];
+        const cleanedPoly = poly.map(strip2D);
+        const ring = cleanedPoly[0];
         out.push({
           name: g.coordinates.length > 1 ? `${name} (${i + 1})` : name,
-          geometry: { type: 'Polygon', coordinates: poly },
+          geometry: { type: 'Polygon', coordinates: cleanedPoly },
           areaHa: Number(polygonAreaHa(ring).toFixed(2)),
           centroid: polygonCentroid(ring),
         });

@@ -116,9 +116,12 @@ export default function KmzImporter() {
       navigate('/dashboard/parcels');
     },
     onError: (e: { response?: { data?: { error?: { message?: string } } }; message?: string }) => {
-      const msg =
-        e.response?.data?.error?.message ?? e.message ?? 'Error al crear las parcelas';
-      toast.error(msg);
+      const raw = e.response?.data?.error?.message ?? e.message ?? 'Error al crear las parcelas';
+      // Validation errors can be 1-2k characters of "field.path: detail"
+      // chains — show only the first issue and a short hint.
+      const firstLine = raw.split(/[,\n]/)[0]?.trim() ?? raw;
+      const truncated = firstLine.length > 160 ? firstLine.slice(0, 160) + '…' : firstLine;
+      toast.error(truncated);
     },
   });
 
