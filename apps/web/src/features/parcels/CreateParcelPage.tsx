@@ -86,19 +86,28 @@ export default function CreateParcelPage() {
       <div className="mb-6 inline-flex bg-gray-100 rounded-xl p-1 gap-1">
         <button
           onClick={() => setMode('draw')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             mode === 'draw' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          ✏️ Dibujar en mapa
+          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 17h14" />
+            <path d="M14.5 4.5l1.8-1.8a1.5 1.5 0 1 1 2.1 2.1L16.6 6.6m-2.1-2.1L4.5 14.5 3 17l2.5-1.5L15.5 5.6m-1-1.1l2.1 2.1" />
+          </svg>
+          Dibujar en mapa
         </button>
         <button
           onClick={() => setMode('import')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             mode === 'import' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          📁 Importar archivo
+          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 4v9" />
+            <path d="M6.5 7.5L10 4l3.5 3.5" />
+            <path d="M3.5 13v2.5A1.5 1.5 0 0 0 5 17h10a1.5 1.5 0 0 0 1.5-1.5V13" />
+          </svg>
+          Importar archivo
         </button>
       </div>
 

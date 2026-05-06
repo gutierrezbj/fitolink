@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Document -->
+  <path d="M22 18 h14 l6 6 v22 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-26 a2 2 0 0 1 2 -2 z" fill="#fff"/>
+  <path d="M36 18 v6 h6" fill="none" stroke="#46632e" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Parcel polygon inside the document -->
+  <polygon points="25,32 32,30 38,33 36,40 28,41 24,37" fill="none" stroke="#46632e" stroke-width="1.6" stroke-linejoin="round"/>
+  <polygon points="25,32 32,30 38,33 36,40 28,41 24,37" fill="#bbf7d0" opacity="0.6"/>
+  <!-- Vertex dots -->
+  <circle cx="25" cy="32" r="0.9" fill="#46632e"/>
+  <circle cx="32" cy="30" r="0.9" fill="#46632e"/>
+  <circle cx="38" cy="33" r="0.9" fill="#46632e"/>
+  <circle cx="36" cy="40" r="0.9" fill="#46632e"/>
+  <circle cx="28" cy="41" r="0.9" fill="#46632e"/>
+  <circle cx="24" cy="37" r="0.9" fill="#46632e"/>
+  <!-- Upload arrow at top, signal yellow -->
+  <line x1="32" y1="3" x2="32" y2="13" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+  <polyline points="27,8 32,3 37,8" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

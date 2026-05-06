@@ -168,7 +168,7 @@ export default function KmzImporter() {
             className="hidden"
           />
           <label htmlFor="kmz-input" className="cursor-pointer block">
-            <div className="text-5xl mb-3">🗺️</div>
+            <img src="/import-parcel.svg" alt="" className="w-16 h-16 mx-auto mb-4" />
             <p className="text-base font-semibold text-gray-900">
               Suelta aquí tu KMZ, KML, GPX o GeoJSON
             </p>

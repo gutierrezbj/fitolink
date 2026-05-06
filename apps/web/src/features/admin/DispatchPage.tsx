@@ -14,13 +14,15 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_ICONS: Record<string, string> = {
-  phytosanitary: '💊',
-  inspection: '📡',
-  diagnosis: '🔬',
-  herbicide: '🌿',
-  fertilization: '🌱',
-  seeding: '🌾',
+  phytosanitary: '/service-phytosanitary.svg',
+  inspection: '/service-multispectral.svg',
+  diagnosis: '/service-diagnosis.svg',
+  herbicide: '/service-herbicide.svg',
+  fertilization: '/service-fertilization.svg',
+  seeding: '/service-seeding.svg',
 };
+
+const FALLBACK_ICON = '/operational-system.svg';
 
 const SEVERITY_RING: Record<string, string> = {
   critical: 'ring-2 ring-red-400',
@@ -67,7 +69,7 @@ function AssignModal({ operation, pilots, onClose, onAssign }: {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{TYPE_ICONS[operation.type] || '📋'}</span>
+            <img src={TYPE_ICONS[operation.type] || FALLBACK_ICON} alt="" className="w-10 h-10" />
             <div>
               <h3 className="font-bold text-gray-900">{operation.parcelId?.name}</h3>
               <p className="text-xs text-gray-500">{TYPE_LABELS[operation.type]} · {operation.parcelId?.areaHa} ha</p>
@@ -137,7 +139,7 @@ function DispatchCard({ op, onAssign, onCancel, onReassign }: {
       {/* Top row */}
       <div className="flex items-start justify-between mb-2.5">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{TYPE_ICONS[op.type] || '📋'}</span>
+          <img src={TYPE_ICONS[op.type] || FALLBACK_ICON} alt="" className="w-6 h-6" />
           <span className="text-[11px] font-semibold text-gray-500">{TYPE_LABELS[op.type] || op.type}</span>
         </div>
         <div className="flex items-center gap-1.5">
