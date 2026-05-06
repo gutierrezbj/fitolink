@@ -12,6 +12,7 @@ interface NdviReading {
   anomalyDetected: boolean;
   source?: string;
   ndreValue?: number;
+  ndmiValue?: number;
 }
 
 interface NdviChartProps {
@@ -46,6 +47,12 @@ function CustomTooltip({ active, payload, label }: {
             <span className="font-medium text-purple-600">{d.ndreValue.toFixed(3)}</span>
           </div>
         )}
+        {d.ndmiValue !== undefined && (
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">NDMI</span>
+            <span className="font-medium text-sky-600">{d.ndmiValue.toFixed(3)}</span>
+          </div>
+        )}
         {d.source && (
           <div className="flex justify-between gap-4">
             <span className="text-gray-500">Fuente</span>
@@ -68,6 +75,7 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
     .map((d) => ({ ...d, dateLabel: formatDate(d.date) }));
 
   const hasNdre = chartData.some((d) => d.ndreValue !== undefined);
+  const hasNdmi = chartData.some((d) => d.ndmiValue !== undefined);
 
   const anomalyCount = data.filter((d) => d.anomalyDetected).length;
 
@@ -189,6 +197,21 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
               connectNulls
             />
           )}
+
+          {/* NDMI line — leaf moisture; drops before NDVI under water stress */}
+          {hasNdmi && (
+            <Area
+              type="monotone"
+              dataKey="ndmiValue"
+              stroke="#0ea5e9"
+              strokeWidth={2}
+              strokeDasharray="2 4"
+              fill="none"
+              dot={false}
+              activeDot={{ r: 4, fill: '#0284c7', stroke: '#fff', strokeWidth: 1.5 }}
+              connectNulls
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
 
@@ -203,6 +226,14 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
               <line x1="0" y1="2" x2="14" y2="2" stroke="#a855f7" strokeWidth="2" strokeDasharray="5 3" />
             </svg>
             <span className="text-[11px] text-gray-500">NDRE (clorofila)</span>
+          </div>
+        )}
+        {hasNdmi && (
+          <div className="flex items-center gap-1.5">
+            <svg width="14" height="4" className="inline-block">
+              <line x1="0" y1="2" x2="14" y2="2" stroke="#0ea5e9" strokeWidth="2" strokeDasharray="2 4" />
+            </svg>
+            <span className="text-[11px] text-gray-500">NDMI (humedad)</span>
           </div>
         )}
         <div className="flex items-center gap-1.5">

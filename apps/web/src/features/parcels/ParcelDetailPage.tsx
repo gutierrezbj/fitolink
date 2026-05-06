@@ -128,7 +128,19 @@ type Alert = {
   detectedAt: string;
 };
 
-type NdviReading = { date: string; mean: number; min: number; max: number; anomalyDetected: boolean; source?: string };
+type NdviReading = {
+  date: string;
+  mean: number;
+  min: number;
+  max: number;
+  anomalyDetected: boolean;
+  source?: string;
+  ndreValue?: number;
+  ndmiValue?: number;
+  eviValue?: number;
+  saviValue?: number;
+  cloudFraction?: number;
+};
 
 type ModisBaseline = {
   source: string;
@@ -147,6 +159,16 @@ type ClimateBaseline = {
   annualPrecip: number;
   annualPet?: number;
   aridityIndex?: number;
+};
+
+type Thermal = {
+  source: string;
+  days: number;
+  lstC: number;
+  airTempC?: number | null;
+  lstDeltaAirC?: number | null;
+  scenesUsed: number;
+  lastDate?: string | null;
 };
 
 type RecentClimate = {
@@ -179,6 +201,7 @@ type Parcel = {
   modisBaseline?: ModisBaseline;
   climateBaseline?: ClimateBaseline;
   recentClimate?: RecentClimate;
+  thermal?: Thermal;
 };
 
 function StatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
@@ -518,6 +541,56 @@ export default function ParcelDetailPage() {
         );
       })()}
 
+      {/* Sentinel-2 indices — current snapshot */}
+      {parcel.ndviHistory?.length > 0 && (() => {
+        const latest = parcel.ndviHistory[parcel.ndviHistory.length - 1];
+        const prev = parcel.ndviHistory[parcel.ndviHistory.length - 2];
+        const indices: { label: string; value: number | undefined; prev: number | undefined; tooltip: string; color: string }[] = [
+          { label: 'NDVI', value: latest.mean, prev: prev?.mean,
+            tooltip: 'Vigor general del cultivo. <0.30 critico · 0.30-0.40 alerta · 0.40-0.55 medio · >0.55 sano.',
+            color: '#16a34a' },
+          { label: 'NDRE', value: latest.ndreValue, prev: prev?.ndreValue,
+            tooltip: 'Clorofila Red Edge (B05). Mas sensible al estres de clorofila que el NDVI; lo detecta antes.',
+            color: '#9333ea' },
+          { label: 'NDMI', value: latest.ndmiValue, prev: prev?.ndmiValue,
+            tooltip: 'Humedad foliar (B11 SWIR). Cae antes que el NDVI bajo estres hidrico.',
+            color: '#0ea5e9' },
+          { label: 'EVI',  value: latest.eviValue,  prev: prev?.eviValue,
+            tooltip: 'Vegetacion mejorada. Corrige suelo y atmosfera; mejor que NDVI con copa rala.',
+            color: '#65a30d' },
+          { label: 'SAVI', value: latest.saviValue, prev: prev?.saviValue,
+            tooltip: 'Vegetacion ajustada al suelo. Util en pistacho y otros cultivos con marco abierto.',
+            color: '#84cc16' },
+        ];
+        const available = indices.filter((i) => i.value !== undefined && i.value !== null);
+        if (available.length <= 1) return null; // only NDVI → don't show panel yet
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">Indices Sentinel-2</h2>
+              <span className="text-xs text-gray-400">Ultima escena · {formatDate(latest.date)}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {available.map((idx) => {
+                const v = idx.value as number;
+                const trend = idx.prev !== undefined ? v - idx.prev : null;
+                return (
+                  <div key={idx.label} className="bg-gray-50 rounded-lg p-3 border border-gray-100" title={idx.tooltip}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: idx.color }}>{idx.label}</p>
+                    <p className="text-2xl font-bold tabular-nums text-gray-900 mt-1">{v.toFixed(3)}</p>
+                    {trend !== null && Math.abs(trend) >= 0.005 && (
+                      <p className={`text-[10px] font-semibold mt-0.5 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {trend > 0 ? '+' : ''}{trend.toFixed(3)} vs ant.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* NDVI Chart — compact */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
@@ -545,6 +618,7 @@ export default function ParcelDetailPage() {
           modisBaseline={parcel.modisBaseline}
           climateBaseline={parcel.climateBaseline}
           recentClimate={parcel.recentClimate}
+          thermal={parcel.thermal}
         />
       </div>
 

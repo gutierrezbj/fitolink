@@ -117,7 +117,9 @@ class OpenEOClient:
         )
 
         try:
-            # Step 1: Load collection — include B05 (RedEdge) for NDRE (Sprint ML)
+            # Step 1: Load collection — include B02 (Blue) and B11 (SWIR-1) so the
+            # same fetch yields NDVI + NDRE + NDMI + EVI + SAVI without a second
+            # download.
             s2 = self._conn.load_collection(
                 OPENEO_COLLECTION,
                 spatial_extent={
@@ -126,7 +128,7 @@ class OpenEOClient:
                     'crs': 'EPSG:4326',
                 },
                 temporal_extent=[start_str, end_str],
-                bands=['B04', 'B05', 'B08', 'SCL'],
+                bands=['B02', 'B04', 'B05', 'B08', 'B11', 'SCL'],
                 max_cloud_cover=max_cloud_cover,
             )
 
@@ -136,63 +138,85 @@ class OpenEOClient:
             cloud_mask = (scl == 0) | (scl == 1) | (scl == 3) | (scl == 8) | (scl == 9) | (scl == 10) | (scl == 11)
             s2_clean = s2.mask(cloud_mask)
 
-            # Step 3: NDVI band math = (B08 - B04) / (B08 + B04)
-            b04 = s2_clean.band('B04')
-            b05 = s2_clean.band('B05')
-            b08 = s2_clean.band('B08')
-            ndvi = (b08 - b04) / (b08 + b04)
+            # Step 3: index band math
+            b02 = s2_clean.band('B02')   # Blue (10 m)  — needed by EVI
+            b04 = s2_clean.band('B04')   # Red (10 m)
+            b05 = s2_clean.band('B05')   # Red Edge (20 m)
+            b08 = s2_clean.band('B08')   # NIR (10 m)
+            b11 = s2_clean.band('B11')   # SWIR-1 (20 m) — needed by NDMI
 
-            # NDRE band math = (B08 - B05) / (B08 + B05) — more sensitive to chlorophyll
-            ndre = (b08 - b05) / (b08 + b05)
+            ndvi = (b08 - b04) / (b08 + b04)                              # vigor general
+            ndre = (b08 - b05) / (b08 + b05)                              # clorofila red-edge
+            ndmi = (b08 - b11) / (b08 + b11)                              # leaf moisture (key for water stress)
+            evi  = 2.5 * (b08 - b04) / (b08 + 6.0 * b04 - 7.5 * b02 + 1.0)  # canopy density, soil/atmosphere corrected
+            savi = 1.5 * (b08 - b04) / (b08 + b04 + 0.5)                  # soil-adjusted, sparse canopy friendly
 
-            # Step 4: Clip both indices to parcel polygon
+            # Step 4: Clip every index to parcel polygon
             ndvi_parcel = ndvi.filter_spatial(geometry)
             ndre_parcel = ndre.filter_spatial(geometry)
+            ndmi_parcel = ndmi.filter_spatial(geometry)
+            evi_parcel  = evi.filter_spatial(geometry)
+            savi_parcel = savi.filter_spatial(geometry)
 
-            # Step 5: Temporal reduction — max composite
+            # Step 5: Temporal reduction — max composite (clearest pixel per location)
             ndvi_composite = ndvi_parcel.reduce_temporal('max')
             ndre_composite = ndre_parcel.reduce_temporal('max')
+            ndmi_composite = ndmi_parcel.reduce_temporal('max')
+            evi_composite  = evi_parcel.reduce_temporal('max')
+            savi_composite = savi_parcel.reduce_temporal('max')
 
-            # Step 6: Download via temp files (download() requires a path in newer openeo-client)
-            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as ndvi_tmp:
-                ndvi_tmp_path = ndvi_tmp.name
-            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as ndre_tmp:
-                ndre_tmp_path = ndre_tmp.name
+            # Step 6: Download each composite as a tiny GeoTIFF, read bytes, clean up.
+            tmp_paths: dict[str, str] = {}
+            for key in ('ndvi', 'ndre', 'ndmi', 'evi', 'savi'):
+                with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as f:
+                    tmp_paths[key] = f.name
 
+            raw_bytes: dict[str, bytes] = {}
             try:
-                ndvi_composite.download(ndvi_tmp_path, format='GTiff')
-                ndre_composite.download(ndre_tmp_path, format='GTiff')
-
-                with open(ndvi_tmp_path, 'rb') as f:
-                    ndvi_raw_bytes = f.read()
-                with open(ndre_tmp_path, 'rb') as f:
-                    ndre_raw_bytes = f.read()
+                ndvi_composite.download(tmp_paths['ndvi'], format='GTiff')
+                ndre_composite.download(tmp_paths['ndre'], format='GTiff')
+                ndmi_composite.download(tmp_paths['ndmi'], format='GTiff')
+                evi_composite.download(tmp_paths['evi'], format='GTiff')
+                savi_composite.download(tmp_paths['savi'], format='GTiff')
+                for key, path in tmp_paths.items():
+                    with open(path, 'rb') as f:
+                        raw_bytes[key] = f.read()
             finally:
-                for p in (ndvi_tmp_path, ndre_tmp_path):
-                    if os.path.exists(p):
-                        os.unlink(p)
+                for path in tmp_paths.values():
+                    if os.path.exists(path):
+                        os.unlink(path)
 
-            # Step 7: Compute statistics
-            result = _stats_from_geotiff(io.BytesIO(ndvi_raw_bytes))
+            # Step 7: Compute NDVI stats (the canonical ones — drive the rest).
+            result = _stats_from_geotiff(io.BytesIO(raw_bytes['ndvi']))
             if result is None:
                 logger.info('openeo_no_valid_pixels', bbox=bbox)
                 return None
 
-            # Add NDRE mean to result
-            ndre_result = _stats_from_geotiff(io.BytesIO(ndre_raw_bytes))
-            if ndre_result is not None:
-                result.ndre_mean = ndre_result.mean
+            # Auxiliary indices: only the mean is propagated (history compactness).
+            # EVI/SAVI can exceed [-1, 1] over bright surfaces; widen bounds.
+            for key, attr, lo, hi in (
+                ('ndre', 'ndre_mean', -1.0, 1.0),
+                ('ndmi', 'ndmi_mean', -1.0, 1.0),
+                ('evi',  'evi_mean',  -1.5, 1.5),
+                ('savi', 'savi_mean', -1.5, 1.5),
+            ):
+                aux = _stats_from_geotiff(io.BytesIO(raw_bytes[key]), clip_min=lo, clip_max=hi)
+                if aux is not None:
+                    setattr(result, attr, aux.mean)
 
             logger.info(
                 'openeo_processing_completed',
-                mean=result.mean,
-                ndre_mean=result.ndre_mean,
+                ndvi=result.mean,
+                ndre=result.ndre_mean,
+                ndmi=result.ndmi_mean,
+                evi=result.evi_mean,
+                savi=result.savi_mean,
                 min_val=result.min_val,
                 max_val=result.max_val,
                 pixels=result.pixel_count,
             )
             # Return result + raw NDVI bytes for intra-parcel grid generation
-            return result, ndvi_raw_bytes
+            return result, raw_bytes['ndvi']
 
         except Exception as e:
             logger.error('openeo_processing_failed', error=str(e), bbox=bbox)
@@ -207,9 +231,16 @@ def _geometry_to_bbox(geometry: dict) -> tuple[float, float, float, float]:
     return (min(lngs), min(lats), max(lngs), max(lats))
 
 
-def _stats_from_geotiff(buffer: io.BytesIO) -> Optional[NdviResult]:
+def _stats_from_geotiff(
+    buffer: io.BytesIO,
+    clip_min: float = -1.0,
+    clip_max: float = 1.0,
+) -> Optional[NdviResult]:
     """
-    Parse a GeoTIFF from a BytesIO buffer and compute NDVI statistics.
+    Parse a GeoTIFF from a BytesIO buffer and compute pixel statistics.
+
+    Defaults to NDVI/NDRE/NDMI bounds [-1, 1]. EVI and SAVI legitimately
+    exceed those over bright surfaces and can be passed wider bounds.
 
     Returns None if the raster has no valid (non-nodata, finite) pixels.
     """
@@ -234,8 +265,7 @@ def _stats_from_geotiff(buffer: io.BytesIO) -> Optional[NdviResult]:
     if len(valid) == 0:
         return None
 
-    # Clip NDVI to physical range [-1, 1]
-    valid = np.clip(valid, -1.0, 1.0)
+    valid = np.clip(valid, clip_min, clip_max)
 
     return NdviResult(
         mean=round(float(np.mean(valid)), 4),

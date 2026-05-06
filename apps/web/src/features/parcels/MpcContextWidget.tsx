@@ -47,6 +47,15 @@ interface Props {
     tempAnomalyC?: number;
     droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe';
   };
+  thermal?: {
+    source: string;
+    days: number;
+    lstC: number;
+    airTempC?: number | null;
+    lstDeltaAirC?: number | null;
+    scenesUsed: number;
+    lastDate?: string | null;
+  };
 }
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -64,8 +73,9 @@ export default function MpcContextWidget({
   modisBaseline,
   climateBaseline,
   recentClimate,
+  thermal,
 }: Props) {
-  const hasAny = modisBaseline || climateBaseline || recentClimate;
+  const hasAny = modisBaseline || climateBaseline || recentClimate || thermal;
   if (!hasAny) return null;
 
   const baselineMonth = modisBaseline?.months.find(m => m.month === currentMonth);
@@ -96,7 +106,7 @@ export default function MpcContextWidget({
         <span className="text-[10px] text-white/80 font-medium">Gratis · Global</span>
       </div>
 
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Block 1 — MODIS NDVI baseline */}
         {modisBaseline && (
           <div className="space-y-2">
@@ -195,6 +205,48 @@ export default function MpcContextWidget({
             </div>
           </div>
         )}
+
+        {/* Block 4 — Landsat thermal LST (Sprint Thermal) */}
+        {thermal && (() => {
+          const delta = thermal.lstDeltaAirC;
+          let badge: { label: string; bg: string; text: string; border: string } | null = null;
+          if (delta !== null && delta !== undefined) {
+            if (delta >= 8) badge = { label: 'Estrés crítico', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
+            else if (delta >= 5) badge = { label: 'Estrés térmico', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' };
+            else if (delta >= 2) badge = { label: 'Templado', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' };
+            else badge = { label: 'Sin estrés', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
+          }
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Térmico {thermal.days}d</span>
+                <span className="text-[9px] text-gray-400">Landsat 30 m</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-gray-900">{thermal.lstC.toFixed(1)}</p>
+                <p className="text-xs text-gray-400">°C superficie</p>
+              </div>
+              <div className="space-y-1">
+                {badge && (
+                  <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border ${badge.bg} ${badge.border}`}>
+                    <span className={`text-[10px] font-bold ${badge.text}`}>{badge.label}</span>
+                    {delta !== null && delta !== undefined && (
+                      <span className={`text-[10px] font-bold ${badge.text}`}>
+                        {delta > 0 ? '+' : ''}{delta.toFixed(1)} °C vs aire
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="text-[10px] text-gray-500 space-y-0.5">
+                  {thermal.airTempC !== undefined && thermal.airTempC !== null && (
+                    <p>🌡 Aire {thermal.airTempC.toFixed(1)} °C (Open-Meteo)</p>
+                  )}
+                  <p>🛰 {thermal.scenesUsed} escena{thermal.scenesUsed !== 1 ? 's' : ''} L8/L9</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

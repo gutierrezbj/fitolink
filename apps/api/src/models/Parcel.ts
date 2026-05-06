@@ -8,6 +8,13 @@ export interface INdviReading {
   max: number;
   anomalyDetected: boolean;
   source: NdviSource;
+  // Optional auxiliary indices computed from the same Sentinel-2 fetch.
+  // All means; populated when the corresponding bands are available.
+  ndreValue?: number;   // Red Edge — chlorophyll, B05+B08
+  ndmiValue?: number;   // Leaf moisture — drops before NDVI under water stress, B08+B11
+  eviValue?: number;    // Enhanced VI — soil/atmosphere corrected, B02+B04+B08
+  saviValue?: number;   // Soil-adjusted VI — sparse canopy friendly, B04+B08
+  cloudFraction?: number;
 }
 
 export interface IModisBaselineMonth {
@@ -63,6 +70,18 @@ export interface IRecentClimate {
   droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe' | null;
 }
 
+// Sprint Thermal — Landsat C2 L2 surface temperature, refreshed each run
+export interface IThermal {
+  source: string;            // 'landsat-c2-l2'
+  fetched: Date;
+  days: number;              // lookback window
+  lstC: number;              // weighted-mean LST in Celsius
+  airTempC?: number | null;  // echoed from recentClimate.tempMeanC for context
+  lstDeltaAirC?: number | null;  // canopy − air; > 5 °C = stress
+  scenesUsed: number;        // L8/L9 scenes that contributed
+  lastDate?: Date | null;    // date of the latest scene used
+}
+
 export interface IParcel extends Document {
   ownerId: mongoose.Types.ObjectId;
   name: string;
@@ -78,6 +97,7 @@ export interface IParcel extends Document {
   modisBaseline?: IModisBaseline;
   climateBaseline?: IClimateBaseline;
   recentClimate?: IRecentClimate;
+  thermal?: IThermal;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -91,6 +111,11 @@ const ndviReadingSchema = new Schema<INdviReading>(
     max: { type: Number, required: true },
     anomalyDetected: { type: Boolean, default: false },
     source: { type: String, enum: NDVI_SOURCES, required: true },
+    ndreValue: { type: Number },
+    ndmiValue: { type: Number },
+    eviValue: { type: Number },
+    saviValue: { type: Number },
+    cloudFraction: { type: Number },
   },
   { _id: false },
 );
@@ -163,6 +188,20 @@ const recentClimateSchema = new Schema<IRecentClimate>(
   { _id: false },
 );
 
+const thermalSchema = new Schema<IThermal>(
+  {
+    source: { type: String, required: true },
+    fetched: { type: Date, required: true },
+    days: { type: Number, required: true },
+    lstC: { type: Number, required: true },
+    airTempC: { type: Number, default: null },
+    lstDeltaAirC: { type: Number, default: null },
+    scenesUsed: { type: Number, required: true },
+    lastDate: { type: Date, default: null },
+  },
+  { _id: false },
+);
+
 const parcelSchema = new Schema<IParcel>(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -182,6 +221,7 @@ const parcelSchema = new Schema<IParcel>(
     modisBaseline: { type: modisBaselineSchema, default: undefined },
     climateBaseline: { type: climateBaselineSchema, default: undefined },
     recentClimate: { type: recentClimateSchema, default: undefined },
+    thermal: { type: thermalSchema, default: undefined },
     isActive: { type: Boolean, default: true },
   },
   {

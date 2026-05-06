@@ -37,3 +37,8 @@ PROCESSING_INTERVAL_DAYS: int = 5
 # Refresh 30-day climate snapshot on every pipeline run (cheap HTTP fetch).
 # Set MPC_CLIMATE_REFRESH=false to disable (e.g. if Open-Meteo is rate-limited).
 MPC_CLIMATE_REFRESH: bool = os.getenv('MPC_CLIMATE_REFRESH', 'true').lower() != 'false'
+
+# Sprint Thermal — Landsat C2 L2 surface temperature
+# Refresh latest LST on every pipeline run (Landsat 8/9 ~8-day cadence per pixel).
+# Set MPC_THERMAL_REFRESH=false if MPC throttles or you want to skip.
+MPC_THERMAL_REFRESH: bool = os.getenv('MPC_THERMAL_REFRESH', 'true').lower() != 'false'

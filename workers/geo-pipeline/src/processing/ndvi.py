@@ -73,14 +73,23 @@ def extract_bands_from_safe(
 
 @dataclass
 class NdviResult:
-    """Result of NDVI/NDRE computation for a parcel."""
+    """Result of vegetation index computation for a parcel.
+
+    `mean`/`min_val`/`max_val`/`std` always reference NDVI for backward
+    compatibility with existing callers and stored history. The other index
+    fields are populated when the corresponding bands are available in the
+    same fetch (Sentinel-2 via openEO ships them all together).
+    """
     mean: float
     min_val: float
     max_val: float
     std: float
     pixel_count: int
     cloud_fraction: float
-    ndre_mean: float | None = None  # NDRE mean (Sprint ML — None if B05 unavailable)
+    ndre_mean: float | None = None  # (B08-B05)/(B08+B05) — Red Edge chlorophyll
+    ndmi_mean: float | None = None  # (B08-B11)/(B08+B11) — leaf moisture, drops before NDVI under water stress
+    evi_mean: float | None = None   # 2.5·(B08-B04)/(B08+6·B04-7.5·B02+1) — soil/atmosphere-corrected vegetation
+    savi_mean: float | None = None  # 1.5·(B08-B04)/(B08+B04+0.5) — soil-adjusted, useful for sparse canopies
 
 
 def compute_ndvi(nir: np.ndarray, red: np.ndarray) -> np.ndarray:

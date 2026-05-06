@@ -18,13 +18,14 @@ from typing import Optional
 from .config import (
     MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR,
     USE_OPENEO, NDVI_GRID_ENABLED, NDVI_GRID_RESOLUTION,
-    MPC_CLIMATE_REFRESH,
+    MPC_CLIMATE_REFRESH, MPC_THERMAL_REFRESH,
 )
 from .ingestion.copernicus import CopernicusClient
 from .ingestion.openeo_client import OpenEOClient
 from .ingestion.climate_context import (
     fetch_recent_climate, compute_climate_anomaly,
 )
+from .ingestion.landsat_thermal import fetch_thermal
 from .processing.ndvi import (
     NdviResult, extract_bands_from_safe, compute_ndvi, compute_parcel_stats,
 )
@@ -206,7 +207,10 @@ def run_pipeline() -> None:
                 logger.info('no_imagery_found', parcel=parcel_name)
                 continue
 
-            # Store NDVI reading (cloud_fraction + ndreValue from Sprint ML)
+            # Store NDVI reading (cloud_fraction + auxiliary indices when present).
+            # Schema: every reading carries NDVI (canonical mean/min/max). NDRE,
+            # NDMI, EVI, SAVI ride along as optional means when their bands were
+            # available in the same fetch.
             new_reading = {
                 'date': datetime.now(),
                 'mean': stats.mean,
@@ -216,8 +220,15 @@ def run_pipeline() -> None:
                 'anomalyDetected': False,
                 'source': 'sentinel2',
             }
-            if stats.ndre_mean is not None:
-                new_reading['ndreValue'] = stats.ndre_mean
+            for attr, key in (
+                ('ndre_mean', 'ndreValue'),
+                ('ndmi_mean', 'ndmiValue'),
+                ('evi_mean',  'eviValue'),
+                ('savi_mean', 'saviValue'),
+            ):
+                value = getattr(stats, attr, None)
+                if value is not None:
+                    new_reading[key] = value
 
             db.parcels.update_one(
                 {'_id': parcel['_id']},
@@ -302,6 +313,31 @@ def run_pipeline() -> None:
                         )
                 except Exception as e:
                     logger.warning('climate_refresh_failed', parcel=parcel_name, error=str(e))
+
+            # Sprint Thermal — Landsat C2 L2 surface temperature (LST) via MPC.
+            # Adds the missing thermal channel: canopy temperature anomalies show
+            # 7-14 days before NDRE drops under water stress.
+            if MPC_THERMAL_REFRESH:
+                try:
+                    air_temp = None
+                    rc = parcel.get('recentClimate') or {}
+                    if isinstance(rc, dict):
+                        air_temp = rc.get('tempMeanC')
+                    thermal = fetch_thermal(parcel['geometry'], days=30, air_temp_c=air_temp)
+                    if thermal is not None:
+                        db.parcels.update_one(
+                            {'_id': parcel['_id']},
+                            {'$set': {'thermal': thermal}},
+                        )
+                        logger.info(
+                            'thermal_refreshed',
+                            parcel=parcel_name,
+                            lst_c=thermal['lstC'],
+                            delta_air=thermal.get('lstDeltaAirC'),
+                            scenes=thermal['scenesUsed'],
+                        )
+                except Exception as e:
+                    logger.warning('thermal_refresh_failed', parcel=parcel_name, error=str(e))
 
             # Anomaly detection V2 (ML) with seasonal context + MODIS baseline
             ndvi_history = parcel.get('ndviHistory', [])

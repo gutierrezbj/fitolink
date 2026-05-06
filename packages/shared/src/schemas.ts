@@ -65,6 +65,11 @@ export const ndviReadingSchema = z.object({
   max: z.number(),
   anomalyDetected: z.boolean().default(false),
   source: z.enum(NDVI_SOURCES),
+  ndreValue: z.number().optional(),
+  ndmiValue: z.number().optional(),
+  eviValue: z.number().optional(),
+  saviValue: z.number().optional(),
+  cloudFraction: z.number().optional(),
 });
 
 export const createParcelSchema = z.object({
