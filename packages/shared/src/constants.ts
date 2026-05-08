@@ -26,6 +26,18 @@ export type AlertStatus = (typeof ALERT_STATUSES)[number];
 export const NDVI_SOURCES = ['sentinel2', 'planet'] as const;
 export type NdviSource = (typeof NDVI_SOURCES)[number];
 
+// Marketplace provider categories (non-login directory entries)
+// Pilots stay as User with role='pilot' (they operate actively).
+// Distributors / agronomists / cooperatives are listings only — no login required.
+export const PROVIDER_CATEGORIES = ['phyto-distributor', 'agronomist', 'cooperative'] as const;
+export type ProviderCategory = (typeof PROVIDER_CATEGORIES)[number];
+
+export const LEAD_TYPES = ['cooperative-program', 'general-contact'] as const;
+export type LeadType = (typeof LEAD_TYPES)[number];
+
+export const LEAD_STATUSES = ['new', 'contacted', 'closed', 'lost'] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
 // Alert resolution types
 export const ALERT_RESOLUTIONS = ['service', 'false_positive', 'natural_recovery'] as const;
 export type AlertResolution = (typeof ALERT_RESOLUTIONS)[number];

@@ -9,6 +9,8 @@ import {
   ALERT_RESOLUTIONS,
   NDVI_SOURCES,
   CROP_TYPES,
+  PROVIDER_CATEGORIES,
+  LEAD_TYPES,
 } from './constants.js';
 
 // === GeoJSON ===
@@ -158,6 +160,37 @@ export const registerSchema = z.object({
   phone: z.string().optional(),
 });
 
+// === Marketplace providers (directory entries — no login) ===
+
+export const providerSchema = z.object({
+  category: z.enum(PROVIDER_CATEGORIES),
+  name: z.string().min(1).max(200),
+  brand: z.string().max(200).optional(),
+  description: z.string().max(500),
+  location: pointSchema,
+  serviceRadiusKm: z.number().positive().max(500).default(50),
+  cropSpecialties: z.array(z.enum(CROP_TYPES)).default([]),
+  contact: z.object({
+    email: z.string().email().optional(),
+    phone: z.string().max(40).optional(),
+    website: z.string().url().optional(),
+  }).default({}),
+  certifications: z.array(z.string().max(60)).optional(),
+  rating: z.number().min(0).max(5).default(0),
+  ratingCount: z.number().int().min(0).default(0),
+  isVerified: z.boolean().default(true),
+  notes: z.string().max(1000).optional(),
+  // Cooperative-only metrics
+  memberCount: z.number().int().positive().optional(),
+  aggregateAreaHa: z.number().positive().optional(),
+});
+
+export const createLeadSchema = z.object({
+  providerId: z.string().min(1),
+  type: z.enum(LEAD_TYPES),
+  message: z.string().max(2000).optional(),
+});
+
 // === Types ===
 
 export type CreateUser = z.infer<typeof createUserSchema>;
@@ -174,3 +207,5 @@ export type Certification = z.infer<typeof certificationSchema>;
 export type Equipment = z.infer<typeof equipmentSchema>;
 export type GeoPoint = z.infer<typeof pointSchema>;
 export type GeoPolygon = z.infer<typeof polygonSchema>;
+export type CreateProvider = z.infer<typeof providerSchema>;
+export type CreateLead = z.infer<typeof createLeadSchema>;
