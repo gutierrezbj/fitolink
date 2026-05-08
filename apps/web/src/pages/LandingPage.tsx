@@ -579,6 +579,19 @@ const ROLES = [
     gradient: 'from-amber-50 to-white',
     border: 'hover:border-amber-300',
   },
+  {
+    icon: <img src="/provider-cooperative.svg" alt="Cooperativa" className="w-14 h-14" />,
+    title: 'Cooperativa',
+    subtitle: 'Coordina y negocia',
+    features: [
+      'Monitoriza todas las parcelas del colectivo',
+      'Cuaderno PAC centralizado entre socios',
+      'Datos agregados para mejorar negociaci\u00f3n',
+      'Programa a medida con tu red de pilotos',
+    ],
+    gradient: 'from-yellow-50 to-amber-100',
+    border: 'hover:border-amber-400',
+  },
 ];
 
 function Roles() {
@@ -595,11 +608,11 @@ function Roles() {
           </span>
           <h2 className="text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05]" style={{ fontFamily: 'Instrument Serif, serif' }}>
             Una plataforma,<br />
-            <span className="text-brand-600">tres perspectivas</span>
+            <span className="text-brand-600">cuatro perspectivas</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {ROLES.map((role, i) => (
             <div
               key={role.title}
