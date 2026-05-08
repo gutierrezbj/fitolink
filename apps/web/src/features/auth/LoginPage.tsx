@@ -8,15 +8,16 @@ const SHOW_DEMO = import.meta.env.DEV
   || import.meta.env.VITE_SHOW_DEMO === 'true'
   || new URLSearchParams(window.location.search).has('demo');
 
+// Demo accounts shown publicly on the login page. Kept to the 4 archetypes
+// the product covers — pilots are intentionally not surfaced here (they
+// log in with their corporate account in real life). Outreach-specific
+// users (Sergio, John) still exist in MongoDB and can be entered via the
+// email field below — just removed from the chip row to reduce noise.
 const DEMO_ACCOUNTS = [
-  { label: 'Agricultor', googleId: 'demo-farmer-001', icon: '/farmer.svg', color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
-  { label: 'AgroXdron', googleId: 'demo-pilot-001', icon: '/drone-pilot.svg', color: 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100' },
-  { label: 'Drovinci', googleId: 'demo-pilot-002', icon: '/drone-pilot.svg', color: 'bg-indigo-50 border-indigo-200 text-indigo-800 hover:bg-indigo-100' },
-  { label: 'Aseguradora', googleId: 'demo-insurer-001', icon: '/insurance2.svg', color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
-  { label: 'Admin', googleId: 'demo-admin-001', icon: '/system-administration.svg', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
-  { label: 'ASAJA', googleId: 'demo-farmer-002', icon: '/farmer.svg', color: 'bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100' },
-  { label: 'Sergio · ASAJA', googleId: 'demo-sergio-asaja', icon: '/system-administration.svg', color: 'bg-yellow-100 border-yellow-300 text-yellow-900 hover:bg-yellow-200 ring-2 ring-yellow-300' },
-  { label: 'John · Pistacho', googleId: 'demo-john-pistacho', icon: '/farmer.svg', color: 'bg-emerald-100 border-emerald-300 text-emerald-900 hover:bg-emerald-200 ring-2 ring-emerald-300' },
+  { label: 'Agricultor',  googleId: 'demo-farmer-001',      icon: '/farmer.svg',                 color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
+  { label: 'Aseguradora', googleId: 'demo-insurer-001',     icon: '/insurance2.svg',             color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
+  { label: 'Cooperativa', googleId: 'demo-cooperative-001', icon: '/provider-cooperative.svg',   color: 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' },
+  { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 
 export default function LoginPage() {
