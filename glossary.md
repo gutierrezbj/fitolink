@@ -16,6 +16,15 @@
 | **Max composite** | Temporal reduction strategy: picks the maximum NDVI value per pixel across the time window. Selects the clearest (least cloudy) observation. |
 | **CLMS NPP** | Copernicus Land Monitoring Service Net Primary Productivity. Based on FAPAR 200m. Complements NDVI with real vegetation productivity. |
 | **FIRMS** | Fire Information for Resource Management System (NASA). Near real-time fire detection. Future integration for burn alerts. |
+| **MPC** | Microsoft Planetary Computer. Catálogo STAC público con auto-firma de URLs. Sin auth obligatoria, sin coste. Acceso a MODIS, Landsat, Sentinel, ERA5, TerraClimate, etc. Integrado en FitoLink desde Sprint MPC (2026-05-02). |
+| **MODIS / MOD13Q1.061** | Terra MODIS Vegetation Indices. 250m resolution, 16-day composite, 2000-presente, global. NDVI con scale factor 0.0001 e int16 fill -3000. Usado en FitoLink para baseline histórico 3-5 años por parcela. |
+| **STAC** | SpatioTemporal Asset Catalog. Estándar abierto para indexar datos geoespaciales. Permite buscar por bbox + datetime + collection. MPC, CDSE y NASA exponen catálogos STAC. |
+| **odc-stac** | Open Data Cube + STAC: librería Python para cargar items STAC como xarray DataArray. Usada en FitoLink para extraer time series MODIS por parcela. |
+| **TerraClimate** | Dataset mensual climatología 1958-2021, ~4km global. Variables: precip, tmax, tmin, PDSI (drought index), PET, AET. Vía MPC. Fallback de baseline climático en FitoLink (la fuente principal es Open-Meteo). |
+| **Open-Meteo** | API HTTP gratuita para datos meteorológicos históricos (ERA5 reanalysis 1940-presente) y actuales. Sin API key. Tier gratis 10k requests/día. Usado en FitoLink para baseline climático (1995-2024) y clima 30-day actual. Rate-limit 429 manejado con backoff exponencial 5/10/15/20s. |
+| **ERA5** | Reanálisis ECMWF horario 1940-presente, ~31km global. Backend de Open-Meteo y de varios datasets MPC. Provee T, lluvia, viento, ET₀ FAO. |
+| **ET₀ (FAO)** | Evapotranspiración de referencia, método Penman-Monteith FAO. Demanda atmosférica de agua. Calculada por Open-Meteo desde ERA5. Indicador clave de estrés hídrico. |
+| **PDSI** | Palmer Drought Severity Index. Rango -10 (sequía extrema) a +10 (humedad extrema). En TerraClimate. No disponible en Open-Meteo (FitoLink usa anomalía precipitación como proxy). |
 
 ## ML & Anomaly Detection
 
@@ -29,6 +38,12 @@
 | **Severity classes** | 0=no anomaly (healthy), 1=medium, 2=high, 3=critical. Mapped to alert severity field. |
 | **alert_type** | 'ndvi_drop' (sudden fall), 'stress_pattern' (sustained decline, consecutive_drops≥3), 'ndre_anomaly' (chlorophyll stress, ndre-ndvi gap>0.08). |
 | **aiConfidence** | Probability of the predicted class from RandomForest predict_proba. Stored in alert doc, displayed as bar in UI. |
+| **modis_baseline_ndvi** | Argumento opcional del detector V2: media histórica MODIS de 5 años para esa parcela en ese mes. Si la lectura actual está dentro de ±15% del baseline, override "anomalía → no anomalía" (suprime falsos positivos en parcelas con dinámica estacional fuerte). |
+| **drought_flag** | Argumento opcional del detector V2: 'none' / 'mild' / 'moderate' / 'severe' calculado de `precip_30d / climate_normal_precip`. Enriquece el texto de la alerta con contexto físico para distinguir estrés biótico de abiótico. |
+| **modisBaseline** | Subdoc en `parcels` con baseline NDVI MODIS. Schema: `{source, years, computed, months[{month, mean, std, n}], allTimeMean, observationCount}`. Construido por `build_mpc_baselines.py`. |
+| **climateBaseline** | Subdoc en `parcels` con normales climáticas mensuales. Schema: `{source, period, computed, months[{month, precip, tmax, tmin, pdsi, pet}], annualPrecip, annualPet, aridityIndex}`. Fuente primaria: Open-Meteo ERA5 1995-2024. |
+| **recentClimate** | Subdoc en `parcels` con clima últimos 30 días (refrescado cada pipeline run). Schema: `{source, days, fetched, precipTotalMm, tempMeanC, tempMaxC, tempMinC, et0TotalMm, daysWithRain, lastRainDaysAgo, precipPctOfNormal, precipAnomalyMm, tempAnomalyC, droughtFlag}`. |
+| **search_with_retry** | Helper en `planetary_computer.py` para STAC searches con backoff exponencial 2s/4s ante "maximum allowed time" timeouts típicos del MPC anonymous tier. |
 
 ## Agricultural Domain
 
@@ -71,3 +86,9 @@
 | **ndvi_snapshots** | MongoDB collection para snapshots intra-parcela. Schema: parcelId, date, resolution, points[{lat,lng,ndvi}], bbox, pixelCount. Índice compound {parcelId:1, date:-1}. |
 | **RBF interpolation** | Radial Basis Function (scipy, kernel=thin_plate_spline). Interpola pixels NDVI muestreados del GeoTIFF a grilla uniforme. Proyecta a UTM EPSG:25830 para interpolación métrica, devuelve a WGS84. |
 | **PAC compliance** | FitoLink como "proveedor de evidencia técnica para cumplimiento PAC". Historial NDVI = prueba pre-siniestro. Cuaderno de campo digital. Trazabilidad fitosanitaria 100%. Sección PacPain en LandingPage. |
+| **MpcContextWidget** | Componente React en `apps/web/src/features/parcels/MpcContextWidget.tsx`. Tarjeta 3 columnas con cabecera azul-cian gradient (branding Microsoft Planetary Computer). Muestra NDVI baseline 5y MODIS · normales climáticas mensuales · clima últimos 30 días con badge drought (none/mild/moderate/severe). Insertado debajo del NdviChart en ParcelDetailPage. |
+| **build_mpc_baselines.py** | Script Python one-shot idempotente. Recorre todas las parcelas activas y construye `modisBaseline` + `climateBaseline` para las que no lo tengan. Flags: `--refresh` (rebuild todos), `--parcel ID` (uno solo). Pacing 2s entre parcelas para evitar rate-limits. Failures por parcela no abortan el batch. |
+| **demo-sergio-asaja** | googleId del usuario demo personalizado para Sergio Valverde (Jefe de Formación ASAJA). Rol admin, company "ASAJA". Botón destacado amarillo con anillo en LoginPage cuando se accede con `?demo`. |
+| **Onepager ASAJA** | PDF A4 de 1 cara generado con reportlab desde `docs/asaja-onepager/build_onepager.py`. Filosofía de diseño "Botanical Telemetry" (lámina botánica científica + telemetría aeroespacial). Tipografía: Crimson Pro + Bricolage Grotesque + IBM Plex Mono. Paleta: verdes FitoLink + amarillo telemetría #d4a017. |
+| **Botanical Telemetry** | Filosofía de diseño documentada en `docs/asaja-onepager/design-philosophy.md`. Cruce entre tradición de lámina botánica (Maria Sibylla Merian, Redouté) y disciplina de telemetría aeroespacial. Crosshairs de registro, coordenadas en cabecera, numeración griega/romana. Aplicable a futuros documentos comerciales FitoLink. |
+| **gzip sweep SRS** | Activación system-wide de gzip en nginx de srs-staging (2026-05-04). Aplica a todos los sites SRS hospedados allí (fitolink, bodyforge, dbuilder, insiteiq, moevet, ottoia, skypro360, s3.skypro360). Reducción típica JS bundle 71-72%. Backup config en `/etc/nginx/nginx.conf.bak.20260504-094222`. |

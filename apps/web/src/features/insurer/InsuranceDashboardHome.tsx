@@ -27,8 +27,17 @@ export default function InsuranceDashboardHome() {
     refetchInterval: 60_000,
   });
 
-  type Parcel = { _id: string; name: string; cropType: string; province: string; ndviHistory?: { mean: number }[] };
+  // Drone inspections in the last 30 days — captures the "claim verification"
+  // value prop and proves the platform actually moves people on the ground.
+  const { data: operations = [] } = useQuery({
+    queryKey: ['b2b', 'operations'],
+    queryFn: async () => { const res = await api.get('/admin/operations'); return res.data.data ?? []; },
+    refetchInterval: 120_000,
+  });
+
+  type Parcel = { _id: string; name: string; cropType: string; province: string; areaHa?: number; ndviHistory?: { mean: number }[] };
   type Alert  = { _id: string; severity: string; ndviValue: number; parcelId?: { name: string; province: string } };
+  type Operation = { type: string; status: string; createdAt: string };
 
   const atRisk      = (parcels as Parcel[]).filter(p => (p.ndviHistory?.at(-1)?.mean ?? 1) < 0.40);
   const critical    = (parcels as Parcel[]).filter(p => (p.ndviHistory?.at(-1)?.mean ?? 1) < 0.30);
@@ -36,6 +45,14 @@ export default function InsuranceDashboardHome() {
   const avgNdvi     = parcels.length
     ? (parcels as Parcel[]).reduce((s, p) => s + (p.ndviHistory?.at(-1)?.mean ?? 0), 0) / parcels.length
     : 0;
+  const totalHa = (parcels as Parcel[]).reduce((s, p) => s + (p.areaHa ?? 0), 0);
+
+  // Inspections last 30 days (count). The cutoff is rolling so the demo
+  // always shows recent activity without re-seeding.
+  const cutoff30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const inspections30d = (operations as Operation[]).filter(
+    (op) => op.type === 'inspection' && new Date(op.createdAt).getTime() >= cutoff30d,
+  ).length;
 
   const worstParcel = [...(parcels as Parcel[])]
     .filter(p => p.ndviHistory?.length)
@@ -61,32 +78,39 @@ export default function InsuranceDashboardHome() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-1">Parcelas aseguradas</p>
-          <p className="text-3xl font-bold text-gray-900">{parcels.length}</p>
-          <p className="text-xs text-gray-400 mt-1">en cartera activa</p>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500 mb-1">Cartera</p>
+          <p className="text-3xl font-bold text-gray-900 tabular-nums">{parcels.length}</p>
+          <p className="text-xs text-gray-400 mt-1">parcelas · {totalHa.toFixed(0)} ha</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">NDVI promedio</p>
-          <p className={`text-3xl font-bold ${avgNdvi < 0.40 ? 'text-orange-600' : 'text-green-600'}`}>
+          <p className={`text-3xl font-bold tabular-nums ${avgNdvi < 0.40 ? 'text-orange-600' : 'text-green-600'}`}>
             {avgNdvi.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">Sentinel-2 · cada 5 días</p>
+          <p className="text-xs text-gray-400 mt-1">Sentinel-2 · cada 5d</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">En riesgo</p>
-          <p className={`text-3xl font-bold ${atRisk.length > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+          <p className={`text-3xl font-bold tabular-nums ${atRisk.length > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
             {atRisk.length}
           </p>
           <p className="text-xs text-gray-400 mt-1">NDVI &lt; 0.40</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-1">Alertas críticas</p>
-          <p className={`text-3xl font-bold ${critAlerts > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+          <p className={`text-3xl font-bold tabular-nums ${critAlerts > 0 ? 'text-red-600' : 'text-gray-400'}`}>
             {critAlerts}
           </p>
           <p className="text-xs text-gray-400 mt-1">activas ahora</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500 mb-1">Inspecciones 30d</p>
+          <p className={`text-3xl font-bold tabular-nums ${inspections30d > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+            {inspections30d}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">vuelos drone realizados</p>
         </div>
       </div>
 

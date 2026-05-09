@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import ToastContainer from '@/components/ToastContainer.js';
+import AlertBell from '@/components/AlertBell.js';
 
 const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string }>> = {
   farmer: [
@@ -18,10 +19,13 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/marketplace', label: 'Red de Pilotos', icon: '/location.svg' },
   ],
   insurer: [
-    { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/insurance2.svg' },
+    // "Inspecciones" was a placeholder. The real flow is: insurer sees a
+    // critical alert → solicits drone inspection → it shows up under
+    // Operaciones (V2 nav addition when there's volume). For demo we
+    // surface the loop from the Alertas page directly.
+    { to: '/dashboard', label: 'Inicio', icon: '/insurance2.svg' },
+    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/location.svg' },
     { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/siren.svg' },
-    { to: '/dashboard/b2b/inspections', label: 'Inspecciones', icon: '🔍' },
     { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
   ],
   admin: [
@@ -30,6 +34,15 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/user.svg' },
     { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/location.svg' },
     { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/siren.svg' },
+  ],
+  cooperative: [
+    // The cooperative dashboard already aggregates parcels + alerts per
+    // socio. A separate "Parcelas" or "Alertas" tab would either show
+    // nothing (user owns no parcels) or duplicate info. V2 brings:
+    //  · /dashboard/cooperative/socios — full member admin
+    //  · /dashboard/cooperative/reports — exportable reports
+    { to: '/dashboard', label: 'Inicio', icon: '/provider-cooperative.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
   ],
 };
 
@@ -111,7 +124,15 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <main className="flex-1 bg-gray-50 overflow-auto">
-        <div className="p-8">
+        {/* Minimal topbar — only renders meaningful chrome where it adds value.
+            Farmer (and future cooperative) get the alert bell because their
+            primary value prop is "we tell you when something happens". */}
+        {(user.role === 'farmer' || user.role === 'cooperative') && (
+          <div className="flex items-center justify-end px-8 pt-5 pb-1">
+            <AlertBell />
+          </div>
+        )}
+        <div className={user.role === 'farmer' || user.role === 'cooperative' ? 'px-8 pb-8 pt-2' : 'p-8'}>
           <Outlet />
         </div>
       </main>

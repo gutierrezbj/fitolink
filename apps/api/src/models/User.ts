@@ -16,7 +16,9 @@ export interface IUser extends Document {
   isVerified: boolean;
   rating: number;
   ratingCount: number;
-  // Farmer-specific
+  // Farmer-specific — links the farmer to a User with role='cooperative'
+  // when they're a socio of a cooperative. Cooperative dashboards aggregate
+  // parcels of all users with this field pointing to them.
   cooperativeId?: mongoose.Types.ObjectId;
   // Insurer-specific
   company?: string;

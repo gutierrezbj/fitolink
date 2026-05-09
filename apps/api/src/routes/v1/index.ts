@@ -6,6 +6,7 @@ import operationRoutes from './operations.js';
 import adminRoutes from './admin.js';
 import sigpacRoutes from './sigpac.js';
 import marketplaceRoutes from './marketplace.js';
+import cooperativeRoutes from './cooperative.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/operations', operationRoutes);
 router.use('/admin', adminRoutes);
 router.use('/sigpac', sigpacRoutes);
 router.use('/marketplace', marketplaceRoutes);
+router.use('/cooperative', cooperativeRoutes);
 
 export default router;

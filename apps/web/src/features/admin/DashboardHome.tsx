@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils.js';
 import PilotDashboardHome from '@/features/pilot/PilotDashboardHome.js';
 import InsuranceDashboardHome from '@/features/insurer/InsuranceDashboardHome.js';
 import AdminDashboardHome from '@/features/admin/AdminDashboardHome.js';
+import CooperativeDashboardHome from '@/features/cooperative/CooperativeDashboardHome.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 
@@ -66,6 +67,7 @@ export default function DashboardHome() {
   if (user?.role === 'pilot') return <PilotDashboardHome />;
   if (user?.role === 'insurer') return <InsuranceDashboardHome />;
   if (user?.role === 'admin') return <AdminDashboardHome />;
+  if (user?.role === 'cooperative') return <CooperativeDashboardHome />;
 
   const isFarmer = user?.role === 'farmer';
 

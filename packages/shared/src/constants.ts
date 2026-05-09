@@ -1,5 +1,8 @@
 // User roles
-export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin'] as const;
+// `cooperative` represents an entity that aggregates many farmers (socios).
+// It owns no parcels itself; it sees an overview of its socios' parcels via
+// the `cooperativeId` link on User.
+export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin', 'cooperative'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // Operation types

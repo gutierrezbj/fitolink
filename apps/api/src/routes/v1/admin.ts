@@ -2,11 +2,19 @@ import { Router, type Request, type Response } from 'express';
 import { protect, authorize } from '../../middleware/auth.js';
 import { User } from '../../models/User.js';
 import { Operation } from '../../models/Operation.js';
+import { getKpis } from '../../services/adminService.js';
 
 const router = Router();
 
 router.use(protect());
 router.use(authorize('admin'));
+
+// GET /admin/kpis — platform-wide KPI snapshot for the admin dashboard.
+// Single round-trip; aggregations live server-side so the UI stays fast.
+router.get('/kpis', async (_req: Request, res: Response) => {
+  const kpis = await getKpis();
+  res.json({ success: true, data: kpis });
+});
 
 // GET /admin/users — list all users (omit googleId)
 router.get('/users', async (_req: Request, res: Response) => {
