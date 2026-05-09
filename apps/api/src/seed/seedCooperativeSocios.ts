@@ -146,6 +146,10 @@ async function seed() {
           avatar: '/farmer.svg',
           updatedAt: now,
         },
+        // Strip the empty `location` subdoc Mongoose tries to default in.
+        // Leaving `{coordinates: []}` blows up the 2dsphere index. The
+        // cooperative socios don't have a base location anyway.
+        $unset: { location: '' },
         $setOnInsert: { googleId: socio.googleId, createdAt: now },
       },
       { upsert: true },
