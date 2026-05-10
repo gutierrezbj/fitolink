@@ -10,6 +10,8 @@ import ParcelMap from './ParcelMap.js';
 import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
+import WeatherWidget from '@/features/weather/WeatherWidget.js';
+import { polygonCentroid } from '@/features/marketplace/distance.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
 
 // ── Seasonal baselines per crop group ───────────────────────────────────────
@@ -620,6 +622,14 @@ export default function ParcelDetailPage() {
           recentClimate={parcel.recentClimate}
           thermal={parcel.thermal}
         />
+      </div>
+
+      {/* Forecast — closes the loop "we saw X happen → here's when you can act" */}
+      <div className="mb-4">
+        {(() => {
+          const [lon, lat] = polygonCentroid(parcel.geometry);
+          return <WeatherWidget lat={lat} lon={lon} parcelName={parcel.name} />;
+        })()}
       </div>
 
       {/* Alerts */}
