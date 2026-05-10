@@ -103,7 +103,7 @@ export default function AdminDashboardHome() {
   const insuredPct = kpis ? pct(kpis.activity.parcelsInsured, totalParcels) : '—';
 
   return (
-    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

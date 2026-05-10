@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Circle, Popup, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
@@ -152,223 +152,302 @@ function Stars({ value, count }: { value: number; count: number }) {
 
 // ── Cards ────────────────────────────────────────────────────────────────────
 
-function PilotCard({ pilot, selected, onClick, distance }: {
-  pilot: Pilot;
+// ── Compact row — used for pilots, providers and cooperatives alike ─────────
+// One uniform shape: click any row to open the detail panel on the right.
+// Cooperatives get a small ⚡ glyph for visual priority but no separate
+// button — the action lives inside the detail view.
+
+interface EntityRowProps {
   selected: boolean;
   onClick: () => void;
-  distance: NearestParcel | null;
-}) {
-  const c = getCompanyColor(pilot.company);
-  const applicator = pilot.equipment.find(e => e.type.toLowerCase().includes('aplicador'));
-  const multispectral = pilot.equipment.find(e => e.type.toLowerCase().includes('multiespectral'));
+  accentColor: string;            // left vertical strip
+  icon: string;                   // category svg
+  title: string;
+  subtitle?: string;              // company / brand
+  categoryLabel: string;
+  categoryBg: string;             // tailwind classes for the pill
+  categoryText: string;
+  rating: number;
+  ratingCount: number;
+  primaryStat: { label: string; value: string };  // e.g. radius or socios
+  secondaryStat?: { label: string; value: string }; // e.g. equipment or area
+  distance?: NearestParcel | null;
+  isCoop?: boolean;
+}
+
+function EntityRow({
+  selected, onClick, accentColor, icon, title, subtitle,
+  categoryLabel, categoryBg, categoryText,
+  rating, ratingCount, primaryStat, secondaryStat,
+  distance, isCoop,
+}: EntityRowProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-2xl border transition-all duration-200 overflow-hidden group ${
-        selected ? 'border-brand-400 shadow-lg scale-[1.01]' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+      className={`w-full text-left flex bg-white rounded-xl border overflow-hidden transition-all ${
+        selected ? 'border-brand-400 ring-1 ring-brand-200 shadow-sm' : 'border-gray-200 hover:border-gray-300'
       }`}
     >
-      <div className="h-1.5 w-full" style={{ background: c.primary }} />
-      <div className="bg-white p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="font-bold text-gray-900 text-[15px] leading-tight">{pilot.name}</p>
-            {pilot.company ? (
-              <span className="inline-flex items-center gap-1.5 mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
-                style={{ background: c.light, color: c.text }}>
-                <img src="/company.svg" alt="" className="w-3.5 h-3.5" />
-                {pilot.company}
+      <div className="w-1 flex-shrink-0" style={{ background: accentColor }} />
+      <div className="flex-1 min-w-0 p-3">
+        <div className="flex items-start gap-2.5">
+          <img src={icon} alt="" className="w-8 h-8 flex-shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-gray-900 text-[13px] leading-snug truncate flex items-center gap-1">
+                {isCoop && <span className="text-amber-500 text-[10px]">⚡</span>}
+                {title}
+              </p>
+              <div className="flex items-center gap-1 flex-shrink-0 text-[11px] text-gray-500 tabular-nums">
+                <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+                <span>{rating ? rating.toFixed(1) : '—'}</span>
+                <span className="text-gray-400">({ratingCount})</span>
+              </div>
+            </div>
+            {subtitle && <p className="text-[11px] text-gray-500 truncate -mt-0.5">{subtitle}</p>}
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5">
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${categoryBg} ${categoryText}`}>
+                {categoryLabel}
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 mt-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                <img src="/drone-pilot.svg" alt="" className="w-3.5 h-3.5" />
-                Autónomo
+              <span className="text-[11px] text-gray-600">
+                <b className="text-gray-800 tabular-nums">{primaryStat.value}</b> <span className="text-gray-400">{primaryStat.label}</span>
               </span>
+              {secondaryStat && (
+                <span className="text-[11px] text-gray-600">
+                  <b className="text-gray-800 tabular-nums">{secondaryStat.value}</b> <span className="text-gray-400">{secondaryStat.label}</span>
+                </span>
+              )}
+            </div>
+            {distance && (
+              <p className="text-[10px] text-gray-400 mt-1 truncate">
+                a <b className="text-gray-600">{formatKm(distance.km)}</b> de {distance.parcelName}
+              </p>
             )}
           </div>
-          <div className="text-right mt-0.5">
-            <p className="text-xs font-bold text-gray-700">{pilot.operationalRadiusKm} km</p>
-            <p className="text-[10px] text-gray-400">radio op.</p>
-          </div>
-        </div>
-        <Stars value={pilot.rating || 0} count={pilot.ratingCount || 0} />
-        <div className="mt-3 space-y-1.5">
-          {applicator && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-lg px-3 py-1.5">
-              <img src="/service-phytosanitary.svg" alt="" className="w-6 h-6 flex-shrink-0" />
-              <div>
-                <p className="text-[11px] font-semibold text-green-800">{applicator.model}</p>
-                <p className="text-[10px] text-green-600">Aplicación fitosanitaria{applicator.payloadKg ? ` · ${applicator.payloadKg}kg` : ''}</p>
-              </div>
-            </div>
-          )}
-          {multispectral && (
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
-              <img src="/service-multispectral.svg" alt="" className="w-6 h-6 flex-shrink-0" />
-              <div>
-                <p className="text-[11px] font-semibold text-blue-800">{multispectral.model}</p>
-                <p className="text-[10px] text-blue-600">Inspección multiespectral</p>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1">
-          {pilot.certifications.map((cert, i) => (
-            <span key={i} className="text-[9px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
-              {cert.type}
-            </span>
-          ))}
-        </div>
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-[11px] text-gray-400">
-            {distance ? <>a <b className="text-gray-700">{formatKm(distance.km)}</b> de {distance.parcelName}</> : 'Empresa certificada FitoLink'}
-          </p>
-          <span className="text-xs font-semibold text-brand-600 group-hover:text-brand-700">
-            {selected ? 'Ver en mapa ↑' : 'Localizar →'}
-          </span>
         </div>
       </div>
     </button>
   );
 }
 
-function ProviderCard({ provider, selected, onClick, distance }: {
-  provider: Provider;
-  selected: boolean;
-  onClick: () => void;
+// ── Detail panel — fires when you click a row or a marker ───────────────────
+// Replaces the list inside the right column. Click "← Volver" to go back.
+// Phone / email / website are clickable; for cooperatives a primary CTA
+// opens the lead modal.
+
+type DetailEntity =
+  | { kind: 'pilot'; data: Pilot }
+  | { kind: 'provider'; data: Provider };
+
+interface EntityDetailProps {
+  entity: DetailEntity;
+  onBack: () => void;
+  onRequestCoop: (provider: Provider) => void;
   distance: NearestParcel | null;
-}) {
-  const style = CATEGORY_STYLE[provider.category];
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left rounded-2xl border transition-all duration-200 overflow-hidden group ${
-        selected ? 'border-brand-400 shadow-lg scale-[1.01]' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-      }`}
-    >
-      <div className="h-1.5 w-full" style={{ background: style.primary }} />
-      <div className="bg-white p-5">
-        <div className="flex items-start gap-3 mb-3">
-          <img src={style.icon} alt="" className="w-10 h-10 flex-shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-gray-900 text-[15px] leading-tight truncate">{provider.name}</p>
-            {provider.brand && (
-              <p className="text-[11px] text-gray-500 truncate">{provider.brand}</p>
-            )}
-            <span className={`inline-flex mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
-              {style.label.slice(0, -1)}
-            </span>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-gray-700">{provider.serviceRadiusKm} km</p>
-            <p className="text-[10px] text-gray-400">radio</p>
-          </div>
-        </div>
-        <p className="text-[12px] text-gray-600 leading-relaxed mb-3">{provider.description}</p>
-        <Stars value={provider.rating || 0} count={provider.ratingCount || 0} />
-        {provider.cropSpecialties.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {provider.cropSpecialties.slice(0, 5).map((crop) => (
-              <span key={crop} className="text-[10px] bg-gray-50 border border-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                {crop}
-              </span>
-            ))}
-          </div>
-        )}
-        {provider.certifications && provider.certifications.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {provider.certifications.slice(0, 3).map((cert, i) => (
-              <span key={i} className="text-[9px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                {cert}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-[11px] text-gray-400">
-            {distance ? <>a <b className="text-gray-700">{formatKm(distance.km)}</b> de {distance.parcelName}</> : 'Proveedor certificado'}
-          </p>
-          <span className="text-xs font-semibold text-brand-600 group-hover:text-brand-700">
-            Contactar →
-          </span>
-        </div>
-      </div>
-    </button>
-  );
 }
 
-function CooperativeCard({ provider, selected, onClick, onRequestProgram, distance }: {
-  provider: Provider;
-  selected: boolean;
-  onClick: () => void;
-  onRequestProgram: () => void;
-  distance: NearestParcel | null;
-}) {
-  const style = CATEGORY_STYLE['cooperative'];
+function EntityDetail({ entity, onBack, onRequestCoop, distance }: EntityDetailProps) {
+  const isPilot = entity.kind === 'pilot';
+  const pilot = isPilot ? entity.data : null;
+  const provider = !isPilot ? entity.data : null;
+  const isCoop = provider?.category === 'cooperative';
+
+  const accent = isPilot
+    ? getCompanyColor(pilot?.company).primary
+    : CATEGORY_STYLE[(provider!.category as FilterKey)].primary;
+  const icon = isPilot
+    ? '/drone-pilot.svg'
+    : CATEGORY_STYLE[(provider!.category as FilterKey)].icon;
+  const categoryLabel = isPilot
+    ? 'Piloto'
+    : CATEGORY_STYLE[(provider!.category as FilterKey)].label.slice(0, -1);
+  const categoryBg = isPilot ? 'bg-blue-50' : CATEGORY_STYLE[(provider!.category as FilterKey)].bg;
+  const categoryText = isPilot ? 'text-blue-700' : CATEGORY_STYLE[(provider!.category as FilterKey)].text;
+
+  const title = isPilot ? pilot!.name : provider!.name;
+  const subtitle = isPilot
+    ? (pilot!.company ?? 'Piloto autónomo')
+    : (provider!.brand ?? null);
+  const rating = (isPilot ? pilot!.rating : provider!.rating) || 0;
+  const ratingCount = (isPilot ? pilot!.ratingCount : provider!.ratingCount) || 0;
+
+  const description = !isPilot ? provider!.description : null;
+  const cropSpecialties = !isPilot ? provider!.cropSpecialties : [];
+  const certifications = isPilot
+    ? pilot!.certifications.map(c => c.type)
+    : (provider!.certifications ?? []);
+  const equipment = isPilot ? pilot!.equipment : [];
+  const contact = !isPilot ? provider!.contact : null;
+  const radiusKm = isPilot ? pilot!.operationalRadiusKm : provider!.serviceRadiusKm;
+
   return (
-    <div
-      className={`rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
-        selected ? 'border-amber-500 shadow-lg' : 'border-amber-200 hover:border-amber-400 hover:shadow-md'
-      }`}
-    >
-      {/* Highlight band: cooperative is strategic */}
-      <div className="bg-gradient-to-r from-amber-700 to-amber-500 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img src={style.icon} alt="" className="w-5 h-5" />
-          <span className="text-[10px] font-bold text-white tracking-widest uppercase">Programa cooperativa</span>
-        </div>
-        <span className="text-[9px] text-white/80 font-medium">Cliente potencial estratégico</span>
-      </div>
-      <button
-        onClick={onClick}
-        className="w-full text-left bg-amber-50 hover:bg-amber-100 transition-colors p-5"
-      >
-        <div className="flex items-start gap-3 mb-3">
-          <img src={style.icon} alt="" className="w-12 h-12 flex-shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-gray-900 text-base leading-tight">{provider.name}</p>
-            {provider.brand && <p className="text-xs text-amber-800 font-semibold">{provider.brand}</p>}
-            <Stars value={provider.rating || 0} count={provider.ratingCount || 0} />
-          </div>
-        </div>
-        <p className="text-sm text-gray-700 leading-relaxed mb-4">{provider.description}</p>
-        {/* Big stats — what makes a coop a strategic target */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          {provider.memberCount !== undefined && (
-            <div className="bg-white rounded-xl border border-amber-100 p-3">
-              <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Socios</p>
-              <p className="text-2xl font-bold text-gray-900 leading-tight">{provider.memberCount.toLocaleString('es-ES')}</p>
-            </div>
-          )}
-          {provider.aggregateAreaHa !== undefined && (
-            <div className="bg-white rounded-xl border border-amber-100 p-3">
-              <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Hectáreas</p>
-              <p className="text-2xl font-bold text-gray-900 leading-tight">{provider.aggregateAreaHa.toLocaleString('es-ES')}</p>
-            </div>
-          )}
-        </div>
-        {provider.cropSpecialties.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {provider.cropSpecialties.map((crop) => (
-              <span key={crop} className="text-[10px] bg-amber-100 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
-                {crop}
-              </span>
-            ))}
-          </div>
-        )}
-        {distance && (
-          <p className="text-[11px] text-gray-500">a <b className="text-gray-700">{formatKm(distance.km)}</b> de {distance.parcelName}</p>
-        )}
-      </button>
-      {/* Strategic CTA — separate from the card body so it's not part of the toggle action */}
-      <div className="bg-amber-50 border-t border-amber-200 px-5 py-3">
+    <div className="flex flex-col h-full">
+      {/* Sticky header */}
+      <div className="flex-shrink-0 border-b border-gray-100">
         <button
-          onClick={onRequestProgram}
-          className="w-full bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-sm"
+          onClick={onBack}
+          className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors"
         >
-          Solicitar programa cooperativa →
+          ← Volver al listado
         </button>
+        <div className="h-1" style={{ background: accent }} />
       </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        {/* Identity */}
+        <div className="flex items-start gap-3">
+          <img src={icon} alt="" className="w-12 h-12 flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold text-gray-900 text-base leading-tight">{title}</h2>
+            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${categoryBg} ${categoryText}`}>
+                {categoryLabel}
+              </span>
+              <Stars value={rating} count={ratingCount} />
+            </div>
+          </div>
+        </div>
+
+        {/* Distance / radius row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-gray-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Radio</p>
+            <p className="text-sm font-bold text-gray-800 tabular-nums">{radiusKm} km</p>
+          </div>
+          {distance ? (
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Tu parcela</p>
+              <p className="text-sm font-bold text-gray-800 tabular-nums">{formatKm(distance.km)}</p>
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Verificado</p>
+              <p className="text-sm font-bold text-gray-800">FitoLink ✓</p>
+            </div>
+          )}
+        </div>
+
+        {/* Cooperative big stats — only here, inside the detail */}
+        {isCoop && (provider!.memberCount !== undefined || provider!.aggregateAreaHa !== undefined) && (
+          <div className="grid grid-cols-2 gap-2">
+            {provider!.memberCount !== undefined && (
+              <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Socios</p>
+                <p className="text-lg font-bold text-gray-900 tabular-nums">{provider!.memberCount.toLocaleString('es-ES')}</p>
+              </div>
+            )}
+            {provider!.aggregateAreaHa !== undefined && (
+              <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Hectáreas</p>
+                <p className="text-lg font-bold text-gray-900 tabular-nums">{provider!.aggregateAreaHa.toLocaleString('es-ES')}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Description */}
+        {description && (
+          <Section title="Descripción">
+            <p className="text-xs text-gray-700 leading-relaxed">{description}</p>
+          </Section>
+        )}
+
+        {/* Equipment (pilots) */}
+        {equipment.length > 0 && (
+          <Section title="Equipo">
+            <ul className="space-y-1.5">
+              {equipment.map((e, i) => (
+                <li key={i} className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <img src={e.type.toLowerCase().includes('multi') ? '/service-multispectral.svg' : '/service-phytosanitary.svg'} alt="" className="w-5 h-5" />
+                  <span className="font-medium text-gray-800">{e.model}</span>
+                  <span className="text-gray-400">·</span>
+                  <span className="text-gray-500 truncate">{e.type}{e.payloadKg ? ` · ${e.payloadKg} kg` : ''}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {/* Specialties */}
+        {cropSpecialties.length > 0 && (
+          <Section title="Especialidades">
+            <div className="flex flex-wrap gap-1">
+              {cropSpecialties.map((crop) => (
+                <span key={crop} className="text-[10px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                  {crop}
+                </span>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Certifications */}
+        {certifications.length > 0 && (
+          <Section title="Certificaciones">
+            <div className="flex flex-wrap gap-1">
+              {certifications.map((cert, i) => (
+                <span key={i} className="text-[10px] font-semibold bg-gray-50 border border-gray-200 text-gray-600 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                  {cert}
+                </span>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Contact (providers) */}
+        {contact && (contact.phone || contact.email || contact.website) && (
+          <Section title="Contacto">
+            <div className="space-y-1.5">
+              {contact.phone && (
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-xs text-gray-700 hover:text-brand-700 hover:bg-brand-50 rounded-lg px-2.5 py-1.5 transition-colors">
+                  <span className="text-gray-400">☎</span>
+                  <span className="font-medium tabular-nums">{contact.phone}</span>
+                </a>
+              )}
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-xs text-gray-700 hover:text-brand-700 hover:bg-brand-50 rounded-lg px-2.5 py-1.5 transition-colors">
+                  <span className="text-gray-400">✉</span>
+                  <span className="font-medium truncate">{contact.email}</span>
+                </a>
+              )}
+              {contact.website && (
+                <a href={contact.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-gray-700 hover:text-brand-700 hover:bg-brand-50 rounded-lg px-2.5 py-1.5 transition-colors">
+                  <span className="text-gray-400">↗</span>
+                  <span className="font-medium truncate">{contact.website.replace(/^https?:\/\//, '')}</span>
+                </a>
+              )}
+            </div>
+          </Section>
+        )}
+      </div>
+
+      {/* Sticky CTA footer */}
+      {isCoop && (
+        <div className="flex-shrink-0 border-t border-amber-200 bg-amber-50 p-3">
+          <button
+            onClick={() => onRequestCoop(provider!)}
+            className="w-full bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-sm"
+          >
+            Solicitar contacto cooperativa →
+          </button>
+          <p className="text-[10px] text-center text-amber-700/80 mt-1.5">
+            El equipo FitoLink te contactará en &lt; 48 h
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">{title}</p>
+      {children}
     </div>
   );
 }
@@ -459,7 +538,11 @@ export default function MarketplacePage() {
   const { user } = useAuthStore();
   const isFarmer = user?.role === 'farmer';
 
-  const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set(ALL_FILTERS));
+  // Filter as radio: either 'all' or one specific category. Independent
+  // toggles confused users — they couldn't tell whether clicking "Pilotos"
+  // was *adding* pilots to view or *isolating* them. Single-select is the
+  // natural mental model: "I want to see X" or "I want to see everything".
+  const [activeFilter, setActiveFilter] = useState<FilterKey | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [leadProvider, setLeadProvider] = useState<Provider | null>(null);
 
@@ -534,13 +617,23 @@ export default function MarketplacePage() {
     return best;
   }, [distanceFor, pilots, providers, parcels]);
 
-  // Filter visibility
-  const isVisible = (key: FilterKey) => activeFilters.has(key);
+  // Filter visibility — radio model. 'all' shows everything; otherwise
+  // exactly one category is visible.
+  const isVisible = (key: FilterKey) => activeFilter === 'all' || activeFilter === key;
 
   const visiblePilots = isVisible('pilot') ? pilots : [];
-  const visibleProviders = providers.filter((p) =>
-    activeFilters.has(p.category as FilterKey),
-  );
+  const visibleProviders = providers.filter((p) => isVisible(p.category as FilterKey));
+
+  // Resolve the currently selected entity (pilot or provider) for the detail
+  // panel. Cleared on filter change so users don't see a phantom selection.
+  const selectedEntity: DetailEntity | null = useMemo(() => {
+    if (!selectedId) return null;
+    const p = pilots.find((x) => x._id === selectedId);
+    if (p) return { kind: 'pilot', data: p };
+    const pr = providers.find((x) => x._id === selectedId);
+    if (pr) return { kind: 'provider', data: pr };
+    return null;
+  }, [selectedId, pilots, providers]);
 
   // Combined cards list, sorted by distance to nearest parcel (or rating if no parcels).
   type Entry = { kind: 'pilot'; pilot: Pilot } | { kind: 'provider'; provider: Provider };
@@ -567,79 +660,79 @@ export default function MarketplacePage() {
     return (ratingB || 0) - (ratingA || 0);
   });
 
-  const toggleFilter = (key: FilterKey) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-        if (next.size === 0) ALL_FILTERS.forEach((f) => next.add(f)); // never empty
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
-
   const heroSubtitle = (() => {
     if (isFarmer && parcels.length > 0 && nearestOverall) {
       return (
         <>
-          {totalAll} proveedores certificados cerca de tus {parcels.length} parcela{parcels.length !== 1 ? 's' : ''}.
-          {' '}El más cercano: <b className="text-gray-900">{nearestOverall.name}</b> a {formatKm(nearestOverall.km)} de {nearestOverall.parcelName}.
+          Directorio de pilotos, distribuidores, asesores y cooperativas en tu zona.
+          {' '}El más cercano: <b className="text-gray-900">{nearestOverall.name}</b>, a {formatKm(nearestOverall.km)} de {nearestOverall.parcelName}.
         </>
       );
     }
-    if (user?.role === 'pilot') return <>Tu red operativa: {totalAll} entidades en zona</>;
-    return <>{totalAll} entidades certificadas en la red FitoLink</>;
+    if (user?.role === 'pilot') return <>Directorio: {totalAll} entidades en tu zona operativa.</>;
+    return <>Directorio: {totalAll} entidades certificadas en la red FitoLink.</>;
   })();
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col overflow-hidden h-full">
       {/* Hero */}
-      <div>
+      <div className="flex-shrink-0 mb-3">
         <h1 className="text-2xl font-bold text-gray-900">Red FitoLink</h1>
-        <p className="text-gray-500 text-sm mt-1">{heroSubtitle}</p>
+        <p className="text-gray-500 text-sm mt-0.5">{heroSubtitle}</p>
       </div>
 
-      {/* Category chips */}
-      <div className="flex flex-wrap gap-2">
+      {/* Category chips — radio style. One pill is always selected so you
+          always know what you're looking at. The active pill fills with
+          the category's brand colour; inactive pills are flat outline. */}
+      <div className="flex flex-wrap items-center gap-2 flex-shrink-0 mb-4">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mr-1">Mostrar</span>
         <button
-          onClick={() => setActiveFilters(new Set(ALL_FILTERS))}
-          className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-            activeFilters.size === ALL_FILTERS.length
+          onClick={() => setActiveFilter('all')}
+          aria-pressed={activeFilter === 'all'}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border text-sm font-semibold transition-all ${
+            activeFilter === 'all'
               ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
-              : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800'
           }`}
         >
-          Todos · {totalAll}
+          Todos
+          <span className={`tabular-nums text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+            activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+          }`}>{totalAll}</span>
         </button>
         {ALL_FILTERS.map((key) => {
           const style = CATEGORY_STYLE[key];
-          const active = isVisible(key);
+          const active = activeFilter === key;
           return (
             <button
               key={key}
-              onClick={() => toggleFilter(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-                active ? `${style.bg} ${style.text} border-current shadow-sm ring-1 ${style.ring}`
-                       : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 opacity-60'
+              onClick={() => setActiveFilter(key)}
+              aria-pressed={active}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border text-sm font-semibold transition-all ${
+                active
+                  ? 'text-white border-transparent shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800'
               }`}
+              style={active ? { backgroundColor: style.primary } : undefined}
             >
-              <img src={style.icon} alt="" className="w-4 h-4" />
-              {style.label} · {counts[key]}
+              <img src={style.icon} alt="" className={`w-4 h-4 ${active ? 'brightness-0 invert' : ''}`} />
+              {style.label}
+              <span className={`tabular-nums text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>{counts[key]}</span>
               {key === 'cooperative' && counts[key] > 0 && (
-                <span className="ml-1 text-[9px]">⚡</span>
+                <span className={`text-[9px] ${active ? 'text-amber-100' : 'text-amber-500'}`}>⚡</span>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Map + cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Map + list — fills the remaining viewport height like the other dashboards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0" style={{ minHeight: '560px' }}>
         {/* Map — 2/3 */}
-        <div className="lg:col-span-2">
-          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: '480px' }}>
+        <div className="lg:col-span-2 h-full min-h-[480px]">
+          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-full">
             <MapContainer center={[39.5, -4.0]} zoom={6} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -679,26 +772,9 @@ export default function MarketplacePage() {
                     <Marker
                       position={[lat, lng]}
                       icon={makePilotMarker(pilot.company, isSelected)}
-                      eventHandlers={{ click: () => setSelectedId(isSelected ? null : pilot._id) }}
-                    >
-                      <Popup className="pilot-popup">
-                        <div style={{ minWidth: 180 }}>
-                          <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{pilot.name}</p>
-                          {pilot.company && (
-                            <p style={{ fontSize: 11, fontWeight: 700, color: c.primary, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <img src="/company.svg" alt="" style={{ width: 14, height: 14 }} />
-                              {pilot.company}
-                            </p>
-                          )}
-                          <p style={{ fontSize: 11, color: '#6b7280' }}>
-                            {pilot.rating?.toFixed(1)} ★ · {pilot.operationalRadiusKm} km radio
-                          </p>
-                          {pilot.equipment.map((e, i) => (
-                            <p key={i} style={{ fontSize: 11, color: '#374151', marginBottom: 1 }}>• {e.model}</p>
-                          ))}
-                        </div>
-                      </Popup>
-                    </Marker>
+                      eventHandlers={{ click: () => setSelectedId(pilot._id) }}
+                    />
+                    {/* Detail opens in the right panel — no native Leaflet popup */}
                   </div>
                 );
               })}
@@ -724,23 +800,9 @@ export default function MarketplacePage() {
                     <Marker
                       position={[lat, lng]}
                       icon={makeProviderMarker(provider.category, isSelected)}
-                      eventHandlers={{ click: () => setSelectedId(isSelected ? null : provider._id) }}
-                    >
-                      <Popup>
-                        <div style={{ minWidth: 200 }}>
-                          <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{provider.name}</p>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: style.primary, marginBottom: 6 }}>
-                            {style.label.slice(0, -1)}{provider.brand ? ` · ${provider.brand}` : ''}
-                          </p>
-                          <p style={{ fontSize: 11, color: '#374151', marginBottom: 4 }}>{provider.description}</p>
-                          {provider.category === 'cooperative' && provider.memberCount && (
-                            <p style={{ fontSize: 11, color: '#a16207', fontWeight: 600 }}>
-                              {provider.memberCount.toLocaleString('es-ES')} socios · {provider.aggregateAreaHa?.toLocaleString('es-ES')} ha
-                            </p>
-                          )}
-                        </div>
-                      </Popup>
-                    </Marker>
+                      eventHandlers={{ click: () => setSelectedId(provider._id) }}
+                    />
+                    {/* Detail opens in the right panel */}
                   </div>
                 );
               })}
@@ -748,47 +810,94 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* Cards — 1/3, scrollable internally */}
-        <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: '480px' }}>
-          {entries.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
-              <p className="text-sm text-gray-500">No hay entidades visibles con los filtros activos.</p>
-            </div>
+        {/* Right column — list OR detail panel for the selected entity */}
+        <div className="bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden">
+          {selectedEntity ? (
+            <EntityDetail
+              entity={selectedEntity}
+              onBack={() => setSelectedId(null)}
+              onRequestCoop={(p) => setLeadProvider(p)}
+              distance={distanceFor.get(
+                selectedEntity.kind === 'pilot' ? selectedEntity.data._id : selectedEntity.data._id,
+              ) ?? null}
+            />
           ) : (
-            entries.map((entry) => {
-              if (entry.kind === 'pilot') {
-                return (
-                  <PilotCard
-                    key={entry.pilot._id}
-                    pilot={entry.pilot}
-                    selected={selectedId === entry.pilot._id}
-                    onClick={() => setSelectedId(selectedId === entry.pilot._id ? null : entry.pilot._id)}
-                    distance={distanceFor.get(entry.pilot._id) ?? null}
-                  />
-                );
-              }
-              if (entry.provider.category === 'cooperative') {
-                return (
-                  <CooperativeCard
-                    key={entry.provider._id}
-                    provider={entry.provider}
-                    selected={selectedId === entry.provider._id}
-                    onClick={() => setSelectedId(selectedId === entry.provider._id ? null : entry.provider._id)}
-                    onRequestProgram={() => setLeadProvider(entry.provider)}
-                    distance={distanceFor.get(entry.provider._id) ?? null}
-                  />
-                );
-              }
-              return (
-                <ProviderCard
-                  key={entry.provider._id}
-                  provider={entry.provider}
-                  selected={selectedId === entry.provider._id}
-                  onClick={() => setSelectedId(selectedId === entry.provider._id ? null : entry.provider._id)}
-                  distance={distanceFor.get(entry.provider._id) ?? null}
-                />
-              );
-            })
+            <>
+              <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  {entries.length} resultado{entries.length === 1 ? '' : 's'}
+                </p>
+                {isFarmer && parcels.length > 0 && (
+                  <p className="text-[10px] text-gray-400">orden: cercanía a tus parcelas</p>
+                )}
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5">
+                {entries.length === 0 ? (
+                  <div className="text-center py-10">
+                    <p className="text-sm text-gray-400">No hay entidades en esta categoría.</p>
+                  </div>
+                ) : (
+                  entries.map((entry) => {
+                    if (entry.kind === 'pilot') {
+                      const pilot = entry.pilot;
+                      const c = getCompanyColor(pilot.company);
+                      const applicator = pilot.equipment.find(e => e.type.toLowerCase().includes('aplicador'));
+                      const equipDisplay = applicator?.model ?? pilot.equipment[0]?.model ?? '—';
+                      return (
+                        <EntityRow
+                          key={pilot._id}
+                          selected={selectedId === pilot._id}
+                          onClick={() => setSelectedId(pilot._id)}
+                          accentColor={c.primary}
+                          icon="/drone-pilot.svg"
+                          title={pilot.name}
+                          subtitle={pilot.company || 'Piloto autónomo'}
+                          categoryLabel="Piloto"
+                          categoryBg="bg-blue-50"
+                          categoryText="text-blue-700"
+                          rating={pilot.rating || 0}
+                          ratingCount={pilot.ratingCount || 0}
+                          primaryStat={{ label: 'km radio', value: `${pilot.operationalRadiusKm}` }}
+                          secondaryStat={equipDisplay !== '—' ? { label: '', value: equipDisplay } : undefined}
+                          distance={distanceFor.get(pilot._id) ?? null}
+                        />
+                      );
+                    }
+                    const provider = entry.provider;
+                    const style = CATEGORY_STYLE[provider.category as FilterKey];
+                    const isCoop = provider.category === 'cooperative';
+                    return (
+                      <EntityRow
+                        key={provider._id}
+                        selected={selectedId === provider._id}
+                        onClick={() => setSelectedId(provider._id)}
+                        accentColor={style.primary}
+                        icon={style.icon}
+                        title={provider.name}
+                        subtitle={provider.brand}
+                        categoryLabel={style.label.slice(0, -1)}
+                        categoryBg={style.bg}
+                        categoryText={style.text}
+                        rating={provider.rating || 0}
+                        ratingCount={provider.ratingCount || 0}
+                        primaryStat={
+                          isCoop && provider.memberCount !== undefined
+                            ? { label: 'socios', value: provider.memberCount.toLocaleString('es-ES') }
+                            : { label: 'km radio', value: `${provider.serviceRadiusKm}` }
+                        }
+                        secondaryStat={
+                          isCoop && provider.aggregateAreaHa !== undefined
+                            ? { label: 'ha', value: provider.aggregateAreaHa.toLocaleString('es-ES') }
+                            : undefined
+                        }
+                        distance={distanceFor.get(provider._id) ?? null}
+                        isCoop={isCoop}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -58,9 +58,12 @@ export default function DashboardLayout() {
   const navItems = NAV_ITEMS[user.role] || NAV_ITEMS.farmer;
 
   return (
-    <div className="min-h-screen flex">
+    // h-screen + overflow-hidden contain the layout so inner pages can use
+    // `h-full`. With min-h-screen the sidebar grew past the viewport when an
+    // inner page asked for more height (cut off "Cerrar sesion" + body scroll).
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shrink-0">
@@ -122,17 +125,20 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 bg-gray-50 overflow-auto">
+      {/* Main content — flex column so the topbar is a fixed-height row and
+          the outlet wrapper handles its own scroll. */}
+      <main className="flex-1 bg-gray-50 flex flex-col min-w-0 overflow-hidden">
         {/* Minimal topbar — only renders meaningful chrome where it adds value.
             Farmer (and future cooperative) get the alert bell because their
             primary value prop is "we tell you when something happens". */}
         {(user.role === 'farmer' || user.role === 'cooperative') && (
-          <div className="flex items-center justify-end px-8 pt-5 pb-1">
+          <div className="flex-shrink-0 flex items-center justify-end px-8 pt-5 pb-1">
             <AlertBell />
           </div>
         )}
-        <div className={user.role === 'farmer' || user.role === 'cooperative' ? 'px-8 pb-8 pt-2' : 'p-8'}>
+        <div className={`flex-1 min-h-0 overflow-auto ${
+          user.role === 'farmer' || user.role === 'cooperative' ? 'px-8 pb-8 pt-2' : 'p-8'
+        }`}>
           <Outlet />
         </div>
       </main>

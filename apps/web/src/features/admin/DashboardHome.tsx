@@ -118,7 +118,7 @@ export default function DashboardHome() {
     : null;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col overflow-hidden h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
