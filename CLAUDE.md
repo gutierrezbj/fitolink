@@ -110,6 +110,36 @@ fitolink/
 - **Landsat historico:** Archivo 40+ anos — analisis temporal largo plazo
 - **Nota:** APIs distintas (CMR/STAC), auth separada. No integrar hasta Overwatch.
 
+## Identidad visual AgroM (Identity Sprint v0.1 — heredado)
+
+> Aplicada en puntos de contacto de marca: email transaccional, login, sidebar dashboard. Interior del dashboard sigue con paleta `brand/terra/earth` original para no romper componentes en uso. Migración total a `agrom-*` queda en backlog.
+
+### Tokens Tailwind disponibles
+```js
+colors.agrom = {
+  deep:  '#1B4332',  // brand primary, CTA, headers
+  terra: '#E07A3C',  // acento, monogram dot, highlights
+  ink:   '#0F2A22',  // texto principal
+  paper: '#F4F0E8',  // fondo cálido neutro
+  parch: '#E8DDC9',  // fondo bloque diferenciado
+  rule:  '#C9A876',  // hairlines, separadores
+  muted: '#6B6B5C',  // texto secundario, labels
+  // Semánticos:
+  alert:   '#B8312F', warning: '#D49343',
+  success: '#3A7D44', info:    '#5B7A8F',
+}
+fontFamily.display = ['Fraunces', 'Georgia', 'Cambria', 'serif']
+fontFamily.body    = ['"IBM Plex Sans"', system fallbacks…]
+fontFamily.mono    = ['"IBM Plex Mono"', 'SF Mono', 'Consolas', 'monospace']
+```
+
+### Assets de marca
+- `apps/web/public/brand/agrom-wordmark.svg/.png` — logotipo completo (Agro·M con punto terra)
+- `apps/web/public/brand/agrom-monogram.svg/.png` — solo el monograma
+
+### Email transaccional
+Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado con OverWatch). Paleta + tipografía + wordmark aplicados al template HTML. Sender: `SMTP_FROM` env var (default `FitoLink Alertas <juang@systemrapid.io>`, migrar a `AlertasAgrom@systemrapid.io` cuando el alias exista en Workspace).
+
 ## Roles de usuario y dashboards
 - **farmer:** DashboardHome (mapa+gauge+alertas) · ParcelsPage · ParcelDetailPage · AlertsPage · OperationsPage (kanban)
 - **pilot:** PilotDashboardHome · AssignmentsPage (kanban accept/reject) · CompleteOperationForm · OperationDetailPage
