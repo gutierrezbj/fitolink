@@ -14,12 +14,16 @@ services:
       dockerfile: docker/Dockerfile.api
     ports:
       - '127.0.0.1:4040:4040'
+    # .env injected wholesale so secrets like SMTP_PASS, RESEND_API_KEY,
+    # COPERNICUS_*, JWT_SECRET (when overridden) reach the container
+    # without listing every variable here. Explicit `environment` overrides
+    # take precedence and define the in-container hostnames (MongoDB, port).
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=4040
       - MONGODB_URI=mongodb://mongo:27017/fitolink
-      - JWT_SECRET=dev-secret-change-in-production
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     depends_on:
       - mongo
     volumes:
