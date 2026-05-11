@@ -25,12 +25,27 @@ export async function getParcelsByOwner(ownerId: string): Promise<IParcel[]> {
   return Parcel.find({ ownerId, isActive: true }).sort({ createdAt: -1 });
 }
 
-export async function getParcelById(parcelId: string, userId: string): Promise<IParcel> {
+export async function getParcelById(
+  parcelId: string,
+  userId: string,
+  // Allow admin to read any parcel without ownership check (analytics top-5
+  // drill-down, dispatcher). Mutations (update/delete) keep strict ownership
+  // — only the dedicated update/delete services call this with strict mode.
+  options: { allowAdminRead?: boolean; userRole?: string } = {},
+): Promise<IParcel> {
   const parcel = await Parcel.findById(parcelId);
   if (!parcel || !parcel.isActive) {
     throw AppError.notFound('Parcela');
   }
-  if (parcel.ownerId.toString() !== userId) {
+  const isOwner = parcel.ownerId.toString() === userId;
+  const isAdminRead = options.allowAdminRead === true && options.userRole === 'admin';
+  // Insurer can read any parcel that's in their cartera (isInsured + insurerId match)
+  const isInsurerCartera =
+    options.userRole === 'insurer' &&
+    parcel.isInsured === true &&
+    parcel.insurerId?.toString() === userId;
+
+  if (!isOwner && !isAdminRead && !isInsurerCartera) {
     throw AppError.forbidden('No tienes acceso a esta parcela');
   }
   return parcel;

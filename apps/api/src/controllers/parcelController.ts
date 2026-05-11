@@ -36,7 +36,11 @@ export async function getMyParcels(req: AuthRequest, res: Response, next: NextFu
 
 export async function getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const parcel = await parcelService.getParcelById(req.params.id as string, req.user!._id.toString());
+    const parcel = await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
     res.json({ success: true, data: parcel });
   } catch (error) {
     next(error);
