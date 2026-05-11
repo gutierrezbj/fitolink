@@ -43,10 +43,31 @@ export default {
           800: '#523b16',
           900: '#36270f',
         },
+        // AgroM brand identity tokens (Identity Sprint v0.1 — inherited).
+        // Applied at the brand-contact points (login, sidebar wordmark, email).
+        // Existing brand/terra/earth stay untouched so dashboard internals
+        // don't visually break during the gradual migration.
+        agrom: {
+          deep:    '#1B4332',
+          terra:   '#E07A3C',
+          ink:     '#0F2A22',
+          paper:   '#F4F0E8',
+          parch:   '#E8DDC9',
+          rule:    '#C9A876',
+          muted:   '#6B6B5C',
+          alert:   '#B8312F',
+          warning: '#D49343',
+          success: '#3A7D44',
+          info:    '#5B7A8F',
+        },
       },
       fontFamily: {
         sans:  ['DM Sans', 'system-ui', 'sans-serif'],
         serif: ['Instrument Serif', 'Georgia', 'serif'],
+        // AgroM Identity Sprint v0.1 type stack
+        display: ['Fraunces', 'Georgia', 'Cambria', 'serif'],
+        body:    ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono:    ['"IBM Plex Mono"', '"SF Mono"', 'Consolas', 'monospace'],
       },
     },
   },
