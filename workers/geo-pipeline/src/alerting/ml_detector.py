@@ -30,6 +30,7 @@ import numpy as np
 
 from .detector import AnomalyResult, detect_anomaly as detect_anomaly_v1
 from .feature_extractor import NdviFeatures, extract_features, seasonal_baseline, is_seasonally_normal
+from .learned_baseline import compute_baseline, apply_learned_override
 
 logger = structlog.get_logger(__name__)
 
@@ -323,6 +324,21 @@ class MLAnomalyDetector:
                     is_anomaly = False
                     severity = 'low'
 
+            # ── Ola 1.2: learned baseline per parcel ────────────────────────
+            # Compute from this parcel's own Sentinel-2 history and apply
+            # symmetric overrides: suppress when within ±1σ of its own
+            # natural range, escalate when far below its own pattern.
+            learned = compute_baseline(history)
+            override = apply_learned_override(
+                current_ndvi=current_ndvi,
+                initial_is_anomaly=is_anomaly,
+                initial_severity=severity,
+                baseline=learned,
+            )
+            is_anomaly = override.is_anomaly
+            severity = override.severity
+            learned_reason_fragment = override.reason_fragment
+
             # Determine alert type: stress_pattern if sustained decline
             alert_type = 'ndvi_drop'
             if is_anomaly and features.consecutive_drops >= 3:
@@ -334,13 +350,16 @@ class MLAnomalyDetector:
             delta = features.delta_1
 
             if not is_anomaly:
+                base_reason = 'NDVI estable o mejorando (modelo V2)'
+                if learned_reason_fragment:
+                    base_reason += ' · ' + learned_reason_fragment
                 return AnomalyResult(
                     is_anomaly=False,
                     alert_type='ndvi_drop',
                     severity='low',
                     confidence=confidence,
                     ndvi_delta=round(delta, 4),
-                    reason=_enrich_reason('NDVI estable o mejorando (modelo V2)'),
+                    reason=_enrich_reason(base_reason),
                 )
 
             reason = (
@@ -350,6 +369,8 @@ class MLAnomalyDetector:
             )
             if current_ndre is not None:
                 reason += f' · NDRE={current_ndre:.3f}'
+            if learned_reason_fragment:
+                reason += ' · ' + learned_reason_fragment
             reason = _enrich_reason(reason)
 
             logger.info(
