@@ -198,18 +198,16 @@ function renderAlertEmail(p: AlertEmailPayload): string {
     <td align="center">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background:#ffffff;border:1px solid ${c.rule}30;border-radius:14px;overflow:hidden;">
 
-        <!-- Brand bar with AgroM wordmark -->
+        <!-- Brand bar with real AgroM wordmark on paper background -->
         <tr>
-          <td style="background:${c.deep};padding:18px 24px;">
+          <td style="background:${c.paper};padding:22px 24px;border-bottom:1px solid ${c.rule}40;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
               <tr>
                 <td style="vertical-align:middle;">
-                  <!-- AgroM wordmark: serif "Agro" + bold "M" with terra bullet between -->
-                  <span style="font-family:${FONT_DISPLAY};font-size:22px;font-weight:600;color:#ffffff;letter-spacing:0.5px;">Agro</span><span style="display:inline-block;width:6px;height:6px;background:${c.terra};border-radius:50%;margin:0 4px 4px 2px;vertical-align:middle;"></span><span style="font-family:${FONT_DISPLAY};font-size:22px;font-weight:700;color:${c.terra};letter-spacing:0.5px;">M</span>
-                  <span style="font-family:${FONT_MONO};font-size:10px;color:${c.parch};letter-spacing:2px;text-transform:uppercase;margin-left:10px;border-left:1px solid ${c.rule}80;padding-left:10px;">FitoLink</span>
+                  <img src="${STAGING_BASE}/brand/agrom-wordmark.png" alt="AgroM" width="140" height="44" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;height:auto;">
                 </td>
                 <td align="right" style="vertical-align:middle;">
-                  <span style="font-family:${FONT_MONO};font-size:10px;color:${c.parch};letter-spacing:1.5px;text-transform:uppercase;">${detectedStr} UTC</span>
+                  <span style="font-family:${FONT_MONO};font-size:10px;color:${c.muted};letter-spacing:2px;text-transform:uppercase;border-left:1px solid ${c.rule};padding-left:12px;">FitoLink · ${detectedStr} UTC</span>
                 </td>
               </tr>
             </table>
