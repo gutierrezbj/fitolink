@@ -213,3 +213,92 @@ export async function getKpis(): Promise<AdminKpis> {
     },
   };
 }
+
+// ── Timeline analytics — Ola 1.3 (OverWatch pattern) ────────────────────
+
+export interface AlertTimelineBucket {
+  weekStart: string;       // ISO date of bucket Monday
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  total: number;
+}
+
+export interface AlertTimelineResponse {
+  weeks: number;
+  buckets: AlertTimelineBucket[];
+  bySeverity: { critical: number; high: number; medium: number; low: number };
+  byType: Record<string, number>;
+  topParcels: Array<{ parcelId: string; parcelName: string; count: number }>;
+}
+
+/**
+ * Alerts aggregated by week + severity + type + top parcels.
+ * Used to render the dashboard timeline chart, severity donut, and "top 5
+ * problem parcels" horizontal bar. Single round-trip; cheap because alerts
+ * are a small collection.
+ */
+export async function getAlertTimeline(weeks = 8): Promise<AlertTimelineResponse> {
+  const now = Date.now();
+  const windowMs = weeks * 7 * 24 * 60 * 60 * 1000;
+  const from = new Date(now - windowMs);
+
+  // Anchor to UTC Monday so buckets are stable regardless of TZ
+  const mondayUtc = (d: Date): Date => {
+    const t = new Date(d);
+    t.setUTCHours(0, 0, 0, 0);
+    const dow = t.getUTCDay(); // 0=Sun..6=Sat
+    const offset = dow === 0 ? -6 : 1 - dow;
+    t.setUTCDate(t.getUTCDate() + offset);
+    return t;
+  };
+
+  // Pre-create empty buckets so weeks with zero alerts still appear
+  const firstMonday = mondayUtc(from);
+  const lastMonday = mondayUtc(new Date(now));
+  const bucketMap = new Map<string, AlertTimelineBucket>();
+  for (let t = firstMonday.getTime(); t <= lastMonday.getTime(); t += 7 * 24 * 60 * 60 * 1000) {
+    const key = new Date(t).toISOString().slice(0, 10);
+    bucketMap.set(key, { weekStart: key, critical: 0, high: 0, medium: 0, low: 0, total: 0 });
+  }
+
+  const alerts = await Alert.find({ detectedAt: { $gte: from } })
+    .select('severity type detectedAt parcelId')
+    .populate('parcelId', 'name')
+    .lean();
+
+  const bySeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+  const byType: Record<string, number> = {};
+  const parcelCounts = new Map<string, { name: string; count: number }>();
+
+  for (const a of alerts) {
+    const sev = a.severity as keyof typeof bySeverity;
+    bySeverity[sev] = (bySeverity[sev] ?? 0) + 1;
+    byType[a.type] = (byType[a.type] ?? 0) + 1;
+
+    const week = mondayUtc(new Date(a.detectedAt)).toISOString().slice(0, 10);
+    const bucket = bucketMap.get(week);
+    if (bucket) {
+      bucket[sev] += 1;
+      bucket.total += 1;
+    }
+
+    const parcel = a.parcelId as unknown as { _id: { toString(): string }; name?: string } | null;
+    if (parcel) {
+      const key = parcel._id.toString();
+      const entry = parcelCounts.get(key) ?? { name: parcel.name ?? 'Parcela', count: 0 };
+      entry.count += 1;
+      parcelCounts.set(key, entry);
+    }
+  }
+
+  const topParcels = [...parcelCounts.entries()]
+    .map(([parcelId, e]) => ({ parcelId, parcelName: e.name, count: e.count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const buckets = [...bucketMap.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+  return { weeks, buckets, bySeverity, byType, topParcels };
+}

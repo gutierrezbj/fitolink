@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { protect, authorize } from '../../middleware/auth.js';
 import { User } from '../../models/User.js';
 import { Operation } from '../../models/Operation.js';
-import { getKpis } from '../../services/adminService.js';
+import { getKpis, getAlertTimeline } from '../../services/adminService.js';
 
 const router = Router();
 
@@ -14,6 +14,16 @@ router.use(authorize('admin'));
 router.get('/kpis', async (_req: Request, res: Response) => {
   const kpis = await getKpis();
   res.json({ success: true, data: kpis });
+});
+
+// GET /admin/alerts/timeline?weeks=8 — alerts aggregated by week + severity,
+// distribution by type, and top-5 worst parcels. Powers the OverWatch-style
+// analytics charts in admin and insurer dashboards.
+router.get('/alerts/timeline', async (req: Request, res: Response) => {
+  const weeksRaw = typeof req.query.weeks === 'string' ? parseInt(req.query.weeks, 10) : NaN;
+  const weeks = Math.max(4, Math.min(52, Number.isFinite(weeksRaw) ? weeksRaw : 8));
+  const data = await getAlertTimeline(weeks);
+  res.json({ success: true, data });
 });
 
 // GET /admin/users — list all users (omit googleId)

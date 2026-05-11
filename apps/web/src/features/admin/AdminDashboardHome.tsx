@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
+import AlertsTimeline from '@/components/AlertsTimeline.js';
 
 /**
  * Admin dashboard — single-screen control panel for the platform.
@@ -280,6 +281,15 @@ export default function AdminDashboardHome() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* ── Análisis de alertas (timeline + severidad + top parcelas) ─ */}
+          <SectionTitle icon="/siren.svg" title="Análisis de alertas" subtitle="Tendencia semanal · severidad · parcelas problemáticas" />
+          <div className="mb-6">
+            <AlertsTimeline
+              initialWeeks={8}
+              onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
+            />
           </div>
 
           {/* ── Bloque 4 · Comercial ──────────────────────────────────── */}
