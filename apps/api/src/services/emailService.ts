@@ -1,20 +1,37 @@
-import { Resend } from 'resend';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 /**
- * Email notifications via Resend.
+ * Email notifications via Gmail SMTP (nodemailer).
  *
- * Dual mode: if RESEND_API_KEY is set, sends real emails. If not, logs the
- * email payload structurally so we can dev/staging without spamming inboxes
- * and without breaking the alert flow. The flag flip is just pasting a key
- * in `.env` — zero code change.
+ * Aligned with OverWatch's email stack — both products operate under the
+ * SRS Google Workspace and share the deliverability story. Use a Google
+ * App Password (not the account password) in SMTP_PASS.
  *
- * Resend free tier: 100 emails/day, 3000/month. Plenty for the wedge phase.
+ * Dual mode: if SMTP_HOST is unset, emails are logged structurally
+ * instead of sent (useful for dev/staging without secrets and for tests).
+ * Toggle is just pasting env vars in `.env` — zero code change.
+ *
+ * Workspace plan caps: ~500 emails/day per sender. Abundant for the wedge
+ * (1 farmer ≈ 10 emails/day). If we hit the cap, swap to a transactional
+ * provider (Resend/SES/SendGrid) — the function signature stays the same.
  */
 
-const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
-const isLive = !!resend;
+const isLive = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+
+let transporter: Transporter | null = null;
+if (isLive) {
+  transporter = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465, // SSL for 465, STARTTLS for 587/others
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+  });
+}
 
 const STAGING_BASE = 'https://fitolink.systemrapid.io';
 
@@ -63,7 +80,7 @@ export async function sendAlertEmail(payload: AlertEmailPayload): Promise<void> 
   const html = renderAlertEmail(payload);
   const text = renderAlertText(payload);
 
-  if (!isLive) {
+  if (!isLive || !transporter) {
     logger.info(
       {
         mode: 'dry-run',
@@ -72,27 +89,23 @@ export async function sendAlertEmail(payload: AlertEmailPayload): Promise<void> 
         severity: payload.severity,
         ndvi: payload.ndviValue,
       },
-      'Email would be sent (RESEND_API_KEY not configured)',
+      'Email would be sent (SMTP_* not configured)',
     );
     return;
   }
 
   try {
-    const result = await resend!.emails.send({
-      from: env.EMAIL_FROM,
+    const info = await transporter.sendMail({
+      from: env.SMTP_FROM,
       to: payload.to,
       subject,
       html,
       text,
     });
-    if ('error' in result && result.error) {
-      logger.warn({ err: result.error, to: payload.to }, 'Resend rejected message');
-    } else {
-      logger.info(
-        { to: payload.to, severity: payload.severity, messageId: (result as { data?: { id: string } }).data?.id },
-        'Alert email sent',
-      );
-    }
+    logger.info(
+      { to: payload.to, severity: payload.severity, messageId: info.messageId },
+      'Alert email sent',
+    );
   } catch (err) {
     logger.error({ err, to: payload.to }, 'Email send failed (alert flow unaffected)');
   }

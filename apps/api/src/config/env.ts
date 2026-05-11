@@ -14,8 +14,15 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().email().default('alertas@fitolink.srs.es'),
+  // Gmail SMTP via nodemailer — aligned with OverWatch's email stack since
+  // both products operate under the SRS Google Workspace. App Password
+  // recommended (not plain password). Leave SMTP_HOST empty to run in
+  // dry-run mode where emails are logged structurally instead of sent.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('FitoLink Alertas <AlertasAgrom@systemrapid.io>'),
   COPERNICUS_CLIENT_ID: z.string().optional(),
   COPERNICUS_CLIENT_SECRET: z.string().optional(),
 });
