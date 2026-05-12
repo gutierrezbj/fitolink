@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { User, type IUser } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 import { generateToken } from '../middleware/auth.js';
+import { sendWelcomeEmail } from './emailService.js';
 import type { UserRole } from '@fitolink/shared';
 
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
@@ -142,6 +143,16 @@ export async function registerWithGoogle(
     // both fields; the policy version is the date the user accepted.
     acceptedTerms: options.acceptedTerms ?? false,
     acceptedTermsAt: options.acceptedTermsAt ? new Date(options.acceptedTermsAt) : undefined,
+  });
+
+  // Welcome email — fire-and-forget. Si falla SMTP el alta sigue válida;
+  // sendWelcomeEmail nunca lanza. Para roles que requieren verificación
+  // manual el mensaje cambia (heads-up de validación 24-48h).
+  void sendWelcomeEmail({
+    to: user.email,
+    recipientName: user.name,
+    role: user.role,
+    needsVerification: !isAutoVerified,
   });
 
   const token = generateToken(user._id.toString());

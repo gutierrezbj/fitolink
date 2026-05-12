@@ -1,12 +1,46 @@
 import { Parcel, type IParcel } from '../models/Parcel.js';
+import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
+import { sendFirstParcelEmail } from './emailService.js';
+import { logger } from '../utils/logger.js';
 import type { CreateParcel, UpdateParcel } from '@fitolink/shared';
+
+/**
+ * Fire-and-forget: si esta es la primera parcela activa del usuario,
+ * mandar el email "procesando" para que sepa qué esperar. Idempotente
+ * por estado de la BD — si ya tenía parcelas no se manda.
+ */
+async function maybeSendFirstParcelEmail(ownerId: string, justCreated: IParcel | IParcel[]): Promise<void> {
+  try {
+    // Count parcels for the user. If exactly the count we just created → first time.
+    const totalNow = await Parcel.countDocuments({ ownerId, isActive: true });
+    const createdCount = Array.isArray(justCreated) ? justCreated.length : 1;
+    if (totalNow !== createdCount) return; // ya tenía otras → no es la primera vez
+
+    const user = await User.findById(ownerId).lean();
+    if (!user) return;
+
+    // Usamos la primera (más significativa) si bulk.
+    const firstParcel = Array.isArray(justCreated) ? justCreated[0] : justCreated;
+    void sendFirstParcelEmail({
+      to: user.email,
+      recipientName: user.name,
+      parcelName: firstParcel.name,
+      cropType: firstParcel.cropType,
+      province: firstParcel.province,
+      areaHa: firstParcel.areaHa ?? 0,
+    });
+  } catch (err) {
+    logger.warn({ err, ownerId }, 'maybeSendFirstParcelEmail check failed (no-op)');
+  }
+}
 
 export async function createParcel(ownerId: string, data: CreateParcel): Promise<IParcel> {
   const parcel = await Parcel.create({
     ...data,
     ownerId,
   });
+  void maybeSendFirstParcelEmail(ownerId, parcel);
   return parcel;
 }
 
@@ -18,7 +52,9 @@ export async function createParcelsBulk(
   // doc fails validation, none are inserted (ordered: true is the default).
   const docs = parcels.map((p) => ({ ...p, ownerId }));
   const created = await Parcel.insertMany(docs, { ordered: true });
-  return created as unknown as IParcel[];
+  const createdArr = created as unknown as IParcel[];
+  void maybeSendFirstParcelEmail(ownerId, createdArr);
+  return createdArr;
 }
 
 export async function getParcelsByOwner(ownerId: string): Promise<IParcel[]> {

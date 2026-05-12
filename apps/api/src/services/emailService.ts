@@ -637,4 +637,316 @@ function renderPestItem(adv: DigestPestAdvisory): string {
   </table>`;
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// Transactional emails — bienvenida + primera parcela procesando
+// (Ola onboarding · Ronda 2)
+// ────────────────────────────────────────────────────────────────────────
+
+export interface WelcomeEmailPayload {
+  to: string;
+  recipientName: string;
+  role: 'farmer' | 'cooperative' | 'pilot' | 'insurer' | 'agronomist' | 'admin';
+  needsVerification?: boolean;
+}
+
+/**
+ * Bienvenida tras alta. Tono Tipo A friendly. Llamada a la acción clara:
+ * sube tu primera parcela. Incluye explicación de cuándo llegan los datos
+ * y enlace al dashboard. Para roles que requieren verificación manual,
+ * el mensaje cambia.
+ */
+export async function sendWelcomeEmail(payload: WelcomeEmailPayload): Promise<void> {
+  const subject = payload.needsVerification
+    ? `[AgroM · FitoLink] Hemos recibido tu solicitud — verificación en marcha`
+    : `[AgroM · FitoLink] Bienvenido, ${payload.recipientName.split(' ')[0]}`;
+  const html = renderWelcomeEmail(payload);
+  const text = renderWelcomeText(payload);
+
+  if (!isLive || !transporter) {
+    logger.info({ mode: 'dry-run', to: payload.to, subject }, 'Welcome email would be sent');
+    return;
+  }
+  try {
+    const info = await transporter.sendMail({
+      from: env.SMTP_FROM,
+      to: payload.to,
+      subject,
+      html,
+      text,
+    });
+    logger.info({ to: payload.to, messageId: info.messageId }, 'Welcome email sent');
+  } catch (err) {
+    logger.error({ err, to: payload.to }, 'Welcome email send failed (signup flow unaffected)');
+    // Never throw — alta del usuario ya tuvo éxito antes de llamar a este send.
+  }
+}
+
+function renderWelcomeText(p: WelcomeEmailPayload): string {
+  const firstName = p.recipientName.split(' ')[0];
+  if (p.needsVerification) {
+    return [
+      `Hola ${firstName},`,
+      '',
+      `Hemos recibido tu solicitud de alta como ${p.role}.`,
+      'Antes de poder operar comercialmente, nuestro equipo verifica los perfiles',
+      'no-agricultor para garantizar la calidad del servicio. Revisaremos tu cuenta',
+      'en las próximas 24-48 horas y te avisaremos cuando esté lista.',
+      '',
+      'Mientras tanto, puedes acceder a tu panel y familiarizarte con la interfaz:',
+      `${STAGING_BASE}/dashboard`,
+      '',
+      '—',
+      'AgroM · Inteligencia agraria de precisión',
+    ].join('\n');
+  }
+  return [
+    `Buenos días, ${firstName}.`,
+    '',
+    'Bienvenido a AgroM FitoLink. Estos son tus próximos pasos:',
+    '',
+    'I. Sube tu primera parcela. Acepta archivos KMZ (SIGPAC, Mapping) o',
+    '   dibujado manual del perímetro sobre el mapa.',
+    '',
+    'II. Elige el cultivo y la provincia. Nuestro sistema consulta el satélite',
+    '    europeo Sentinel-2 sobre tus coordenadas y empieza a procesar.',
+    '',
+    'III. Tu primer informe llega en ~5 días, cuando Sentinel-2 pase por',
+    '     tu zona. A partir de ahí, recibirás el informe diario en este email,',
+    '     a las 7 de la mañana.',
+    '',
+    `Acceder al panel: ${STAGING_BASE}/dashboard/parcels/new`,
+    '',
+    '—',
+    'AgroM · Inteligencia agraria de precisión',
+    'Para no recibir más emails, responde con "BAJA" en el asunto.',
+  ].join('\n');
+}
+
+function renderWelcomeEmail(p: WelcomeEmailPayload): string {
+  const c = AGROM_PALETTE;
+  const firstName = escapeHtml(p.recipientName.split(' ')[0]);
+  const ctaUrl = `${STAGING_BASE}/dashboard/parcels/new`;
+
+  if (p.needsVerification) {
+    return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><title>Solicitud recibida — AgroM FitoLink</title></head>
+<body style="margin:0;padding:0;background:${c.paper};font-family:${FONT_BODY};color:${c.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${c.paper};">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid ${c.rule};">
+      <tr><td style="padding:30px 36px 20px;border-bottom:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · FITOLINK</p>
+        <h1 style="margin:10px 0 4px;color:${c.deep};font-size:24px;font-weight:600;font-family:${FONT_DISPLAY};">Hola ${firstName}.</h1>
+        <p style="margin:0;color:${c.muted};font-size:14px;font-style:italic;font-family:${FONT_DISPLAY};">Hemos recibido tu solicitud de alta.</p>
+      </td></tr>
+      <tr><td style="padding:24px 36px;">
+        <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ VERIFICACIÓN EN MARCHA</p>
+        <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:18px;"></div>
+        <p style="margin:0 0 14px;color:${c.ink};font-size:14px;line-height:1.6;">
+          Tu perfil de <b>${escapeHtml(p.role)}</b> requiere validación manual por nuestro
+          equipo. Es la forma de garantizar que las cooperativas, pilotos y aseguradoras que
+          operan en AgroM tienen las credenciales y compromisos adecuados.
+        </p>
+        <p style="margin:0;color:${c.ink};font-size:14px;line-height:1.6;">
+          Revisamos tu cuenta en las próximas 24-48 horas y te avisamos por email cuando
+          puedas empezar a operar.
+        </p>
+      </td></tr>
+      <tr><td align="center" style="padding:6px 36px 30px;">
+        <a href="${STAGING_BASE}/dashboard" style="display:inline-block;padding:11px 26px;background:${c.deep};color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;font-family:${FONT_BODY};">Acceder al panel →</a>
+      </td></tr>
+      <tr><td style="padding:18px 36px;background:${c.parch};border-top:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><title>Bienvenido — AgroM FitoLink</title></head>
+<body style="margin:0;padding:0;background:${c.paper};font-family:${FONT_BODY};color:${c.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${c.paper};">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid ${c.rule};">
+
+      <tr><td style="padding:30px 36px 20px;border-bottom:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · FITOLINK</p>
+        <h1 style="margin:10px 0 4px;color:${c.deep};font-size:26px;font-weight:600;font-family:${FONT_DISPLAY};">Buenos días, ${firstName}.</h1>
+        <p style="margin:0;color:${c.muted};font-size:14px;font-style:italic;font-family:${FONT_DISPLAY};">Bienvenido a AgroM FitoLink.</p>
+      </td></tr>
+
+      <tr><td style="padding:24px 36px 8px;">
+        <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ TUS PRÓXIMOS PASOS</p>
+        <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:18px;"></div>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="padding:0 12px 16px 0;vertical-align:top;width:40px;">
+              <span style="font-family:${FONT_DISPLAY};font-size:32px;color:${c.terra};line-height:1;">I</span>
+            </td>
+            <td style="padding:0 0 16px;vertical-align:top;">
+              <p style="margin:0;color:${c.deep};font-family:${FONT_DISPLAY};font-size:16px;font-weight:600;">Sube tu primera parcela.</p>
+              <p style="margin:4px 0 0;color:${c.ink};font-size:13px;line-height:1.6;">Acepta KMZ de SIGPAC, Mapping o de tu técnico. También se puede dibujar el perímetro a mano sobre el mapa.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 12px 16px 0;vertical-align:top;">
+              <span style="font-family:${FONT_DISPLAY};font-size:32px;color:${c.terra};line-height:1;">II</span>
+            </td>
+            <td style="padding:0 0 16px;vertical-align:top;">
+              <p style="margin:0;color:${c.deep};font-family:${FONT_DISPLAY};font-size:16px;font-weight:600;">Elige cultivo y provincia.</p>
+              <p style="margin:4px 0 0;color:${c.ink};font-size:13px;line-height:1.6;">Nuestro sistema consulta el satélite europeo Sentinel-2 sobre tus coordenadas y empieza a procesar.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 12px 18px 0;vertical-align:top;">
+              <span style="font-family:${FONT_DISPLAY};font-size:32px;color:${c.terra};line-height:1;">III</span>
+            </td>
+            <td style="padding:0 0 18px;vertical-align:top;">
+              <p style="margin:0;color:${c.deep};font-family:${FONT_DISPLAY};font-size:16px;font-weight:600;">Tu primer informe llega en ~5 días.</p>
+              <p style="margin:4px 0 0;color:${c.ink};font-size:13px;line-height:1.6;">Cada 5 días Sentinel-2 pasa sobre tu zona. A partir de ahí, recibirás el informe diario a las 7 de la mañana.</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+
+      <tr><td align="center" style="padding:8px 36px 32px;">
+        <a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;background:${c.deep};color:#FFFFFF;font-size:15px;font-weight:600;text-decoration:none;font-family:${FONT_BODY};letter-spacing:0.5px;">Subir mi primera parcela →</a>
+      </td></tr>
+
+      <tr><td style="padding:18px 36px;background:${c.parch};border-top:1px solid ${c.rule};">
+        <p style="margin:0 0 6px;color:${c.muted};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN</p>
+        <p style="margin:0;color:${c.muted};font-size:11px;line-height:1.6;">
+          Para no recibir más este informe, responda con "BAJA" en el asunto.
+          <br>
+          <a href="https://agrom.es" style="color:${c.deep};text-decoration:none;">agrom.es</a>
+          <span style="color:${c.rule};margin:0 6px;">·</span>
+          <a href="${STAGING_BASE}" style="color:${c.deep};text-decoration:none;">fitolink.systemrapid.io</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+// ── Email: primera parcela procesando ─────────────────────────────────
+
+export interface FirstParcelEmailPayload {
+  to: string;
+  recipientName: string;
+  parcelName: string;
+  cropType: string;
+  province: string;
+  areaHa: number;
+}
+
+export async function sendFirstParcelEmail(payload: FirstParcelEmailPayload): Promise<void> {
+  const subject = `[AgroM · FitoLink] Procesando ${payload.parcelName} — primer informe en breve`;
+  const html = renderFirstParcelEmail(payload);
+  const text = renderFirstParcelText(payload);
+
+  if (!isLive || !transporter) {
+    logger.info({ mode: 'dry-run', to: payload.to, subject }, 'First-parcel email would be sent');
+    return;
+  }
+  try {
+    const info = await transporter.sendMail({
+      from: env.SMTP_FROM,
+      to: payload.to,
+      subject,
+      html,
+      text,
+    });
+    logger.info({ to: payload.to, messageId: info.messageId }, 'First-parcel email sent');
+  } catch (err) {
+    logger.error({ err, to: payload.to }, 'First-parcel email send failed (parcel creation unaffected)');
+  }
+}
+
+function renderFirstParcelText(p: FirstParcelEmailPayload): string {
+  const firstName = p.recipientName.split(' ')[0];
+  return [
+    `Hola ${firstName},`,
+    '',
+    `Acabamos de registrar tu parcela "${p.parcelName}" en AgroM FitoLink.`,
+    '',
+    `Cultivo: ${p.cropType}`,
+    `Provincia: ${p.province}`,
+    `Superficie: ${p.areaHa} ha`,
+    '',
+    'El satélite europeo Sentinel-2 tiene revisita de 5 días sobre la península.',
+    'En cuanto haga el primer paso por tu zona, generamos el informe inicial y te',
+    'llegará en el digest matutino diario que recibes a las 7 de la mañana.',
+    '',
+    `Acceder a tu parcela: ${STAGING_BASE}/dashboard/parcels`,
+    '',
+    '—',
+    'AgroM · Inteligencia agraria de precisión',
+  ].join('\n');
+}
+
+function renderFirstParcelEmail(p: FirstParcelEmailPayload): string {
+  const c = AGROM_PALETTE;
+  const firstName = escapeHtml(p.recipientName.split(' ')[0]);
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><title>Procesando ${escapeHtml(p.parcelName)} — AgroM</title></head>
+<body style="margin:0;padding:0;background:${c.paper};font-family:${FONT_BODY};color:${c.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${c.paper};">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid ${c.rule};">
+
+      <tr><td style="padding:30px 36px 20px;border-bottom:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · FITOLINK</p>
+        <h1 style="margin:10px 0 4px;color:${c.deep};font-size:22px;font-weight:600;font-family:${FONT_DISPLAY};">Hola ${firstName}.</h1>
+        <p style="margin:0;color:${c.muted};font-size:14px;font-style:italic;font-family:${FONT_DISPLAY};">Hemos registrado tu parcela <b style="color:${c.deep};font-style:normal;">${escapeHtml(p.parcelName)}</b>.</p>
+      </td></tr>
+
+      <tr><td style="padding:24px 36px 6px;">
+        <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ DATOS REGISTRADOS</p>
+        <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:16px;"></div>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${c.paper};border:1px solid ${c.rule};">
+          <tr>
+            <td style="padding:10px 14px;color:${c.muted};font-size:12px;width:120px;font-family:${FONT_MONO};text-transform:uppercase;letter-spacing:1.5px;">Cultivo</td>
+            <td style="padding:10px 14px;color:${c.ink};font-size:14px;font-weight:600;">${escapeHtml(p.cropType)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;color:${c.muted};font-size:12px;font-family:${FONT_MONO};text-transform:uppercase;letter-spacing:1.5px;border-top:1px solid ${c.rule};">Provincia</td>
+            <td style="padding:10px 14px;color:${c.ink};font-size:14px;font-weight:600;border-top:1px solid ${c.rule};">${escapeHtml(p.province)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;color:${c.muted};font-size:12px;font-family:${FONT_MONO};text-transform:uppercase;letter-spacing:1.5px;border-top:1px solid ${c.rule};">Superficie</td>
+            <td style="padding:10px 14px;color:${c.ink};font-size:14px;font-weight:600;border-top:1px solid ${c.rule};">${p.areaHa.toFixed(1)} ha</td>
+          </tr>
+        </table>
+      </td></tr>
+
+      <tr><td style="padding:20px 36px 8px;">
+        <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ QUÉ PASA AHORA</p>
+        <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:14px;"></div>
+        <p style="margin:0;color:${c.ink};font-size:14px;line-height:1.6;">
+          El satélite europeo Sentinel-2 tiene revisita de <b>5 días</b> sobre la
+          península. En cuanto haga el primer paso por tu zona, generamos el
+          informe inicial y te llega en el digest matutino diario a las 7 de la
+          mañana. Sin acción requerida.
+        </p>
+      </td></tr>
+
+      <tr><td align="center" style="padding:14px 36px 32px;">
+        <a href="${STAGING_BASE}/dashboard/parcels" style="display:inline-block;padding:13px 28px;background:${c.deep};color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;font-family:${FONT_BODY};letter-spacing:0.5px;">Ver mis parcelas →</a>
+      </td></tr>
+
+      <tr><td style="padding:18px 36px;background:${c.parch};border-top:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
 export const _isLive = isLive; // useful for tests / debug endpoint
