@@ -507,8 +507,8 @@ function renderDigestHtml(d: DigestPayload): string {
         <!-- § 01 — NDVI -->
         <tr>
           <td style="padding:28px 32px 8px;">
-            <p style="margin:0 0 6px;color:${c.muted};font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">§ 01 · ESTADO DE SUS PARCELAS</p>
-            <div style="width:40px;height:2px;background:${c.terra};margin-bottom:14px;"></div>
+            <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ 01 · ESTADO DE SUS PARCELAS</p>
+            <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:18px;"></div>
             ${renderNdviSection(d)}
           </td>
         </tr>
@@ -516,8 +516,8 @@ function renderDigestHtml(d: DigestPayload): string {
         <!-- § 02 — Weather -->
         <tr>
           <td style="padding:14px 32px 8px;">
-            <p style="margin:0 0 6px;color:${c.muted};font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">§ 02 · METEOROLOGÍA OPERATIVA · 7 DÍAS</p>
-            <div style="width:40px;height:2px;background:${c.terra};margin-bottom:14px;"></div>
+            <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ 02 · METEOROLOGÍA OPERATIVA · 7 DÍAS</p>
+            <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:18px;"></div>
             ${renderWeatherSection(d)}
           </td>
         </tr>
@@ -525,8 +525,8 @@ function renderDigestHtml(d: DigestPayload): string {
         <!-- § 03 — Pest advisories -->
         <tr>
           <td style="padding:14px 32px 22px;">
-            <p style="margin:0 0 6px;color:${c.muted};font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">§ 03 · AVISOS FITOSANITARIOS DE SU COMARCA</p>
-            <div style="width:40px;height:2px;background:${c.terra};margin-bottom:14px;"></div>
+            <p style="margin:0 0 8px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ 03 · AVISOS FITOSANITARIOS DE SU COMARCA</p>
+            <div style="width:56px;height:2.5px;background:${c.terra};margin-bottom:18px;"></div>
             ${renderPestSection(d)}
           </td>
         </tr>
