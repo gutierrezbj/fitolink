@@ -12,6 +12,7 @@ import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
 import NdviForecastCard from './NdviForecastCard.js';
 import WeatherEventsCard from './WeatherEventsCard.js';
+import PestAdvisoriesCard from './PestAdvisoriesCard.js';
 import WeatherWidget from '@/features/weather/WeatherWidget.js';
 import { polygonCentroid } from '@/features/marketplace/distance.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
@@ -618,6 +619,11 @@ export default function ParcelDetailPage() {
       {/* Ola 1.5 · Pieza 2 — Personalised weather events from Open-Meteo */}
       <div className="mb-4">
         <WeatherEventsCard parcelId={parcel._id} />
+      </div>
+
+      {/* Ola 1.5 · Pieza 3 — Curated pest advisories matching parcel comarca */}
+      <div className="mb-4">
+        <PestAdvisoriesCard parcelId={parcel._id} />
       </div>
 
       {/* MPC long-term context — Sprint MPC */}

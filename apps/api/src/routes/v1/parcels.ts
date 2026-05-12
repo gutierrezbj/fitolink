@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as parcelController from '../../controllers/parcelController.js';
+import { getForParcel as getPestAdvisoriesForParcel } from '../../controllers/pestAdvisoryController.js';
 import { protect, authorize } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { createParcelSchema, updateParcelSchema, bulkCreateParcelSchema } from '@fitolink/shared';
@@ -22,6 +23,8 @@ router.get('/:id/ndvi-snapshot', parcelController.getNdviSnapshot);
 router.get('/:id/insights/ndvi-forecast', parcelController.getNdviForecast);
 // Predictive insight — Personalised weather events (cold/warm front, storm, frost, heat, wind)
 router.get('/:id/insights/weather-events', parcelController.getWeatherEvents);
+// Predictive insight — Curated pest advisories matching parcel crop + comarca radius
+router.get('/:id/insights/pest-advisories', getPestAdvisoriesForParcel);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);

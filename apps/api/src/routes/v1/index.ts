@@ -7,6 +7,7 @@ import adminRoutes from './admin.js';
 import sigpacRoutes from './sigpac.js';
 import marketplaceRoutes from './marketplace.js';
 import cooperativeRoutes from './cooperative.js';
+import pestAdvisoryRoutes from './pestAdvisories.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/admin', adminRoutes);
 router.use('/sigpac', sigpacRoutes);
 router.use('/marketplace', marketplaceRoutes);
 router.use('/cooperative', cooperativeRoutes);
+router.use('/pest-advisories', pestAdvisoryRoutes);
 
 export default router;
