@@ -183,6 +183,12 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 | Identidad AgroM en frontend: paleta + Fraunces/Plex/Mono + wordmark en login + sidebar | ✅ Done 2026-05-11 · commit 0227846 |
 | Email Gmail SMTP LIVE con Workspace (App Password juang@systemrapid.io) | ✅ Done 2026-05-11 |
 | Material comercial: pitch deck 5 slides (PPTX+PDF) + infografía A4 (PDF+JPG) para cliente pistacho | ✅ Done 2026-05-12 · commits 67e7414, c964d2c |
+| Ola 1.5 · Pieza 1: NDVI forecast (linear regression + critical-threshold projection per parcel) | ✅ Done 2026-05-12 |
+| Ola 1.5 · Pieza 2: Weather events 7d (7 reglas Open-Meteo: cold/warm front, storm, helada, calor, viento) | ✅ Done 2026-05-12 |
+| Ola 1.5 · Pieza 3: Pest advisories curados (admin emite RAIF/MAPA, 2dsphere + haversine por crop+radius) | ✅ Done 2026-05-12 |
+| Ola 1.5 · Pieza 4: Morning digest 7am (orquesta P1+P2+P3, email AgroM editorial, cron guardado por DIGEST_CRON env) | ✅ Done 2026-05-12 · commit c895432 |
+| Pistacho client: PDF Informe Técnico personalizado + reactivación 6 parcelas + demo button "Pistachar (Cliente)" | ✅ Done 2026-05-12 · commit 1aec910 |
+| Agrodex (Gregorio Becerra) — presentación entregada, interés en meterlo en cursos de formación | ✅ 2026-05-12 (validación cualitativa) |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
@@ -190,6 +196,7 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 - **Stack:** Docker Compose (web:3040 + api:4040 + mongo:6040) + Nginx reverse proxy + Certbot SSL + gzip system-wide
 - **Redeploy:** `ssh root@100.110.52.22 "bash /opt/fitolink/deploy.sh"` (git pull + build + up + seed)
 - **Build baselines MPC:** `ssh root@100.110.52.22 "cd /opt/fitolink && docker compose exec -T pipeline python -m src.build_mpc_baselines"` (idempotente — sólo procesa parcelas sin baseline; añadir `--refresh` para forzar)
+- **Morning digest dry-run (Ola 1.5 · Pieza 4):** `ssh root@100.110.52.22 "cd /opt/fitolink && docker compose exec -T api node apps/api/dist/seed/sendMorningDigest.js --user john-pistacho-real --dry-run"` (idempotente, no manda SMTP). Para activarlo de verdad: `DIGEST_CRON=true` en `.env` raíz + restart api. El cron dispara a las 05:00 UTC (07:00 Madrid verano / 06:00 invierno).
 - **TS fixes en build:** `import { User }` named export en admin.ts · `height` como string en ParcelMap · `company?` en User type · `areaHa?` en B2BParcelsPage
 - **Fix demo login:** `VITE_API_URL` en `.env` raíz tenia `localhost:4040` embebido en build. Fix: `VITE_API_URL=` vacío + `apps/web/.env.production`
 - **Favicon:** `apps/web/public/favicon.svg` creado (círculo verde + trigo + señal satelital)
