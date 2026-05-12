@@ -98,9 +98,7 @@ function ServiceCard({ service, onRequest }: { service: Service; onRequest: (s: 
       )}
       {service.dji && (
         <div className="absolute top-3 left-3 bg-gray-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-          <span>DJI</span>
-          <span className="text-gray-400">·</span>
-          <span className="text-[8px]">Trazabilidad automática</span>
+          <span>Dron DJI Agras</span>
         </div>
       )}
 
@@ -226,7 +224,7 @@ function RequestModal({
               <p>📍 <span className="font-medium text-gray-700">{selectedParcel.name}</span> · {selectedParcel.province}</p>
               <p>🛸 Servicio: <span className="font-medium text-gray-700">{service.name}</span></p>
               <p>💶 Orientativo: <span className="font-medium text-gray-700">{service.priceRange}</span></p>
-              {service.dji && <p>📲 Trazabilidad DJI automática incluida</p>}
+              {service.dji && <p>🚁 Aplicación con dron DJI Agras · operador certificado AESA</p>}
             </div>
           )}
 
@@ -295,7 +293,7 @@ export default function ServicesPage() {
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-2xl font-bold text-gray-900">Servicios FitoLink</h1>
           <span className="bg-brand-50 text-brand-700 border border-brand-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-            Powered by DJI
+            Red de operadores DJI
           </span>
         </div>
         <p className="text-gray-500 text-sm max-w-xl">
@@ -303,18 +301,18 @@ export default function ServicesPage() {
         </p>
       </div>
 
-      {/* DJI banner */}
+      {/* Red de operadores DJI · ambición de plataforma */}
       <div className="bg-gray-900 text-white rounded-2xl p-5 mb-8 flex items-center gap-5">
         <div className="text-4xl shrink-0">🚁</div>
         <div className="flex-1">
-          <p className="font-bold text-sm">Trazabilidad automática con DJI Cloud API</p>
+          <p className="font-bold text-sm">Red de operadores con dron DJI Agras</p>
           <p className="text-gray-400 text-xs mt-0.5">
-            Todos los operadores de la red usan drones DJI certificados. Cuando el piloto completa el vuelo, los datos (área tratada, dosis, track GPS) se sincronizan automáticamente en tu parcela. Sin papeleo.
+            Los operadores de la red trabajan con drones DJI Agras T40 / T50 certificados AESA. Tras cada vuelo, el piloto registra los datos de la operación (superficie tratada, producto, dosis, condiciones) y quedan vinculados a tu parcela.
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">FitoLink</p>
-          <p className="text-xs font-bold">DJI Developer Partner</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wide">SystemRapid</p>
+          <p className="text-xs font-bold">DJI Developer Enterprise</p>
         </div>
       </div>
 

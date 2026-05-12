@@ -137,7 +137,7 @@ export default function PricingPage() {
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">✓</span>
-                <span>5 índices de vegetación calculados por parcela (NDVI, NDRE, SAVI, MSI, EVI)</span>
+                <span>5 índices de vegetación calculados por parcela (NDVI, NDRE, NDMI, SAVI, EVI)</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">✓</span>
@@ -149,7 +149,7 @@ export default function PricingPage() {
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">✓</span>
-                <span>Histórico de 5 años por parcela</span>
+                <span>Contexto histórico de la zona (baseline MODIS 5 años) + serie Sentinel-2 desde el alta de la parcela</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">✓</span>
@@ -174,19 +174,15 @@ export default function PricingPage() {
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">·</span>
-                <span>Tasa variable basada en los datos satelitales reales — no a ojo</span>
+                <span>Aplicación coordinada con los datos satelitales: zona, momento y estado del cultivo</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">·</span>
-                <span>Hasta 30% menos producto que aplicación uniforme</span>
+                <span>Registro digital de cada vuelo con producto, dosis aplicada y condiciones meteo</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">·</span>
-                <span>Reporte PDF firmado tras cada vuelo · cuaderno PAC automático</span>
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
-                <span>Trazabilidad blockchain · firma eIDAS</span>
+                <span>Historial inmutable de aplicaciones por parcela y temporada</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="text-agrom-terra font-bold">·</span>

@@ -404,7 +404,7 @@ function PacPain() {
             </p>
           </div>
           <p className="mt-4 text-sm text-gray-500 text-center max-w-xl" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            Cada vuelo genera autom&aacute;ticamente el registro PAC: fecha, parcela, producto, piloto ROPO, condiciones, firma del agr&oacute;nomo. Cuaderno de campo digital integrado.
+            Cada vuelo queda registrado digitalmente con fecha, parcela, producto, dosis y condiciones meteo. Informaci&oacute;n lista para incorporar al cuaderno de explotaci&oacute;n seg&uacute;n normativa PAC.
           </p>
         </div>
 
@@ -440,7 +440,7 @@ const STEPS = [
       </svg>
     ),
     title: 'Diagnostica',
-    desc: 'Nuestra IA identifica anomal\u00edas, patrones de estr\u00e9s h\u00eddrico y ca\u00eddas de NDVI. Recibe alertas autom\u00e1ticas con nivel de confianza.',
+    desc: 'Detecci\u00f3n autom\u00e1tica de anomal\u00edas y ca\u00eddas de NDVI por parcela con clasificador entrenado en patrones de cultivo mediterr\u00e1neo. Cada alerta lleva su nivel de confianza.',
     accent: 'from-emerald-400/20 to-emerald-500/5',
   },
   {
@@ -574,7 +574,7 @@ const ROLES = [
       'Monitorizaci\u00f3n de parcelas en tiempo real',
       'Inspecciones automatizadas con drones',
       'Reducci\u00f3n de fraude con datos verificables',
-      'API para integraci\u00f3n con tus sistemas',
+      'Integraci\u00f3n B2B disponible bajo demanda',
     ],
     gradient: 'from-amber-50 to-white',
     border: 'hover:border-amber-300',
@@ -585,7 +585,7 @@ const ROLES = [
     subtitle: 'Coordina y negocia',
     features: [
       'Monitoriza todas las parcelas del colectivo',
-      'Cuaderno PAC centralizado entre socios',
+      'Registro de aplicaciones centralizado entre socios',
       'Datos agregados para mejorar negociaci\u00f3n',
       'Programa a medida con tu red de pilotos',
     ],

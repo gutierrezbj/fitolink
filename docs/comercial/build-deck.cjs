@@ -272,18 +272,18 @@ pres.title = 'AgroM · FitoLink — Informe de Capacidades';
     },
     {
       num: 'II',
-      name: 'INTELIGENCIA ARTIFICIAL',
-      body: 'Un modelo entrenado con miles de patrones detecta caídas anómalas en cada parcela, cruzando datos del histórico de 5 años y del clima reciente.',
+      name: 'DETECCIÓN AUTOMÁTICA',
+      body: 'Un clasificador analiza cada lectura nueva de cada parcela frente al baseline MODIS de la zona, el clima reciente y el histórico Sentinel-2 que tenemos de su parcela.',
     },
     {
       num: 'III',
       name: 'DRON DE PRECISIÓN',
-      body: 'Donde hace falta, un piloto certificado aplica solo en las zonas afectadas. Tasa variable basada en datos reales, no en cálculo a ojo.',
+      body: 'Donde hace falta, un piloto certificado AESA aplica con dron DJI Agras según los datos satelitales y el estado real del cultivo, no a ojo.',
     },
     {
       num: 'IV',
       name: 'CUADERNO DIGITAL',
-      body: 'Cada aplicación queda registrada con firma electrónica y trazabilidad. Cumple normativa PAC sin papeleo añadido.',
+      body: 'Cada aplicación queda registrada digitalmente con producto, dosis y condiciones. Información lista para incorporar al cuaderno de explotación según normativa PAC.',
     },
   ];
 

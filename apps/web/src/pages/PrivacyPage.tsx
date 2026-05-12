@@ -109,7 +109,7 @@ export default function PrivacyPage() {
           <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 06 · Cuánto tiempo conservamos los datos</h2>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Datos de la cuenta</b>: mientras la cuenta esté activa, más 4 años tras la baja para cumplir con obligaciones legales (registros PAC y fiscales).</li>
-            <li><b>Datos satelitales históricos</b>: hasta 5 años para mantener el contexto histórico de cada parcela, valor diferencial del Servicio.</li>
+            <li><b>Datos satelitales</b>: serie temporal Sentinel-2 desde el alta de la parcela + contexto histórico MODIS de 5 años para la zona geográfica donde se ubica.</li>
             <li><b>Logs técnicos</b>: 90 días.</li>
           </ul>
           <p className="mt-3">

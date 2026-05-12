@@ -177,25 +177,25 @@ LAYERS = [
         'roman': 'I',
         'eyebrow': '§ I  ·  OBSERVACIÓN SATELITAL',
         'body': 'El satélite Sentinel-2 europeo capta imágenes de sus parcelas cada cinco días. Calculamos cinco índices del estado real del cultivo.',
-        'tech': 'RESOLUCIÓN 10 m   ·   REVISITA 5 DÍAS   ·   HISTÓRICO 5 AÑOS',
+        'tech': 'RESOLUCIÓN 10 m   ·   REVISITA 5 DÍAS   ·   BASELINE MODIS 5 AÑOS · ZONA',
     },
     {
         'roman': 'II',
-        'eyebrow': '§ II  ·  INTELIGENCIA ARTIFICIAL',
-        'body': 'Un modelo propio detecta caídas anómalas parcela a parcela. Aprende qué es normal en su pistachar y avisa cuando algo se desvía.',
-        'tech': '13 INDICADORES POR PARCELA   ·   BASELINE PROPIO   ·   CONFIANZA IA POR ALERTA',
+        'eyebrow': '§ II  ·  DETECCIÓN AUTOMÁTICA',
+        'body': 'Un clasificador detecta caídas anómalas parcela a parcela. Aprende qué es normal en su pistachar y avisa cuando algo se desvía.',
+        'tech': '13 INDICADORES POR PARCELA   ·   BASELINE PROPIO   ·   CONFIANZA POR ALERTA',
     },
     {
         'roman': 'III',
         'eyebrow': '§ III  ·  APLICACIÓN CON DRON',
-        'body': 'Un piloto certificado aplica solo donde hace falta. Tasa variable basada en datos reales, no en cálculo a ojo.',
-        'tech': 'PILOTO AESA CERTIFICADO   ·   DRON DJI T50/T30   ·   HASTA 30% MENOS PRODUCTO',
+        'body': 'Un piloto certificado AESA aplica con dron DJI Agras según los datos satelitales, no a ojo.',
+        'tech': 'PILOTO AESA   ·   DRON DJI AGRAS T40 / T50   ·   DECISIÓN POR DATOS',
     },
     {
         'roman': 'IV',
         'eyebrow': '§ IV  ·  CUADERNO DIGITAL',
-        'body': 'Cada aplicación queda registrada con firma electrónica y trazabilidad. Cumple normativa PAC sin papeleo añadido.',
-        'tech': 'FIRMA eIDAS   ·   TRAZABILIDAD INMUTABLE   ·   CUADERNO PAC AUTOMÁTICO',
+        'body': 'Cada aplicación queda registrada con producto, dosis y condiciones. Información lista para el cuaderno de explotación PAC.',
+        'tech': 'REGISTRO DIGITAL   ·   HISTORIAL DE APLICACIONES   ·   COMPATIBLE CUADERNO PAC',
     },
 ]
 
@@ -274,7 +274,7 @@ ITEMS = [
     },
     {
         'eb': 'REPORTE DE APLICACIÓN',
-        'body': 'Tras cada vuelo del dron, PDF firmado con condiciones, dosis y zonas tratadas.',
+        'body': 'Tras cada vuelo del dron, PDF con condiciones, dosis y superficie tratada.',
     },
 ]
 
