@@ -18,6 +18,8 @@ router.put('/:id', authorize('farmer'), validate(updateParcelSchema), parcelCont
 router.delete('/:id', authorize('farmer'), parcelController.remove);
 router.get('/:id/ndvi-history', parcelController.getNdviHistory);
 router.get('/:id/ndvi-snapshot', parcelController.getNdviSnapshot);
+// Predictive insight — NDVI trend + projected days to critical threshold
+router.get('/:id/insights/ndvi-forecast', parcelController.getNdviForecast);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);
