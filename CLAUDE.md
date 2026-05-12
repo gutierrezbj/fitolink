@@ -174,6 +174,15 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 | MpcContextWidget en ParcelDetailPage (3 columnas: NDVI 5y / clima normal / 30d real) | ✅ Done 2026-05-02 |
 | Sergio Valverde (ASAJA) demo button + onepager PDF Botanical Telemetry | ✅ Done 2026-05-03 · commit 297f047 |
 | SRS sweep: gzip nginx system-wide (-71.8% egress en JS bundle) | ✅ Done 2026-05-04 |
+| Sprint Demos Comerciales: 4 dashboards demoneables + weather widget | ✅ Done 2026-05-09 · commits 8ec231b, 362aa64, 3efd8a7 |
+| Sprint Cooperativa: nuevo rol `cooperative` + agregación de socios + endpoint `/cooperative/overview` | ✅ Done 2026-05-09 |
+| Weather forecast widget (Open-Meteo 7d + suitability badges drone) en ParcelDetailPage | ✅ Done 2026-05-09 |
+| Sprint Ola 1.1: Email notifications (Resend → migrado a Gmail SMTP nodemailer) | ✅ Done 2026-05-11 · commit 9ac556e |
+| Sprint Ola 1.2: Learned baseline per parcel (override sobre detector V2) | ✅ Done 2026-05-11 |
+| Sprint Ola 1.3: Alerts timeline analytics en AdminDashboardHome (Recharts) | ✅ Done 2026-05-11 |
+| Identidad AgroM en frontend: paleta + Fraunces/Plex/Mono + wordmark en login + sidebar | ✅ Done 2026-05-11 · commit 0227846 |
+| Email Gmail SMTP LIVE con Workspace (App Password juang@systemrapid.io) | ✅ Done 2026-05-11 |
+| Material comercial: pitch deck 5 slides (PPTX+PDF) + infografía A4 (PDF+JPG) para cliente pistacho | ✅ Done 2026-05-12 · commits 67e7414, c964d2c |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
@@ -200,13 +209,28 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 { success: true, data: T[], meta: { total: number, page: number, limit: number } }
 ```
 
-## Estado comercial (4 mayo 2026)
+## Estado comercial (12 mayo 2026)
 - **Producto**: en producción técnica, sin clientes aún. Validación con explotaciones reales pendiente para temporada 2026.
-- **Datos demo**: 13 parcelas con coordenadas REALES de zonas agrícolas españolas (Estepa olivar, Ribera del Duero, La Rioja, Castilla-La Mancha). Cobertura MPC 13/13/13 (MODIS · clima histórico · clima 30d). Datos satelitales 100% reales — el único "demo" es la cartera de propietarios.
-- **Equipo operativo**: AgroXdron + Drovinci como partners reales, no ficticios. Pilotos AESA propios con equipo certificado.
+- **Datos demo en staging**: 23 parcelas activas (incluye 12 de socios cooperativa DCOOP recién seedeadas, todas con NDVI real tras corrida del pipeline cron). Cobertura MPC completa en parcelas históricas.
+- **Equipo operativo**: AgroXdron + Drovinci como partners reales, no ficticios. Pilotos AESA propios con equipo certificado. **Socio operativo: Jonh Yanga Núñez** (autónomo bajo paraguas AgroM).
 - **Outreach activo**:
   - **ASAJA** — Sergio Valverde (Jefe de Formación) contactado por teléfono. Email v3 + onepager PDF preparados (`docs/asaja-onepager/`). Demo button personalizado "Sergio · ASAJA" en login (`googleId: demo-sergio-asaja`, rol admin). Pendiente envío + videollamada.
+  - **Cliente pistacho (anónimo)** — intermediado por Jonh. Prestó KMZ para pruebas. **12-may**: pitch deck 5 slides + infografía A4 enviada vía Jonh (`docs/comercial/AgroM-FitoLink-Capacidades.pptx/pdf` + `AgroM-FitoLink-Infografia.pdf/jpg`). Sin nombre concreto del cliente para evitar polémica con 100x100.
   - **DJI Developer Program** — FitoLink es miembro. Webhook DJI Cloud API (auto-sync flight logs) en pipeline técnico de alta prioridad.
+
+## Email transaccional (Gmail SMTP LIVE)
+- Stack: nodemailer + Workspace systemrapid.io. Service en `apps/api/src/services/emailService.ts` (dual-mode: live si SMTP_* configurado, dry-run con structured log si no).
+- Sender: `juang@systemrapid.io` con App Password de Google Workspace. Pendiente: alias `AlertasAgrom@systemrapid.io` (cuando el admin del Workspace lo cree).
+- Trigger automático: severidad `critical`/`high` al crear Alert → email al propietario (fire-and-forget, swallow-errors).
+- Trigger manual: `POST /alerts/:id/resend-email` (admin only) con `{to, name}` override en body — útil para enseñar el email a un prospecto en demo.
+- Plantilla HTML con identidad AgroM (paleta `deep/terra/ink/paper/parch/rule`, Fraunces + IBM Plex Sans + IBM Plex Mono, wordmark real PNG).
+- Docker: `apps/api` lee `.env` vía `env_file: .env` para que SMTP_* lleguen al container (recrear con `docker compose up -d --force-recreate api`).
+
+## Material comercial — `docs/comercial/`
+- **`AgroM-FitoLink-Capacidades.pptx/pdf`** — pitch deck 5 slides 16:9 wide. Slides: portada / contexto / método 4 capas / informe diario / próximo paso. Identidad AgroM aplicada (paleta + Fraunces fallback Georgia + wordmark). Genérico, sin nombre cliente — adaptable por Jonh en PPTX.
+- **`AgroM-FitoLink-Infografia.pdf/jpg`** — infografía A4 vertical "Botanical Cartography". Diseñada para imprimirse y quedarse en la cocina del cliente. Generada con ReportLab + IBM Plex Serif (body) + Helvetica fallback. Una sola página densa pero respirada.
+- **Scripts reproducibles**: `build-deck.cjs` (pptxgenjs) y `build_infografia.py` (reportlab). Si cambia la paleta o tipografía, regeneración en 30 seg.
+- **Filosofía visual**: `docs/comercial/design-philosophy.md` ("Botanical Cartography" — cruce lámina botánica + cartografía catastral SIGPAC).
 
 ## Onepager ASAJA — `docs/asaja-onepager/`
 - **PDF**: `FitoLink_ASAJA_Onepager.pdf` (A4, 73 KB, listo para adjuntar)
