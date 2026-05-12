@@ -189,6 +189,9 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 | Ola 1.5 · Pieza 4: Morning digest 7am (orquesta P1+P2+P3, email AgroM editorial, cron guardado por DIGEST_CRON env) | ✅ Done 2026-05-12 · commit c895432 |
 | Pistacho client: PDF Informe Técnico personalizado + reactivación 6 parcelas + demo button "Pistachar (Cliente)" | ✅ Done 2026-05-12 · commit 1aec910 |
 | Agrodex (Gregorio Becerra) — presentación entregada, interés en meterlo en cursos de formación | ✅ 2026-05-12 (validación cualitativa) |
+| Sprint Alta usuarios · Ronda 1: T&C + Privacidad + checkbox /register + audit trail RGPD + cooperative en role picker | ✅ Done 2026-05-12 · commit 73e073c |
+| Sprint Alta usuarios · Ronda 2: Empty state DashboardHome + aviso "5 días" ParcelDetailPage + emails bienvenida + email primera parcela (idempotente) | ✅ Done 2026-05-12 · commit 44d3640 |
+| Sprint Alta usuarios · Ronda 3: PricingPage modelo C (gratis monitor + dron €/ha sales-led) + formulario "Solicitar demo" → POST /contact/demo-request → email a JuanCho + cc Jonh con reply-to al prospect | ✅ Done 2026-05-12 · commit 5b3c15f |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
