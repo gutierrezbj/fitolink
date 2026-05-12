@@ -773,9 +773,11 @@ function Footer() {
               &copy; 2026 FitoLink &mdash; <span className="text-gray-400">SystemRapid</span>
             </span>
           </div>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-6 text-sm flex-wrap justify-center">
             <a href="#como-funciona" className="hover:text-white transition-colors">Proceso</a>
             <a href="#roles" className="hover:text-white transition-colors">Roles</a>
+            <Link to="/terms" className="hover:text-white transition-colors">Términos</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
             <Link to="/login" className="hover:text-white transition-colors">Acceder</Link>
           </div>
         </div>

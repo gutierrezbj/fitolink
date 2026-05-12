@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import LandingPage from '@/pages/LandingPage.js';
+import TermsPage from '@/pages/TermsPage.js';
+import PrivacyPage from '@/pages/PrivacyPage.js';
 import LoginPage from '@/features/auth/LoginPage.js';
 import RegisterPage from '@/features/auth/RegisterPage.js';
 import DashboardLayout from '@/layouts/DashboardLayout.js';
@@ -31,6 +33,8 @@ export default function App() {
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
 
       {/* Protected Dashboard */}
       <Route

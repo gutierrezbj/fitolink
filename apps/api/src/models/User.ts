@@ -29,6 +29,11 @@ export interface IUser extends Document {
   // of sendMorningDigest the same day are no-ops (idempotent).
   digestSubscribed?: boolean;
   lastDigestSentAt?: Date;
+  // T&C + privacidad consent audit trail (RGPD). acceptedTerms es el flag
+  // del usuario al alta. acceptedTermsAt es el instante exacto del clic,
+  // útil si más adelante actualizamos T&C y tenemos que reverificar.
+  acceptedTerms?: boolean;
+  acceptedTermsAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +69,8 @@ const userSchema = new Schema<IUser>(
     contractId: String,
     digestSubscribed: { type: Boolean, default: true },
     lastDigestSentAt: { type: Date },
+    acceptedTerms: { type: Boolean, default: false },
+    acceptedTermsAt: { type: Date },
   },
   {
     timestamps: true,

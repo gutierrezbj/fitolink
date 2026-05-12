@@ -106,10 +106,16 @@ export async function devLoginByEmail(
   return { token, user };
 }
 
+export interface RegisterOptions {
+  acceptedTerms?: boolean;
+  acceptedTermsAt?: string;
+}
+
 export async function registerWithGoogle(
   credential: string,
   role: UserRole,
   phone?: string,
+  options: RegisterOptions = {},
 ): Promise<{ token: string; user: IUser }> {
   const payload = await verifyGoogleToken(credential);
 
@@ -120,6 +126,10 @@ export async function registerWithGoogle(
     throw AppError.conflict('Ya existe una cuenta con este email');
   }
 
+  // Auto-verified roles: only farmer self-onboards. Cooperative / pilot /
+  // insurer need manual review (commercial implications, certs, etc.).
+  const isAutoVerified = role === 'farmer';
+
   const user = await User.create({
     email: payload.email,
     name: payload.name,
@@ -127,7 +137,11 @@ export async function registerWithGoogle(
     googleId: payload.sub,
     role,
     phone,
-    isVerified: role === 'farmer',
+    isVerified: isAutoVerified,
+    // RGPD audit trail — stamp consent at alta. The User model carries
+    // both fields; the policy version is the date the user accepted.
+    acceptedTerms: options.acceptedTerms ?? false,
+    acceptedTermsAt: options.acceptedTermsAt ? new Date(options.acceptedTermsAt) : undefined,
   });
 
   const token = generateToken(user._id.toString());

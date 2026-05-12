@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from './authStore.js';
 import { api } from '@/lib/api.js';
 
@@ -133,8 +133,12 @@ export default function LoginPage() {
           <div id="google-signin-btn" />
         </div>
 
-        <p className="text-xs text-agrom-muted mb-6">
-          Al acceder, aceptas los términos de uso de AgroM FitoLink
+        <p className="text-xs text-agrom-muted mb-6 leading-relaxed">
+          Al acceder, aceptas los{' '}
+          <Link to="/terms" className="text-agrom-deep hover:underline">términos de uso</Link>
+          {' y la '}
+          <Link to="/privacy" className="text-agrom-deep hover:underline">política de privacidad</Link>
+          {' de AgroM FitoLink.'}
         </p>
 
         {SHOW_DEMO && (

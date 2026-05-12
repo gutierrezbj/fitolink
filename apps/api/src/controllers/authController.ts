@@ -14,8 +14,11 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { credential, role, phone } = req.body;
-    const result = await authService.registerWithGoogle(credential, role, phone);
+    const { credential, role, phone, acceptedTerms, acceptedTermsAt } = req.body;
+    const result = await authService.registerWithGoogle(credential, role, phone, {
+      acceptedTerms,
+      acceptedTermsAt,
+    });
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

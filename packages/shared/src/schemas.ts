@@ -158,6 +158,12 @@ export const registerSchema = z.object({
   credential: z.string().min(1),
   role: z.enum(USER_ROLES),
   phone: z.string().optional(),
+  // T&C + privacidad — obligatorio para alta legal en EU (RGPD).
+  // El cliente envía `true` y el ISO timestamp del momento del clic.
+  // Opcional en el schema para compatibilidad con clientes antiguos pero
+  // el authService los registra en User cuando vienen presentes.
+  acceptedTerms: z.boolean().optional(),
+  acceptedTermsAt: z.string().optional(),
 });
 
 // === Marketplace providers (directory entries — no login) ===
