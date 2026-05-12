@@ -43,6 +43,8 @@ interface CliArgs {
   dryRun: boolean;
   force: boolean;
   all: boolean;
+  to?: string;
+  cc?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -54,6 +56,10 @@ function parseArgs(argv: string[]): CliArgs {
     else if (a === '--all') args.all = true;
     else if (a === '--user' && argv[i + 1]) {
       args.user = argv[++i];
+    } else if (a === '--to' && argv[i + 1]) {
+      args.to = argv[++i];
+    } else if (a === '--cc' && argv[i + 1]) {
+      args.cc = argv[++i];
     }
   }
   if (!args.user) args.all = true;
@@ -112,12 +118,14 @@ async function run() {
         const result = await sendDigestForUser(u._id, {
           dryRun: args.dryRun,
           force: args.force,
+          toOverride: args.to,
+          cc: args.cc,
         });
         bump(stats, result);
-        summarize(u.email, result);
+        summarize(args.to ?? u.email, result);
       } catch (err) {
         stats.errors += 1;
-        logger.error({ err, to: u.email }, 'digest send threw');
+        logger.error({ err, to: args.to ?? u.email }, 'digest send threw');
       }
     } else {
       const users = await listEligibleDigestUsers();
@@ -125,9 +133,12 @@ async function run() {
       logger.info({ count: users.length }, 'sendMorningDigest: eligible cohort');
       for (const u of users) {
         try {
+          // --to override is intentionally NOT honored in --all mode — it would
+          // collapse the entire cohort to a single recipient. --cc IS honored.
           const result = await sendDigestForUser(u._id, {
             dryRun: args.dryRun,
             force: args.force,
+            cc: args.cc,
           });
           bump(stats, result);
           summarize(u.email, result);

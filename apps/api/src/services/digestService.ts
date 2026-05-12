@@ -230,6 +230,10 @@ export interface SendDigestOptions {
   force?: boolean;
   /** Do not call SMTP; just log what would be sent. */
   dryRun?: boolean;
+  /** Override the recipient email (useful when User.email is a placeholder). */
+  toOverride?: string;
+  /** Carbon copy (visible to both parties). For ops monitoring + partner share. */
+  cc?: string;
 }
 
 export interface SendDigestResult {
@@ -278,7 +282,11 @@ export async function sendDigestForUser(
     return { status: 'dry-run', digest };
   }
 
-  await sendDigestEmail({ digest });
+  await sendDigestEmail({
+    digest,
+    to: options.toOverride,
+    cc: options.cc,
+  });
 
   user.lastDigestSentAt = new Date();
   await user.save();

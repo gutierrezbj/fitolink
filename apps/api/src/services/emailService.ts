@@ -352,6 +352,10 @@ const PEST_SEVERITY_COLORS: Record<DigestPestAdvisory['severity'], string> = {
 
 export interface DigestEmailPayload {
   digest: DigestPayload;
+  /** Override the recipient email — useful when User.email is a placeholder. */
+  to?: string;
+  /** Carbon copy (visible to both parties). Used for ops monitoring + partner share. */
+  cc?: string;
 }
 
 /**
@@ -361,6 +365,7 @@ export interface DigestEmailPayload {
  */
 export async function sendDigestEmail(payload: DigestEmailPayload): Promise<void> {
   const { digest } = payload;
+  const recipient = payload.to ?? digest.user.email;
   const subject = digestSubject(digest);
   const html = renderDigestHtml(digest);
   const text = renderDigestText(digest);
@@ -369,7 +374,8 @@ export async function sendDigestEmail(payload: DigestEmailPayload): Promise<void
     logger.info(
       {
         mode: 'dry-run',
-        to: digest.user.email,
+        to: recipient,
+        cc: payload.cc,
         subject,
         ndviActionable: digest.ndviSection.actionable.length,
         weatherEvents: digest.weatherSection.length,
@@ -383,14 +389,16 @@ export async function sendDigestEmail(payload: DigestEmailPayload): Promise<void
   try {
     const info = await transporter.sendMail({
       from: env.SMTP_FROM,
-      to: digest.user.email,
+      to: recipient,
+      cc: payload.cc,
       subject,
       html,
       text,
     });
     logger.info(
       {
-        to: digest.user.email,
+        to: recipient,
+        cc: payload.cc,
         messageId: info.messageId,
         ndviActionable: digest.ndviSection.actionable.length,
         weatherEvents: digest.weatherSection.length,
@@ -399,7 +407,7 @@ export async function sendDigestEmail(payload: DigestEmailPayload): Promise<void
       'Digest email sent',
     );
   } catch (err) {
-    logger.error({ err, to: digest.user.email }, 'Digest email send failed');
+    logger.error({ err, to: recipient, cc: payload.cc }, 'Digest email send failed');
     throw err; // surface to caller so lastDigestSentAt is NOT stamped
   }
 }
