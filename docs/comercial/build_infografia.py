@@ -314,7 +314,7 @@ text_center(c, PAGE_W / 2, y, 'PARA HABLAR CON NOSOTROS',
 y -= 6 * mm
 
 # Two contact lines
-text_center(c, PAGE_W / 2, y, 'Coordinación operativa  —  John Russo',
+text_center(c, PAGE_W / 2, y, 'Coordinación operativa  —  Jonh Yanga Núñez',
             'Display', 13, DEEP)
 y -= 5 * mm
 text_center(c, PAGE_W / 2, y, 'Equipo técnico  —  AgroM',

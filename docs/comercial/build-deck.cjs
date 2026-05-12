@@ -622,7 +622,7 @@ pres.title = 'AgroM · FitoLink — Informe de Capacidades';
 
   // Two contact lines side by side
   const halfW = (W - MARGIN * 2 - 1.0) / 2;
-  s.addText('Coordinación operativa — John Russo', {
+  s.addText('Coordinación operativa — Jonh Yanga Núñez', {
     x: MARGIN + 0.5, y: contactY + 0.55, w: halfW, h: 0.4,
     fontFace: F.display,
     fontSize: 17,
