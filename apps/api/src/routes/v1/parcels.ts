@@ -20,6 +20,8 @@ router.get('/:id/ndvi-history', parcelController.getNdviHistory);
 router.get('/:id/ndvi-snapshot', parcelController.getNdviSnapshot);
 // Predictive insight — NDVI trend + projected days to critical threshold
 router.get('/:id/insights/ndvi-forecast', parcelController.getNdviForecast);
+// Predictive insight — Personalised weather events (cold/warm front, storm, frost, heat, wind)
+router.get('/:id/insights/weather-events', parcelController.getWeatherEvents);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);

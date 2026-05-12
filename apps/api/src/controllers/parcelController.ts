@@ -3,6 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import * as parcelService from '../services/parcelService.js';
 import * as ndviSnapshotService from '../services/ndviSnapshotService.js';
 import { getNdviForecastForParcel } from '../services/predictiveInsightService.js';
+import { getWeatherEventsForParcel } from '../services/weatherEventsService.js';
 
 export async function create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -115,6 +116,26 @@ export async function getNdviForecast(req: AuthRequest, res: Response, next: Nex
     );
     const forecast = await getNdviForecastForParcel(req.params.id as string);
     res.json({ success: true, data: forecast });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Ola 1.5 Pieza 2 — Personalised weather events for a parcel.
+ * 7 rules over Open-Meteo 7-day forecast: cold/warm front, storm, low
+ * pressure, frost, extreme heat, high wind. Same auth pattern as the
+ * NDVI forecast endpoint.
+ */
+export async function getWeatherEvents(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
+    const data = await getWeatherEventsForParcel(req.params.id as string);
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
