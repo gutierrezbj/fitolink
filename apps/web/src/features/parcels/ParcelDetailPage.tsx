@@ -10,6 +10,7 @@ import ParcelMap from './ParcelMap.js';
 import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
+import NdviForecastCard from './NdviForecastCard.js';
 import WeatherWidget from '@/features/weather/WeatherWidget.js';
 import { polygonCentroid } from '@/features/marketplace/distance.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
@@ -606,6 +607,11 @@ export default function ParcelDetailPage() {
             Sin datos NDVI disponibles aun
           </div>
         )}
+      </div>
+
+      {/* Ola 1.5 · Pieza 1 — NDVI trend forecast (the morning-digest preview) */}
+      <div className="mb-4">
+        <NdviForecastCard parcelId={parcel._id} />
       </div>
 
       {/* MPC long-term context — Sprint MPC */}
