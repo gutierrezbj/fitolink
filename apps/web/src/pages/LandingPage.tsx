@@ -776,6 +776,7 @@ function Footer() {
           <div className="flex items-center gap-6 text-sm flex-wrap justify-center">
             <a href="#como-funciona" className="hover:text-white transition-colors">Proceso</a>
             <a href="#roles" className="hover:text-white transition-colors">Roles</a>
+            <Link to="/pricing" className="hover:text-white transition-colors">Precio</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Términos</Link>
             <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
             <Link to="/login" className="hover:text-white transition-colors">Acceder</Link>

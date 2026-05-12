@@ -949,4 +949,133 @@ function renderFirstParcelEmail(p: FirstParcelEmailPayload): string {
 </body></html>`;
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// Demo request — formulario "Solicitar demo" desde LandingPage/PricingPage
+// (Ola onboarding · Ronda 3)
+// ────────────────────────────────────────────────────────────────────────
+
+export interface DemoRequestPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  organization?: string;
+  hectares?: string;
+  cropType?: string;
+  message?: string;
+}
+
+const DEMO_REQUEST_TO = 'gutierrezbj@gmail.com';
+const DEMO_REQUEST_CC = 'jawerjohn1993@gmail.com';
+
+/**
+ * Notifica al equipo comercial (JuanCho + Jonh) que ha llegado un lead.
+ * Email texto simple — no es marketing, es operación interna. AgroM brand
+ * mínimo (eyebrow + footer) para que el destinatario sepa de dónde viene
+ * cuando se mezcle con otras notificaciones.
+ */
+export async function sendDemoRequestEmail(payload: DemoRequestPayload): Promise<void> {
+  const subject = `[AgroM · Lead] ${payload.name}${payload.organization ? ` · ${payload.organization}` : ''}`;
+  const text = renderDemoRequestText(payload);
+  const html = renderDemoRequestHtml(payload);
+
+  if (!isLive || !transporter) {
+    logger.info({ mode: 'dry-run', to: DEMO_REQUEST_TO, cc: DEMO_REQUEST_CC, subject, payload }, 'Demo-request email would be sent');
+    return;
+  }
+  try {
+    const info = await transporter.sendMail({
+      from: env.SMTP_FROM,
+      to: DEMO_REQUEST_TO,
+      cc: DEMO_REQUEST_CC,
+      replyTo: payload.email, // que un click en "Responder" caiga sobre el prospect directamente
+      subject,
+      html,
+      text,
+    });
+    logger.info({ from: payload.email, messageId: info.messageId }, 'Demo-request email sent');
+  } catch (err) {
+    logger.error({ err, from: payload.email }, 'Demo-request email send failed (lead saved in logs)');
+  }
+}
+
+function renderDemoRequestText(p: DemoRequestPayload): string {
+  const lines: string[] = [
+    `Nuevo lead AgroM · FitoLink`,
+    `Recibido: ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`,
+    '',
+    `Nombre:        ${p.name}`,
+    `Email:         ${p.email}`,
+  ];
+  if (p.phone) lines.push(`Teléfono:      ${p.phone}`);
+  if (p.organization) lines.push(`Organización:  ${p.organization}`);
+  if (p.hectares) lines.push(`Hectáreas:     ${p.hectares}`);
+  if (p.cropType) lines.push(`Cultivo:       ${p.cropType}`);
+  if (p.message) {
+    lines.push('');
+    lines.push('Mensaje:');
+    lines.push(p.message);
+  }
+  lines.push('');
+  lines.push('Responde directo a este email — el campo Reply-To está fijado al prospect.');
+  return lines.join('\n');
+}
+
+function renderDemoRequestHtml(p: DemoRequestPayload): string {
+  const c = AGROM_PALETTE;
+  const row = (label: string, value?: string) => value
+    ? `<tr>
+         <td style="padding:8px 14px;color:${c.muted};font-size:12px;width:130px;font-family:${FONT_MONO};text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid ${c.rule};">${label}</td>
+         <td style="padding:8px 14px;color:${c.ink};font-size:14px;font-weight:600;border-bottom:1px solid ${c.rule};">${escapeHtml(value)}</td>
+       </tr>`
+    : '';
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><title>Nuevo lead</title></head>
+<body style="margin:0;padding:0;background:${c.paper};font-family:${FONT_BODY};color:${c.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${c.paper};">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid ${c.rule};">
+
+      <tr><td style="padding:26px 32px 16px;border-bottom:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · LEAD INTERNO</p>
+        <h1 style="margin:10px 0 4px;color:${c.deep};font-size:22px;font-weight:600;font-family:${FONT_DISPLAY};">Nuevo lead</h1>
+        <p style="margin:0;color:${c.muted};font-size:13px;font-style:italic;font-family:${FONT_DISPLAY};">${new Date().toLocaleString('es-ES')}</p>
+      </td></tr>
+
+      <tr><td style="padding:18px 32px 0;">
+        <p style="margin:0 0 6px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">§ DATOS DEL PROSPECT</p>
+        <div style="width:48px;height:2px;background:${c.terra};margin-bottom:14px;"></div>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid ${c.rule};">
+          ${row('Nombre', p.name)}
+          ${row('Email', p.email)}
+          ${row('Teléfono', p.phone)}
+          ${row('Organización', p.organization)}
+          ${row('Hectáreas', p.hectares)}
+          ${row('Cultivo', p.cropType)}
+        </table>
+      </td></tr>
+
+      ${p.message ? `
+      <tr><td style="padding:20px 32px 0;">
+        <p style="margin:0 0 6px;color:${c.deep};font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">§ MENSAJE</p>
+        <div style="width:48px;height:2px;background:${c.terra};margin-bottom:12px;"></div>
+        <p style="margin:0;color:${c.ink};font-size:14px;line-height:1.6;background:${c.paper};padding:14px;border-left:3px solid ${c.terra};">${escapeHtml(p.message)}</p>
+      </td></tr>
+      ` : ''}
+
+      <tr><td style="padding:24px 32px;">
+        <p style="margin:0;color:${c.muted};font-size:12px;line-height:1.6;font-style:italic;">
+          Responde directamente a este email — el campo Reply-To está fijado al prospect (${escapeHtml(p.email)}).
+        </p>
+      </td></tr>
+
+      <tr><td style="padding:14px 32px;background:${c.parch};border-top:1px solid ${c.rule};">
+        <p style="margin:0;color:${c.muted};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;font-family:${FONT_MONO};">AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
 export const _isLive = isLive; // useful for tests / debug endpoint
