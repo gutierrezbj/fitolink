@@ -17,6 +17,10 @@ const DEMO_ACCOUNTS = [
   { label: 'Agricultor',  googleId: 'demo-farmer-001',      icon: '/farmer.svg',                 color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
   { label: 'Aseguradora', googleId: 'demo-insurer-001',     icon: '/insurance2.svg',             color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
   { label: 'Cooperativa', googleId: 'demo-cooperative-001', icon: '/provider-cooperative.svg',   color: 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' },
+  // Cliente Pistacho — accede al login del cliente real de Jonh para
+  // que vea sus 6 parcelas (348 ha en establecimiento) con los insights
+  // Ola 1.5 corriendo en sus propios datos satelitales.
+  { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-agrom-terra/40 text-agrom-terra hover:bg-orange-100' },
   { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 
