@@ -23,6 +23,12 @@ export interface IUser extends Document {
   // Insurer-specific
   company?: string;
   contractId?: string;
+  // Morning digest (Ola 1.5 · Pieza 4) — opt-in flag + idempotency stamp.
+  // digestSubscribed defaults true for farmer/cooperative roles. The cron
+  // reads lastDigestSentAt and skips users already served today, so reruns
+  // of sendMorningDigest the same day are no-ops (idempotent).
+  digestSubscribed?: boolean;
+  lastDigestSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +62,8 @@ const userSchema = new Schema<IUser>(
     cooperativeId: { type: Schema.Types.ObjectId, ref: 'User' },
     company: String,
     contractId: String,
+    digestSubscribed: { type: Boolean, default: true },
+    lastDigestSentAt: { type: Date },
   },
   {
     timestamps: true,

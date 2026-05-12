@@ -25,6 +25,10 @@ const envSchema = z.object({
   SMTP_FROM: z.string().default('FitoLink Alertas <AlertasAgrom@systemrapid.io>'),
   COPERNICUS_CLIENT_ID: z.string().optional(),
   COPERNICUS_CLIENT_SECRET: z.string().optional(),
+  // Morning digest cron (Ola 1.5 · Pieza 4). Off by default — the API can
+  // ship with the code present without auto-firing in production until
+  // the operator has verified a dry-run. Flip to "true" in .env when ready.
+  DIGEST_CRON: z.string().optional().transform((v) => v === 'true'),
 });
 
 export const env = envSchema.parse(process.env);
