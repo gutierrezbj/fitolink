@@ -203,6 +203,7 @@ type Parcel = {
   geometry: GeoJSON.Polygon;
   ndviHistory: NdviReading[];
   isInsured: boolean;
+  establishmentPhase?: boolean;
   modisBaseline?: ModisBaseline;
   climateBaseline?: ClimateBaseline;
   recentClimate?: RecentClimate;
@@ -667,6 +668,8 @@ export default function ParcelDetailPage() {
           climateBaseline={parcel.climateBaseline}
           recentClimate={parcel.recentClimate}
           thermal={parcel.thermal}
+          establishmentPhase={parcel.establishmentPhase}
+          cropType={parcel.cropType}
         />
       </div>
 

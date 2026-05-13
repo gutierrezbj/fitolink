@@ -56,9 +56,36 @@ interface Props {
     scenesUsed: number;
     lastDate?: string | null;
   };
+  /**
+   * Crop context — usado para matizar interpretaciones que serían falsos
+   * positivos en parcelas sin cobertura vegetal completa. Sin estos el
+   * widget cae al threshold absoluto (LST-aire ≥ 8°C = "Estrés crítico"),
+   * que en pistachar joven o cultivo recién plantado es engañoso.
+   */
+  establishmentPhase?: boolean;
+  cropType?: string;
 }
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** Cultivos en castellano para el badge contextual. Si falta uno, cae al cropType crudo. */
+const CROP_LABELS: Record<string, string> = {
+  olivo: 'olivar',
+  vinedo: 'viñedo',
+  pistacho: 'pistachar',
+  almendro: 'almendro',
+  cereal: 'cereal',
+  citrico: 'cítrico',
+  frutal: 'frutal',
+  hortaliza: 'hortícola',
+  girasol: 'girasol',
+  maiz: 'maíz',
+  algodon: 'algodón',
+  arroz: 'arrozal',
+  remolacha: 'remolacha',
+  patata: 'patata',
+  leguminosa: 'leguminosa',
+};
 
 const DROUGHT_STYLE: Record<string, { label: string; bg: string; text: string; border: string }> = {
   none:     { label: 'Normal',         bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200' },
@@ -74,6 +101,8 @@ export default function MpcContextWidget({
   climateBaseline,
   recentClimate,
   thermal,
+  establishmentPhase,
+  cropType,
 }: Props) {
   const hasAny = modisBaseline || climateBaseline || recentClimate || thermal;
   if (!hasAny) return null;
@@ -206,15 +235,43 @@ export default function MpcContextWidget({
           </div>
         )}
 
-        {/* Block 4 — Landsat thermal LST (Sprint Thermal) */}
+        {/* Block 4 — Landsat thermal LST (Sprint Thermal)
+             Badge contextualizado al estado del cultivo, no absoluto:
+             - establishmentPhase=true O NDVI<0.30 → suelo dominantemente expuesto.
+               Un delta LST-aire alto es física básica del suelo desnudo en
+               primavera/verano, NO estrés del cultivo. Etiqueta neutra.
+             - NDVI 0.30-0.45 → cobertura parcial. Se relajan los umbrales.
+             - NDVI ≥ 0.45 → cobertura completa. Aplica el threshold estricto.
+             Esto evita falsos positivos en cultivos jóvenes (caso Jonh pistacho). */}
         {thermal && (() => {
           const delta = thermal.lstDeltaAirC;
           let badge: { label: string; bg: string; text: string; border: string } | null = null;
+          const cropLabel = cropType ? ` ${CROP_LABELS[cropType] ?? cropType}` : '';
+
+          const lowCover = (currentNdvi !== null && currentNdvi !== undefined && currentNdvi < 0.30) || establishmentPhase === true;
+          const partialCover = !lowCover && currentNdvi !== null && currentNdvi !== undefined && currentNdvi < 0.45;
+
           if (delta !== null && delta !== undefined) {
-            if (delta >= 8) badge = { label: 'Estrés crítico', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
-            else if (delta >= 5) badge = { label: 'Estrés térmico', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' };
-            else if (delta >= 2) badge = { label: 'Templado', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' };
-            else badge = { label: 'Sin estrés', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
+            if (lowCover) {
+              // Suelo expuesto — neutralizamos. Es física del suelo desnudo, no estrés.
+              badge = {
+                label: establishmentPhase
+                  ? `Suelo expuesto · esperable en establecimiento${cropLabel ? ' del' + cropLabel.toLowerCase() : ''}`
+                  : 'Suelo expuesto · NDVI bajo',
+                bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200',
+              };
+            } else if (partialCover) {
+              // Cobertura parcial — umbral más permisivo (suelo aún contribuye al LST).
+              if (delta >= 12) badge = { label: 'Estrés térmico', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' };
+              else if (delta >= 7) badge = { label: 'Templado', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' };
+              else badge = { label: 'Sin estrés', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
+            } else {
+              // Cobertura completa — el delta refleja transpiración de la planta.
+              if (delta >= 8) badge = { label: 'Estrés crítico', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
+              else if (delta >= 5) badge = { label: 'Estrés térmico', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' };
+              else if (delta >= 2) badge = { label: 'Templado', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' };
+              else badge = { label: 'Sin estrés', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
+            }
           }
           return (
             <div className="space-y-2">

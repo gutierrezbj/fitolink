@@ -99,6 +99,18 @@ export interface IParcel extends Document {
   recentClimate?: IRecentClimate;
   thermal?: IThermal;
   isActive: boolean;
+  /**
+   * Crop establishment phase — true cuando la parcela está recién plantada
+   * o aún sin cobertura vegetal completa (residual del cultivo anterior,
+   * pistachos jóvenes, etc.). El frontend lo usa para matizar lecturas
+   * absolutas que serían falsos positivos en este contexto:
+   *   · "Estrés térmico crítico" (LST-aire alto es esperable con suelo desnudo)
+   *   · NDVI bajo (esperable, no enfermedad)
+   *   · Forecast NDVI proyectando umbral crítico (la línea es otra fase)
+   * Establecido manualmente vía seed o admin. Un detector V3 futuro lo
+   * inferirá automáticamente de NDVI + edad de la parcela.
+   */
+  establishmentPhase?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -223,6 +235,7 @@ const parcelSchema = new Schema<IParcel>(
     recentClimate: { type: recentClimateSchema, default: undefined },
     thermal: { type: thermalSchema, default: undefined },
     isActive: { type: Boolean, default: true },
+    establishmentPhase: { type: Boolean, default: false },
   },
   {
     timestamps: true,
