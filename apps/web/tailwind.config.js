@@ -43,28 +43,31 @@ export default {
           800: '#523b16',
           900: '#36270f',
         },
-        // AgroM brand identity tokens (Identity Sprint v0.1 — inherited).
-        // Applied at the brand-contact points (login, sidebar wordmark, email).
-        // Existing brand/terra/earth stay untouched so dashboard internals
-        // don't visually break during the gradual migration.
-        agrom: {
-          deep:    '#1B4332',
-          terra:   '#E07A3C',
-          ink:     '#0F2A22',
-          paper:   '#F4F0E8',
-          parch:   '#E8DDC9',
-          rule:    '#C9A876',
-          muted:   '#6B6B5C',
-          alert:   '#B8312F',
-          warning: '#D49343',
-          success: '#3A7D44',
-          info:    '#5B7A8F',
-        },
+        // NOTA · 13-may-2026: la paleta `agrom-*` introducida en mayo se
+        // eliminó. Decisión de JuanCho: FitoLink es la base de la
+        // identidad del ecosistema (AgroM empresa + AgroOps producto
+        // heredan). Toda la marca usa el verde topographic `brand-*`,
+        // el naranja `terra-*` y los acentos ocre `earth-*` definidos
+        // arriba. Para los componentes "editoriales" (login, pages
+        // legales, emails, pricing) se mapearon así:
+        //   agrom-deep   → brand-700  · #354b23
+        //   agrom-terra  → terra-500  · #d45220
+        //   agrom-ink    → brand-900  · #18230f
+        //   agrom-paper  → earth-50   · #fdf8f0
+        //   agrom-parch  → earth-100  · #f5e6cc
+        //   agrom-rule   → earth-300  · #d4a85a
+        //   agrom-muted  → gray-500
+        //   agrom-alert  → red-700
+        //   agrom-warning→ earth-400
+        //   agrom-success→ green-700
+        //   agrom-info   → slate-500
       },
       fontFamily: {
         sans:  ['DM Sans', 'system-ui', 'sans-serif'],
         serif: ['Instrument Serif', 'Georgia', 'serif'],
-        // AgroM Identity Sprint v0.1 type stack
+        // Editorial type stack (Identity Sprint AgroM v0.1, mayo · se mantiene
+        // porque la decisión fue retirar paleta agrom-* pero conservar la
+        // tipografía editorial — Fraunces/Plex se ven bien con la paleta FitoLink).
         display: ['Fraunces', 'Georgia', 'Cambria', 'serif'],
         body:    ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
         mono:    ['"IBM Plex Mono"', '"SF Mono"', 'Consolas', 'monospace'],

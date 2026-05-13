@@ -41,23 +41,27 @@ if (isLive) {
 
 const STAGING_BASE = 'https://fitolink.systemrapid.io';
 
-// ── AgroM brand palette (inherited Identity Sprint AgroM v0.1) ──────────
-// Single source of truth for email — keeps the channel consistent with the
-// AgroM web and product UI. Update here if the brand evolves.
+// ── Brand palette · FitoLink como base del ecosistema ───────────────────
+// 13-may-2026: decisión de JuanCho. Eliminamos los hex `agrom-*` introducidos
+// en mayo y adoptamos la paleta histórica FitoLink (verde topographic +
+// terra naranja vivo + earth ocre) como identidad oficial del ecosistema.
+// AgroM (empresa) y AgroOps (producto operacional) heredan de aquí.
+// Las keys se mantienen para no tocar 145 referencias `c.deep` etc. en el
+// código de templates; solo cambian los valores hex.
 
 const AGROM_PALETTE = {
-  deep:    '#1B4332', // brand primary, headers, CTA
-  terra:   '#E07A3C', // accent, monogram bullet, highlights
-  ink:     '#0F2A22', // primary text
-  paper:   '#F4F0E8', // warm neutral canvas
-  parch:   '#E8DDC9', // differentiated block background
-  rule:    '#C9A876', // hairlines, separators
-  muted:   '#6B6B5C', // secondary text, labels
+  deep:    '#354b23', // brand-700 · verde topographic FitoLink
+  terra:   '#d45220', // terra-500 · naranja vivo FitoLink
+  ink:     '#18230f', // brand-900 · texto principal verde casi negro
+  paper:   '#fdf8f0', // earth-50  · fondo cálido tierra
+  parch:   '#f5e6cc', // earth-100 · bloque diferenciado
+  rule:    '#d4a85a', // earth-300 · hairlines tierra
+  muted:   '#6b7280', // gray-500 Tailwind nativo · texto secundario
   // Semantic (alert states)
-  alert:   '#B8312F', // critical
-  warning: '#D49343', // high / warning
-  success: '#3A7D44', // confirmed / ok
-  info:    '#5B7A8F', // informational
+  alert:   '#b91c1c', // red-700  · critical
+  warning: '#c49032', // earth-400 · high / warning
+  success: '#15803d', // green-700 · confirmed / ok
+  info:    '#64748b', // slate-500 · informational
 } as const;
 
 // AgroM-approved type stack with email-safe fallbacks (Outlook desktop

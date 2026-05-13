@@ -91,15 +91,15 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-agrom-paper">
-      <header className="border-b border-agrom-rule/40 bg-white">
+    <div className="min-h-screen bg-earth-50">
+      <header className="border-b border-earth-300/40 bg-white">
         <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-3">
             <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-8 w-auto" />
           </Link>
-          <nav className="flex items-center gap-5 text-sm text-agrom-muted">
-            <Link to="/" className="hover:text-agrom-deep">Inicio</Link>
-            <Link to="/login" className="bg-agrom-deep text-white px-4 py-1.5 rounded-lg hover:bg-agrom-ink transition-colors">Acceder</Link>
+          <nav className="flex items-center gap-5 text-sm text-gray-500">
+            <Link to="/" className="hover:text-brand-700">Inicio</Link>
+            <Link to="/login" className="bg-brand-700 text-white px-4 py-1.5 rounded-lg hover:bg-brand-900 transition-colors">Acceder</Link>
           </nav>
         </div>
       </header>
@@ -107,85 +107,85 @@ export default function PricingPage() {
       <main className="max-w-5xl mx-auto px-6 py-14">
         {/* Hero */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
             § AGROM · MODELO COMERCIAL
           </p>
-          <h1 className="font-display text-4xl md:text-5xl text-agrom-deep mt-3 leading-tight">
+          <h1 className="font-display text-4xl md:text-5xl text-brand-700 mt-3 leading-tight">
             Primero le demostramos el valor.
           </h1>
-          <p className="font-display italic text-xl text-agrom-muted mt-3">
+          <p className="font-display italic text-xl text-gray-500 mt-3">
             Después hablamos de números.
           </p>
-          <div className="w-12 h-[2px] bg-agrom-terra mx-auto mt-6" />
+          <div className="w-12 h-[2px] bg-terra-500 mx-auto mt-6" />
         </div>
 
         {/* Two pricing tiers */}
         <div className="grid md:grid-cols-2 gap-6 mb-14">
           {/* Monitor — free */}
-          <div className="bg-white rounded-2xl border border-agrom-rule/40 p-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+          <div className="bg-white rounded-2xl border border-earth-300/40 p-8">
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
               § 01 · MONITORIZACIÓN
             </p>
-            <h2 className="font-display text-3xl text-agrom-deep mt-3">Gratis</h2>
-            <p className="font-display italic text-agrom-muted text-sm">durante la fase de validación</p>
-            <div className="w-10 h-[2px] bg-agrom-terra my-5" />
+            <h2 className="font-display text-3xl text-brand-700 mt-3">Gratis</h2>
+            <p className="font-display italic text-gray-500 text-sm">durante la fase de validación</p>
+            <div className="w-10 h-[2px] bg-terra-500 my-5" />
 
-            <ul className="space-y-3 text-sm text-agrom-ink leading-relaxed">
+            <ul className="space-y-3 text-sm text-brand-900 leading-relaxed">
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>Imagen satelital Sentinel-2 cada 5 días</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>5 índices de vegetación calculados por parcela (NDVI, NDRE, NDMI, SAVI, EVI)</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>Alertas automáticas con detección IA por parcela individual</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>Informe matutino diario por email a las 7</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>Contexto histórico de la zona (baseline MODIS 5 años) + serie Sentinel-2 desde el alta de la parcela</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">✓</span>
+                <span className="text-terra-500 font-bold">✓</span>
                 <span>Sin tarjeta · sin permanencia</span>
               </li>
             </ul>
           </div>
 
           {/* Drone — sales-led */}
-          <div className="bg-agrom-deep text-white rounded-2xl p-8 relative overflow-hidden">
+          <div className="bg-brand-700 text-white rounded-2xl p-8 relative overflow-hidden">
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
               § 02 · APLICACIÓN FITOSANITARIA
             </p>
             <h2 className="font-display text-3xl mt-3">Por hectárea aplicada</h2>
             <p className="font-display italic text-white/70 text-sm">presupuesto previo cerrado contigo</p>
-            <div className="w-10 h-[2px] bg-agrom-terra my-5" />
+            <div className="w-10 h-[2px] bg-terra-500 my-5" />
 
             <ul className="space-y-3 text-sm leading-relaxed">
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
+                <span className="text-terra-500 font-bold">·</span>
                 <span>Piloto certificado AESA · dron DJI T50/T30</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
+                <span className="text-terra-500 font-bold">·</span>
                 <span>Aplicación coordinada con los datos satelitales: zona, momento y estado del cultivo</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
+                <span className="text-terra-500 font-bold">·</span>
                 <span>Registro digital de cada vuelo con producto, dosis aplicada y condiciones meteo</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
+                <span className="text-terra-500 font-bold">·</span>
                 <span>Historial inmutable de aplicaciones por parcela y temporada</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="text-agrom-terra font-bold">·</span>
+                <span className="text-terra-500 font-bold">·</span>
                 <span>Sólo cobramos las hectáreas efectivamente tratadas</span>
               </li>
             </ul>
@@ -198,40 +198,40 @@ export default function PricingPage() {
         </div>
 
         {/* Contact form */}
-        <div id="contact" className="bg-white rounded-2xl border border-agrom-rule/40 p-8 md:p-10 max-w-3xl mx-auto">
+        <div id="contact" className="bg-white rounded-2xl border border-earth-300/40 p-8 md:p-10 max-w-3xl mx-auto">
           {submitted ? (
             <div className="text-center py-10">
-              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-terra">
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-terra-500">
                 § MENSAJE RECIBIDO
               </p>
-              <h2 className="font-display text-3xl text-agrom-deep mt-3">Gracias.</h2>
-              <p className="font-display italic text-agrom-muted mt-2 text-lg">
+              <h2 className="font-display text-3xl text-brand-700 mt-3">Gracias.</h2>
+              <p className="font-display italic text-gray-500 mt-2 text-lg">
                 Te contactamos en menos de 24 horas.
               </p>
-              <div className="w-10 h-[2px] bg-agrom-terra mx-auto mt-6" />
-              <p className="text-sm text-agrom-ink mt-6 leading-relaxed max-w-md mx-auto">
+              <div className="w-10 h-[2px] bg-terra-500 mx-auto mt-6" />
+              <p className="text-sm text-brand-900 mt-6 leading-relaxed max-w-md mx-auto">
                 Mientras tanto, si quieres ver el producto en marcha sobre datos
                 reales, puedes acceder al panel demo desde el botón de arriba.
               </p>
               <Link
                 to="/login"
-                className="inline-block mt-6 bg-agrom-deep text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-agrom-ink transition-colors"
+                className="inline-block mt-6 bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-900 transition-colors"
               >
                 Ver demo público →
               </Link>
             </div>
           ) : (
             <>
-              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
                 § HABLAMOS ANTES
               </p>
-              <h2 className="font-display text-2xl md:text-3xl text-agrom-deep mt-3">
+              <h2 className="font-display text-2xl md:text-3xl text-brand-700 mt-3">
                 Cuéntanos sobre tu explotación.
               </h2>
-              <p className="text-agrom-muted text-sm mt-2">
+              <p className="text-gray-500 text-sm mt-2">
                 En menos de 24 horas te llamamos para ver si AgroM encaja para ti.
               </p>
-              <div className="w-10 h-[2px] bg-agrom-terra mt-5 mb-8" />
+              <div className="w-10 h-[2px] bg-terra-500 mt-5 mb-8" />
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid md:grid-cols-2 gap-5">
@@ -300,7 +300,7 @@ export default function PricingPage() {
                   />
                 </Field>
 
-                <div className="p-4 bg-agrom-paper rounded-lg border border-agrom-rule/30">
+                <div className="p-4 bg-earth-50 rounded-lg border border-earth-300/30">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -309,33 +309,33 @@ export default function PricingPage() {
                         setForm({ ...form, acceptedTerms: e.target.checked });
                         if (e.target.checked) setError('');
                       }}
-                      className="mt-1 w-4 h-4 accent-agrom-deep cursor-pointer flex-shrink-0"
+                      className="mt-1 w-4 h-4 accent-brand-700 cursor-pointer flex-shrink-0"
                     />
-                    <span className="text-sm text-agrom-ink leading-snug">
+                    <span className="text-sm text-brand-900 leading-snug">
                       He leído y acepto los{' '}
-                      <Link to="/terms" target="_blank" rel="noopener" className="text-agrom-deep underline">Términos de Uso</Link>{' y la '}
-                      <Link to="/privacy" target="_blank" rel="noopener" className="text-agrom-deep underline">Política de Privacidad</Link>.
+                      <Link to="/terms" target="_blank" rel="noopener" className="text-brand-700 underline">Términos de Uso</Link>{' y la '}
+                      <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-700 underline">Política de Privacidad</Link>.
                     </span>
                   </label>
                 </div>
 
                 {error && (
-                  <div className="p-3 bg-agrom-alert/10 border-l-2 border-agrom-alert rounded-r">
-                    <p className="text-sm text-agrom-alert">{error}</p>
+                  <div className="p-3 bg-red-700/10 border-l-2 border-red-700 rounded-r">
+                    <p className="text-sm text-red-700">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={submitting || !form.acceptedTerms || !form.name || !form.email}
-                  className="w-full bg-agrom-deep text-white font-semibold py-3 rounded-lg hover:bg-agrom-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-brand-700 text-white font-semibold py-3 rounded-lg hover:bg-brand-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? 'Enviando…' : 'Solicitar demo →'}
                 </button>
 
-                <p className="text-[11px] text-agrom-muted text-center">
+                <p className="text-[11px] text-gray-500 text-center">
                   O escríbenos directamente a{' '}
-                  <a href="mailto:juang@systemrapid.io" className="text-agrom-deep underline">
+                  <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
                     juang@systemrapid.io
                   </a>
                 </p>
@@ -345,21 +345,21 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-12 text-center text-sm">
-          <Link to="/" className="text-agrom-deep hover:underline">
+          <Link to="/" className="text-brand-700 hover:underline">
             ← Volver al inicio
           </Link>
         </div>
       </main>
 
-      <footer className="border-t border-agrom-rule/40 bg-white mt-16">
+      <footer className="border-t border-earth-300/40 bg-white mt-16">
         <div className="max-w-3xl mx-auto px-6 py-6 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
             AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN · 2026
           </p>
-          <p className="text-xs text-agrom-muted mt-2">
-            <Link to="/terms" className="hover:text-agrom-deep mx-2">Términos</Link>
+          <p className="text-xs text-gray-500 mt-2">
+            <Link to="/terms" className="hover:text-brand-700 mx-2">Términos</Link>
             ·
-            <Link to="/privacy" className="hover:text-agrom-deep mx-2">Privacidad</Link>
+            <Link to="/privacy" className="hover:text-brand-700 mx-2">Privacidad</Link>
           </p>
         </div>
       </footer>
@@ -370,8 +370,8 @@ export default function PricingPage() {
 function Field({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <label className="block">
-      <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-agrom-muted mb-1.5">
-        {label}{required && <span className="text-agrom-terra ml-1">·</span>}
+      <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500 mb-1.5">
+        {label}{required && <span className="text-terra-500 ml-1">·</span>}
       </span>
       {children}
     </label>

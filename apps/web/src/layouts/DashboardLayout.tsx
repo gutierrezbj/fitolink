@@ -63,14 +63,14 @@ export default function DashboardLayout() {
     // inner page asked for more height (cut off "Cerrar sesion" + body scroll).
     <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-agrom-rule/30 flex flex-col h-full">
+      <aside className="w-64 bg-white border-r border-earth-300/30 flex flex-col h-full">
         {/* AgroM wordmark + FitoLink product label.
             Wordmark image keeps brand identity consistent with the email
             sender ("Agro•M"). The product label sits below as the route
             into the dashboard product — same family, two voices. */}
-        <div className="px-5 py-5 border-b border-agrom-rule/30">
+        <div className="px-5 py-5 border-b border-earth-300/30">
           <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-7 w-auto" />
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-agrom-muted mt-2.5">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-gray-500 mt-2.5">
             FitoLink · del pixel al tratamiento
           </p>
         </div>

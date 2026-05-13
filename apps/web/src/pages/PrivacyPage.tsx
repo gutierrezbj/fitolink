@@ -18,8 +18,8 @@ import { Link } from 'react-router-dom';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-agrom-paper">
-      <header className="border-b border-agrom-rule/40 bg-white">
+    <div className="min-h-screen bg-earth-50">
+      <header className="border-b border-earth-300/40 bg-white">
         <div className="max-w-3xl mx-auto px-6 py-6">
           <Link to="/" className="inline-flex items-center gap-3">
             <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-8 w-auto" />
@@ -28,19 +28,19 @@ export default function PrivacyPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-12">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
           § AGROM · FITOLINK
         </p>
-        <h1 className="font-display text-4xl text-agrom-deep mt-3 leading-tight">
+        <h1 className="font-display text-4xl text-brand-700 mt-3 leading-tight">
           Política de Privacidad
         </h1>
-        <p className="font-display italic text-agrom-muted mt-2">
+        <p className="font-display italic text-gray-500 mt-2">
           Última actualización: 12 de mayo de 2026
         </p>
-        <div className="w-12 h-[2px] bg-agrom-terra mt-6 mb-10" />
+        <div className="w-12 h-[2px] bg-terra-500 mt-6 mb-10" />
 
-        <section className="text-agrom-ink leading-relaxed">
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 01 · Responsable del tratamiento</h2>
+        <section className="text-brand-900 leading-relaxed">
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 01 · Responsable del tratamiento</h2>
           <p>
             SystemRapid SL (en adelante, &laquo;AgroM&raquo;) es la entidad
             responsable del tratamiento de los datos personales recogidos a
@@ -48,12 +48,12 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-3">
             Contacto para consultas sobre privacidad y ejercicio de derechos:{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-agrom-deep underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
               juang@systemrapid.io
             </a>
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 02 · Qué datos tratamos</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 02 · Qué datos tratamos</h2>
           <p>Los datos que recogemos directamente del usuario:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Datos identificativos</b>: nombre, email, teléfono (opcional), avatar de Google (opcional).</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             <li><b>Datos técnicos mínimos</b>: dirección IP en logs del servidor, fecha y hora de acceso. Sin tracking ni huella digital del navegador.</li>
           </ul>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 03 · Para qué los usamos</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 03 · Para qué los usamos</h2>
           <ul className="list-disc pl-6 mt-2 space-y-2">
             <li><b>Prestar el Servicio</b>: procesar imágenes satelitales sobre las parcelas, generar alertas, enviar el informe matutino diario.</li>
             <li><b>Comunicación operativa</b>: avisos críticos de salud del cultivo, confirmación de aplicaciones drone, baja del Servicio.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             comercial ni los vendemos a terceros.</b>
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 04 · Base legal</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 04 · Base legal</h2>
           <p>El tratamiento se ampara en:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Ejecución del contrato</b>: para todo lo necesario para prestar el Servicio que el usuario ha contratado al darse de alta.</li>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
             <li><b>Interés legítimo</b>: para la seguridad de la plataforma (logs técnicos, prevención de abuso).</li>
           </ul>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 05 · Con quién compartimos los datos</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 05 · Con quién compartimos los datos</h2>
           <p>
             AgroM no comparte los datos del usuario con terceros para fines
             comerciales. Los proveedores tecnológicos que procesan datos en
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
             de datos personales identificativos.
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 06 · Cuánto tiempo conservamos los datos</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 06 · Cuánto tiempo conservamos los datos</h2>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Datos de la cuenta</b>: mientras la cuenta esté activa, más 4 años tras la baja para cumplir con obligaciones legales (registros PAC y fiscales).</li>
             <li><b>Datos satelitales</b>: serie temporal Sentinel-2 desde el alta de la parcela + contexto histórico MODIS de 5 años para la zona geográfica donde se ubica.</li>
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
             obligatoria.
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 07 · Derechos del usuario</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 07 · Derechos del usuario</h2>
           <p>El usuario puede ejercer en cualquier momento los siguientes derechos:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Acceso</b>: solicitar copia de los datos que tenemos sobre él.</li>
@@ -131,13 +131,13 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-3">
             Para ejercer cualquiera de estos derechos, escribe a{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-agrom-deep underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
               juang@systemrapid.io
             </a>{' '}
             indicando claramente cuál ejerces. Respondemos en un plazo máximo de 30 días.
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 08 · Cookies</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 08 · Cookies</h2>
           <p>
             FitoLink utiliza únicamente cookies técnicas estrictamente necesarias
             para el funcionamiento de la sesión (token de autenticación). No
@@ -145,7 +145,7 @@ export default function PrivacyPage() {
             compartimos tu actividad con plataformas de tracking.
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 09 · Seguridad</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 09 · Seguridad</h2>
           <p>
             Los datos se transmiten cifrados en tránsito (HTTPS/TLS) y se
             almacenan en una base de datos con acceso restringido a personal
@@ -157,26 +157,26 @@ export default function PrivacyPage() {
             informaremos sin demora indebida según establece el RGPD.
           </p>
 
-          <h2 className="font-display text-2xl text-agrom-deep mt-10 mb-3">§ 10 · Cambios en esta política</h2>
+          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 10 · Cambios en esta política</h2>
           <p>
             Si modificamos esta política, te avisaremos por email con al menos
             30 días de antelación cuando los cambios sean sustanciales.
           </p>
         </section>
 
-        <div className="mt-16 border-t border-agrom-rule/40 pt-6 flex justify-between items-center text-sm">
-          <Link to="/terms" className="text-agrom-deep hover:underline">
+        <div className="mt-16 border-t border-earth-300/40 pt-6 flex justify-between items-center text-sm">
+          <Link to="/terms" className="text-brand-700 hover:underline">
             ← Términos y condiciones
           </Link>
-          <Link to="/" className="text-agrom-deep hover:underline">
+          <Link to="/" className="text-brand-700 hover:underline">
             Volver al inicio →
           </Link>
         </div>
       </main>
 
-      <footer className="border-t border-agrom-rule/40 bg-white mt-16">
+      <footer className="border-t border-earth-300/40 bg-white mt-16">
         <div className="max-w-3xl mx-auto px-6 py-6 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
             AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN · 2026
           </p>
         </div>

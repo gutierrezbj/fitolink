@@ -103,8 +103,8 @@ export default function RegisterPage() {
   const selected = ROLES.find((r) => r.value === selectedRole);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-agrom-paper p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-agrom-rule/30 p-10 max-w-lg w-full">
+    <div className="min-h-screen flex items-center justify-center bg-earth-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-earth-300/30 p-10 max-w-lg w-full">
         {/* Brand header — same wordmark/eyebrow pattern as LoginPage */}
         <div className="text-center mb-6">
           <img
@@ -112,16 +112,16 @@ export default function RegisterPage() {
             alt="AgroM"
             className="h-10 w-auto mx-auto"
           />
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted mt-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mt-3">
             FitoLink · alta de cuenta
           </p>
         </div>
 
         <div className="mb-7 text-center">
-          <p className="font-display text-xl text-agrom-ink leading-snug">
+          <p className="font-display text-xl text-brand-900 leading-snug">
             Completa tu registro
           </p>
-          <p className="text-agrom-muted text-sm mt-1.5">
+          <p className="text-gray-500 text-sm mt-1.5">
             Selecciona el perfil que mejor te describa.
           </p>
         </div>
@@ -137,21 +137,21 @@ export default function RegisterPage() {
                 onClick={() => setSelectedRole(role.value)}
                 className={`w-full text-left p-4 rounded-lg border transition-all flex items-start gap-3 ${
                   isActive
-                    ? 'border-agrom-deep bg-agrom-parch/40'
-                    : 'border-agrom-rule/40 hover:border-agrom-rule hover:bg-agrom-paper'
+                    ? 'border-brand-700 bg-earth-100/40'
+                    : 'border-earth-300/40 hover:border-earth-300 hover:bg-earth-50'
                 }`}
               >
                 <img src={role.icon} alt="" className="w-7 h-7 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-semibold text-agrom-ink flex items-center gap-2">
+                  <div className="font-semibold text-brand-900 flex items-center gap-2">
                     {role.label}
                     {role.needsVerification && (
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-agrom-terra bg-agrom-terra/10 px-1.5 py-0.5 rounded">
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-terra-500 bg-terra-500/10 px-1.5 py-0.5 rounded">
                         Requiere verificación
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-agrom-muted mt-0.5 leading-snug">
+                  <div className="text-sm text-gray-500 mt-0.5 leading-snug">
                     {role.description}
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default function RegisterPage() {
 
         {/* Phone (opt) */}
         <div className="mb-6">
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-agrom-muted mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500 mb-2">
             Teléfono · opcional
           </label>
           <input
@@ -170,15 +170,15 @@ export default function RegisterPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+34 612 345 678"
-            className="w-full px-3 py-2 border border-agrom-rule/40 rounded-lg text-sm focus:ring-2 focus:ring-agrom-deep focus:border-agrom-deep outline-none"
+            className="w-full px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-700 focus:border-brand-700 outline-none"
           />
-          <p className="text-[10px] text-agrom-muted mt-1.5 leading-relaxed">
+          <p className="text-[10px] text-gray-500 mt-1.5 leading-relaxed">
             Sólo se usa para avisos críticos de campo. Nunca para marketing.
           </p>
         </div>
 
         {/* T&C acceptance — required for sign-up */}
-        <div className="mb-6 p-4 bg-agrom-paper rounded-lg border border-agrom-rule/30">
+        <div className="mb-6 p-4 bg-earth-50 rounded-lg border border-earth-300/30">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -187,15 +187,15 @@ export default function RegisterPage() {
                 setAcceptedTerms(e.target.checked);
                 if (e.target.checked) setError('');
               }}
-              className="mt-1 w-4 h-4 text-agrom-deep border-agrom-rule/60 rounded focus:ring-agrom-deep accent-agrom-deep cursor-pointer flex-shrink-0"
+              className="mt-1 w-4 h-4 text-brand-700 border-earth-300/60 rounded focus:ring-brand-700 accent-brand-700 cursor-pointer flex-shrink-0"
             />
-            <span className="text-sm text-agrom-ink leading-snug">
+            <span className="text-sm text-brand-900 leading-snug">
               He leído y acepto los{' '}
-              <Link to="/terms" target="_blank" rel="noopener" className="text-agrom-deep underline font-medium">
+              <Link to="/terms" target="_blank" rel="noopener" className="text-brand-700 underline font-medium">
                 Términos de Uso
               </Link>{' '}
               y la{' '}
-              <Link to="/privacy" target="_blank" rel="noopener" className="text-agrom-deep underline font-medium">
+              <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-700 underline font-medium">
                 Política de Privacidad
               </Link>{' '}
               de AgroM FitoLink.
@@ -205,11 +205,11 @@ export default function RegisterPage() {
 
         {/* Heads-up for verification roles */}
         {selected?.needsVerification && (
-          <div className="mb-6 p-3 bg-agrom-terra/10 border-l-2 border-agrom-terra rounded-r">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-agrom-terra mb-1">
+          <div className="mb-6 p-3 bg-terra-500/10 border-l-2 border-terra-500 rounded-r">
+            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-terra-500 mb-1">
               § Verificación pendiente
             </p>
-            <p className="text-xs text-agrom-ink leading-relaxed">
+            <p className="text-xs text-brand-900 leading-relaxed">
               El perfil de {selected.label.toLowerCase()} requiere verificación
               manual por nuestro equipo antes de operar comercialmente. Recibirás
               un email en 24-48 h.
@@ -218,20 +218,20 @@ export default function RegisterPage() {
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-agrom-alert/10 border-l-2 border-agrom-alert rounded-r">
-            <p className="text-sm text-agrom-alert">{error}</p>
+          <div className="mb-4 p-3 bg-red-700/10 border-l-2 border-red-700 rounded-r">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
         <button
           onClick={handleRegister}
           disabled={!selectedRole || !acceptedTerms || loading}
-          className="w-full bg-agrom-deep text-white py-3 rounded-lg font-semibold hover:bg-agrom-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-brand-700 text-white py-3 rounded-lg font-semibold hover:bg-brand-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
 
-        <p className="text-[10px] text-agrom-muted mt-6 text-center font-mono uppercase tracking-[0.18em]">
+        <p className="text-[10px] text-gray-500 mt-6 text-center font-mono uppercase tracking-[0.18em]">
           AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN
         </p>
       </div>

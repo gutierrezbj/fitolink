@@ -20,7 +20,7 @@ const DEMO_ACCOUNTS = [
   // Cliente Pistacho — accede al login del cliente real de Jonh para
   // que vea sus 6 parcelas (348 ha en establecimiento) con los insights
   // Ola 1.5 corriendo en sus propios datos satelitales.
-  { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-agrom-terra/40 text-agrom-terra hover:bg-orange-100' },
+  { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
   { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 
@@ -106,8 +106,8 @@ export default function LoginPage() {
   }, [handleGoogleCallback]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-agrom-paper p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-agrom-rule/30 p-10 max-w-md w-full text-center">
+    <div className="min-h-screen flex items-center justify-center bg-earth-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-earth-300/30 p-10 max-w-md w-full text-center">
         {/* AgroM wordmark — brand of record. FitoLink labelled below as the product. */}
         <div className="mb-6">
           <img
@@ -115,16 +115,16 @@ export default function LoginPage() {
             alt="AgroM"
             className="h-10 w-auto mx-auto"
           />
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted mt-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mt-3">
             FitoLink · del pixel al tratamiento
           </p>
         </div>
 
         <div className="mb-8">
-          <p className="font-display text-xl text-agrom-ink leading-snug">
+          <p className="font-display text-xl text-brand-900 leading-snug">
             Inteligencia agraria de precisión
           </p>
-          <p className="text-agrom-muted text-sm mt-1.5">
+          <p className="text-gray-500 text-sm mt-1.5">
             Detección satelital + aplicación fitosanitaria con drone
           </p>
         </div>
@@ -133,17 +133,17 @@ export default function LoginPage() {
           <div id="google-signin-btn" />
         </div>
 
-        <p className="text-xs text-agrom-muted mb-6 leading-relaxed">
+        <p className="text-xs text-gray-500 mb-6 leading-relaxed">
           Al acceder, aceptas los{' '}
-          <Link to="/terms" className="text-agrom-deep hover:underline">términos de uso</Link>
+          <Link to="/terms" className="text-brand-700 hover:underline">términos de uso</Link>
           {' y la '}
-          <Link to="/privacy" className="text-agrom-deep hover:underline">política de privacidad</Link>
+          <Link to="/privacy" className="text-brand-700 hover:underline">política de privacidad</Link>
           {' de AgroM FitoLink.'}
         </p>
 
         {SHOW_DEMO && (
-          <div className="border-t border-agrom-rule/30 pt-5">
-            <p className="font-mono text-[10px] text-agrom-muted uppercase tracking-[0.22em] mb-3">
+          <div className="border-t border-earth-300/30 pt-5">
+            <p className="font-mono text-[10px] text-gray-500 uppercase tracking-[0.22em] mb-3">
               Cuentas Demo
             </p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -167,8 +167,8 @@ export default function LoginPage() {
             </div>
 
             {/* Email-based demo entry — for prospects bringing their own KMZ */}
-            <div className="mt-5 pt-5 border-t border-agrom-rule/30">
-              <p className="font-mono text-[10px] text-agrom-muted uppercase tracking-[0.22em] mb-2">
+            <div className="mt-5 pt-5 border-t border-earth-300/30">
+              <p className="font-mono text-[10px] text-gray-500 uppercase tracking-[0.22em] mb-2">
                 O entra con tu email
               </p>
               <form onSubmit={handleDevLoginByEmail} className="flex gap-2">
@@ -180,21 +180,21 @@ export default function LoginPage() {
                     setDemoEmailError(null);
                   }}
                   placeholder="tu@email.com"
-                  className="flex-1 px-3 py-2 border border-agrom-rule/40 rounded-lg text-sm focus:ring-2 focus:ring-agrom-deep focus:border-agrom-deep outline-none"
+                  className="flex-1 px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-700 focus:border-brand-700 outline-none"
                   disabled={loading !== null}
                 />
                 <button
                   type="submit"
                   disabled={!demoEmail.trim() || loading !== null}
-                  className="bg-agrom-deep text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-agrom-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading === 'email' ? '...' : 'Entrar'}
                 </button>
               </form>
               {demoEmailError && (
-                <p className="text-xs text-agrom-alert mt-2">{demoEmailError}</p>
+                <p className="text-xs text-red-700 mt-2">{demoEmailError}</p>
               )}
-              <p className="text-[10px] text-agrom-muted mt-2 text-left leading-relaxed">
+              <p className="text-[10px] text-gray-500 mt-2 text-left leading-relaxed">
                 Si es la primera vez, se crea una cuenta demo de agricultor. Modo validación, sin contraseña.
               </p>
             </div>

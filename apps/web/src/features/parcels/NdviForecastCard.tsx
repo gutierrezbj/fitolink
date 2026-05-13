@@ -67,96 +67,96 @@ export default function NdviForecastCard({ parcelId }: Props) {
 
   if (isLoading || !data) {
     return (
-      <div className="bg-white rounded-xl border border-agrom-rule/30 overflow-hidden">
-        <div className="bg-agrom-deep px-4 py-2.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-agrom-paper/70">
+      <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
+        <div className="bg-brand-700 px-4 py-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
             § PROYECCIÓN — ANÁLISIS PREDICTIVO
           </p>
         </div>
-        <div className="p-6 text-center text-sm text-agrom-muted">Cargando proyección…</div>
+        <div className="p-6 text-center text-sm text-gray-500">Cargando proyección…</div>
       </div>
     );
   }
 
   // State tone — drives the accent color of the trend pill
   const toneClass = data.alreadyCritical
-    ? 'bg-agrom-alert/10 text-agrom-alert'
+    ? 'bg-red-700/10 text-red-700'
     : data.trend === 'descending'
-      ? 'bg-agrom-warning/15 text-agrom-warning'
+      ? 'bg-earth-400/15 text-earth-400'
       : data.trend === 'ascending'
-        ? 'bg-agrom-success/15 text-agrom-success'
-        : 'bg-agrom-info/15 text-agrom-info';
+        ? 'bg-green-700/15 text-green-700'
+        : 'bg-slate-500/15 text-slate-500';
 
   const dotClass = data.alreadyCritical
-    ? 'bg-agrom-alert'
+    ? 'bg-red-700'
     : data.trend === 'descending'
-      ? 'bg-agrom-warning'
+      ? 'bg-earth-400'
       : data.trend === 'ascending'
-        ? 'bg-agrom-success'
-        : 'bg-agrom-info';
+        ? 'bg-green-700'
+        : 'bg-slate-500';
 
   return (
-    <div className="bg-white rounded-xl border border-agrom-rule/30 overflow-hidden">
+    <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
-      <div className="bg-agrom-deep px-4 py-2.5">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-agrom-paper/70">
+      <div className="bg-brand-700 px-4 py-2.5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
           § PROYECCIÓN — ANÁLISIS PREDICTIVO
         </p>
       </div>
 
       {/* Headline message (the Tipo A friendly line) */}
       <div className="px-5 pt-5 pb-3">
-        <p className="font-display text-lg text-agrom-ink leading-snug">
+        <p className="font-display text-lg text-brand-900 leading-snug">
           {data.message}
         </p>
       </div>
 
       {/* Quantitative strip — discreet, mono, never the protagonist */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-agrom-rule/30 border-t border-agrom-rule/30">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-earth-300/30 border-t border-earth-300/30">
         {/* Trend */}
         <div className="bg-white px-4 py-3">
-          <p className="font-mono text-[9px] uppercase tracking-wider text-agrom-muted mb-1">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">
             Tendencia
           </p>
           <div className="flex items-center gap-1.5">
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
-            <span className="text-sm font-semibold text-agrom-ink">{TREND_LABEL[data.trend]}</span>
+            <span className="text-sm font-semibold text-brand-900">{TREND_LABEL[data.trend]}</span>
           </div>
         </div>
         {/* Current NDVI vs threshold */}
         <div className="bg-white px-4 py-3">
-          <p className="font-mono text-[9px] uppercase tracking-wider text-agrom-muted mb-1">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">
             Estado actual
           </p>
-          <p className="text-sm font-semibold tabular-nums text-agrom-ink">
+          <p className="text-sm font-semibold tabular-nums text-brand-900">
             {data.currentNdvi !== null ? data.currentNdvi.toFixed(2) : '—'}
-            <span className="text-agrom-muted font-normal"> / {data.criticalThreshold.toFixed(2)}</span>
+            <span className="text-gray-500 font-normal"> / {data.criticalThreshold.toFixed(2)}</span>
           </p>
         </div>
         {/* Projected date */}
         <div className={`bg-white px-4 py-3 ${data.projectedCriticalDate ? '' : 'opacity-60'}`}>
-          <p className="font-mono text-[9px] uppercase tracking-wider text-agrom-muted mb-1">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">
             Proyección
           </p>
           {data.projectedCriticalDate ? (
-            <p className="text-sm font-semibold text-agrom-ink">
+            <p className="text-sm font-semibold text-brand-900">
               {formatProjectedDate(data.projectedCriticalDate)}
-              <span className="block font-mono text-[10px] text-agrom-muted font-normal mt-0.5">
+              <span className="block font-mono text-[10px] text-gray-500 font-normal mt-0.5">
                 en {data.daysToCritical} días
               </span>
             </p>
           ) : (
-            <p className="text-sm text-agrom-muted">—</p>
+            <p className="text-sm text-gray-500">—</p>
           )}
         </div>
         {/* Confidence */}
         <div className="bg-white px-4 py-3">
-          <p className="font-mono text-[9px] uppercase tracking-wider text-agrom-muted mb-1">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">
             Confianza
           </p>
-          <p className="text-sm font-semibold text-agrom-ink">
+          <p className="text-sm font-semibold text-brand-900">
             {CONFIDENCE_LABEL[data.confidence]}
-            <span className="block font-mono text-[10px] text-agrom-muted font-normal mt-0.5">
+            <span className="block font-mono text-[10px] text-gray-500 font-normal mt-0.5">
               {data.readingsUsed} lectura{data.readingsUsed === 1 ? '' : 's'}
             </span>
           </p>
@@ -175,7 +175,7 @@ export default function NdviForecastCard({ parcelId }: Props) {
         });
         if (cover === 'low') {
           return (
-            <div className="px-5 py-3 border-t border-agrom-rule/30 bg-agrom-paper">
+            <div className="px-5 py-3 border-t border-earth-300/30 bg-earth-50">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider bg-gray-100 text-gray-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
                 {data.establishmentPhase
@@ -186,7 +186,7 @@ export default function NdviForecastCard({ parcelId }: Props) {
           );
         }
         return (
-          <div className="px-5 py-3 border-t border-agrom-rule/30 bg-agrom-paper">
+          <div className="px-5 py-3 border-t border-earth-300/30 bg-earth-50">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider ${toneClass}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
               Por debajo de umbral · acción recomendada

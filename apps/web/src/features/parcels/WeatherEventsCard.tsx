@@ -69,9 +69,9 @@ const TYPE_GLYPH: Record<EventType, string> = {
 
 // Tone classes drive both the side strip and the severity pill.
 const TONE: Record<Severity, { strip: string; pill: string; dot: string }> = {
-  alert:   { strip: 'bg-agrom-alert',   pill: 'bg-agrom-alert/10 text-agrom-alert',     dot: 'bg-agrom-alert'   },
-  warning: { strip: 'bg-agrom-warning', pill: 'bg-agrom-warning/15 text-agrom-warning', dot: 'bg-agrom-warning' },
-  info:    { strip: 'bg-agrom-info',    pill: 'bg-agrom-info/15 text-agrom-info',       dot: 'bg-agrom-info'    },
+  alert:   { strip: 'bg-red-700',   pill: 'bg-red-700/10 text-red-700',     dot: 'bg-red-700'   },
+  warning: { strip: 'bg-earth-400', pill: 'bg-earth-400/15 text-earth-400', dot: 'bg-earth-400' },
+  info:    { strip: 'bg-slate-500',    pill: 'bg-slate-500/15 text-slate-500',       dot: 'bg-slate-500'    },
 };
 
 const SEV_LABEL: Record<Severity, string> = {
@@ -92,25 +92,25 @@ export default function WeatherEventsCard({ parcelId }: Props) {
   });
 
   return (
-    <div className="bg-white rounded-xl border border-agrom-rule/30 overflow-hidden">
+    <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
-      <div className="bg-agrom-deep px-4 py-2.5 flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-agrom-paper/70">
+      <div className="bg-brand-700 px-4 py-2.5 flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
           § METEO 7 DÍAS — EVENTOS A VIGILAR
         </p>
         {data && (
-          <p className="font-mono text-[9px] text-agrom-paper/60 tracking-wide">
+          <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">
             {data.events.length} evento{data.events.length === 1 ? '' : 's'}
           </p>
         )}
       </div>
 
       {isLoading || !data ? (
-        <div className="p-6 text-center text-sm text-agrom-muted">Cargando pronóstico…</div>
+        <div className="p-6 text-center text-sm text-gray-500">Cargando pronóstico…</div>
       ) : data.events.length === 0 ? (
         <div className="px-5 py-8 text-center">
-          <p className="font-display text-lg text-agrom-ink mb-1">Semana tranquila.</p>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-agrom-muted">
+          <p className="font-display text-lg text-brand-900 mb-1">Semana tranquila.</p>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-gray-500">
             Sin eventos climáticos relevantes en los próximos 7 días
           </p>
         </div>
@@ -119,23 +119,23 @@ export default function WeatherEventsCard({ parcelId }: Props) {
           {data.events.map((event, i) => (
             <li
               key={`${event.type}-${event.date}-${i}`}
-              className="flex border-t border-agrom-rule/20 first:border-t-0"
+              className="flex border-t border-earth-300/20 first:border-t-0"
             >
               <span className={`w-1 flex-shrink-0 ${TONE[event.severity].strip}`} />
               <div className="flex-1 px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-agrom-deep flex items-center gap-2">
-                    <span className="text-base text-agrom-terra leading-none">{TYPE_GLYPH[event.type]}</span>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-700 flex items-center gap-2">
+                    <span className="text-base text-terra-500 leading-none">{TYPE_GLYPH[event.type]}</span>
                     {TYPE_LABEL[event.type]}
-                    <span className="text-agrom-muted">·</span>
-                    <span className="text-agrom-muted">{event.dayLabel}</span>
+                    <span className="text-gray-500">·</span>
+                    <span className="text-gray-500">{event.dayLabel}</span>
                   </p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-wider ${TONE[event.severity].pill}`}>
                     <span className={`w-1 h-1 rounded-full ${TONE[event.severity].dot}`} />
                     {SEV_LABEL[event.severity]}
                   </span>
                 </div>
-                <p className="text-sm text-agrom-ink leading-relaxed">
+                <p className="text-sm text-brand-900 leading-relaxed">
                   {event.message}
                 </p>
               </div>
@@ -146,8 +146,8 @@ export default function WeatherEventsCard({ parcelId }: Props) {
 
       {/* Footer attribution */}
       {data && (
-        <div className="px-4 py-2 border-t border-agrom-rule/30 bg-agrom-paper/60">
-          <p className="font-mono text-[9px] uppercase tracking-wider text-agrom-muted text-center">
+        <div className="px-4 py-2 border-t border-earth-300/30 bg-earth-50/60">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 text-center">
             FUENTE: OPEN-METEO ECMWF · ACTUALIZADO {fmtFetchedAt(data.fetchedAt)}
           </p>
         </div>

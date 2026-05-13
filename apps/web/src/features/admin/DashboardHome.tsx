@@ -79,43 +79,43 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
           alt="AgroM"
           className="h-9 w-auto mx-auto mb-4"
         />
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
           § FITOLINK · PRIMER PASO
         </p>
-        <div className="w-12 h-[2px] bg-agrom-terra mx-auto mt-3 mb-6" />
+        <div className="w-12 h-[2px] bg-terra-500 mx-auto mt-3 mb-6" />
 
-        <h1 className="font-display text-3xl text-agrom-deep leading-tight">
+        <h1 className="font-display text-3xl text-brand-700 leading-tight">
           {firstName ? `Bienvenido a AgroM, ${firstName}.` : 'Bienvenido a AgroM.'}
         </h1>
-        <p className="font-display italic text-agrom-muted mt-2 text-lg">
+        <p className="font-display italic text-gray-500 mt-2 text-lg">
           Su pistachar, olivar o cereal — empezamos por sus parcelas.
         </p>
 
-        <div className="mt-10 mb-10 text-left bg-white border border-agrom-rule/40 rounded-xl p-6">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted mb-4">
+        <div className="mt-10 mb-10 text-left bg-white border border-earth-300/40 rounded-xl p-6">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-4">
             § CÓMO EMPEZAR
           </p>
-          <ol className="space-y-4 text-agrom-ink text-sm leading-relaxed">
+          <ol className="space-y-4 text-brand-900 text-sm leading-relaxed">
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-agrom-terra leading-none w-5">I</span>
+              <span className="font-display text-2xl text-terra-500 leading-none w-5">I</span>
               <span>
-                <b className="font-display text-agrom-deep">Suba el archivo KMZ</b> de su parcela
+                <b className="font-display text-brand-700">Suba el archivo KMZ</b> de su parcela
                 — el que descarga de SIGPAC, Mapping o de su técnico. También se puede dibujar
                 el perímetro a mano sobre el mapa.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-agrom-terra leading-none w-5">II</span>
+              <span className="font-display text-2xl text-terra-500 leading-none w-5">II</span>
               <span>
-                <b className="font-display text-agrom-deep">Elija el cultivo y la provincia.</b>
+                <b className="font-display text-brand-700">Elija el cultivo y la provincia.</b>
                 Nuestro sistema consulta el satélite europeo Sentinel-2 sobre sus coordenadas y
                 empieza a generar informes.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-agrom-terra leading-none w-5">III</span>
+              <span className="font-display text-2xl text-terra-500 leading-none w-5">III</span>
               <span>
-                <b className="font-display text-agrom-deep">Su primer informe llega en ~5 días.</b>
+                <b className="font-display text-brand-700">Su primer informe llega en ~5 días.</b>
                 Cada 5 días el satélite pasa sobre su parcela y los datos se incorporan al
                 informe diario que recibe a las 7 de la mañana.
               </span>
@@ -125,12 +125,12 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
 
         <button
           onClick={() => navigate('/dashboard/parcels/new')}
-          className="inline-block bg-agrom-deep text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-agrom-ink transition-colors shadow-sm"
+          className="inline-block bg-brand-700 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-brand-900 transition-colors shadow-sm"
         >
           Subir mi primera parcela →
         </button>
 
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted mt-10">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mt-10">
           AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN
         </p>
       </div>

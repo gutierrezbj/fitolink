@@ -386,18 +386,18 @@ export default function ParcelDetailPage() {
           llegue la primera lectura, ndviHistory.length > 0 y este bloque
           desaparece. */}
       {(parcel.ndviHistory?.length ?? 0) === 0 && (
-        <div className="bg-agrom-parch/50 border border-agrom-rule/40 rounded-xl px-5 py-4 mb-4 flex items-start gap-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-agrom-deep text-white flex items-center justify-center font-display text-lg">
+        <div className="bg-earth-100/50 border border-earth-300/40 rounded-xl px-5 py-4 mb-4 flex items-start gap-4">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-700 text-white flex items-center justify-center font-display text-lg">
             ⌛
           </div>
           <div className="flex-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-agrom-muted mb-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-1">
               § PROCESANDO PRIMERA PASADA
             </p>
-            <p className="font-display text-base text-agrom-deep font-semibold leading-snug">
+            <p className="font-display text-base text-brand-700 font-semibold leading-snug">
               Esperando el primer paso de Sentinel-2 sobre su parcela.
             </p>
-            <p className="text-sm text-agrom-ink mt-1.5 leading-relaxed">
+            <p className="text-sm text-brand-900 mt-1.5 leading-relaxed">
               El satélite europeo Sentinel-2 pasa cada 5 días sobre la
               península. Cuando capte su parcela, generamos el primer
               informe automáticamente y lo recibirá en el digest matutino
