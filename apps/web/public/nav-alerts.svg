@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Bell -->
+  <path d="M32 16 C26 16 22 20 22 26 L22 36 L18 42 L46 42 L42 36 L42 26 C42 20 38 16 32 16 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Clapper -->
+  <path d="M28 44 C28 46.5 29.8 48 32 48 C34.2 48 36 46.5 36 44" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Top dot (alert indicator) -->
+  <circle cx="32" cy="14" r="2" fill="#fff"/>
+</svg>

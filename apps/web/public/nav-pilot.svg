@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Drone top-down: 4 propellers + central body -->
+  <circle cx="32" cy="32" r="6" fill="#fff"/>
+  <circle cx="20" cy="20" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="44" cy="20" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="20" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="44" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+  <!-- Arms connecting body to propellers -->
+  <line x1="32" y1="32" x2="22" y2="22" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="42" y2="22" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="22" y2="42" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="42" y2="42" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

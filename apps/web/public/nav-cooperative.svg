@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- 3 people: cooperative grupo -->
+  <!-- Center person -->
+  <circle cx="32" cy="22" r="5" fill="none" stroke="#fff" stroke-width="2.5"/>
+  <path d="M24 38 C24 33 28 30 32 30 C36 30 40 33 40 38 L40 44 L24 44 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Left person -->
+  <circle cx="18" cy="26" r="4" fill="#fff"/>
+  <path d="M12 44 C12 39 14 36 18 36 C20 36 22 37 23 38" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Right person -->
+  <circle cx="46" cy="26" r="4" fill="#fff"/>
+  <path d="M52 44 C52 39 50 36 46 36 C44 36 42 37 41 38" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+</svg>

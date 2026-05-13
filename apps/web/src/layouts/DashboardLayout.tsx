@@ -3,37 +3,42 @@ import { useAuthStore } from '@/features/auth/authStore.js';
 import ToastContainer from '@/components/ToastContainer.js';
 import AlertBell from '@/components/AlertBell.js';
 
+// Sidebar icon set — set unificado `nav-*.svg` con el mismo lenguaje
+// visual que `service-*.svg` (círculo brand-600 #46632e + trazo blanco
+// mínimo). Sustituyó el set Flaticon multicolor 13-may-2026 para
+// armonizar el sidebar con las cards de servicios y el resto del
+// producto (paleta FitoLink + Instrument Serif + DM Sans).
 const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string }>> = {
   farmer: [
-    { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/location.svg' },
-    { to: '/dashboard/alerts', label: 'Alertas', icon: '/siren.svg' },
-    { to: '/dashboard/operations', label: 'Operaciones', icon: '/operational-system.svg' },
-    { to: '/dashboard/services', label: 'Servicios', icon: '/operational-system.svg' },
-    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-home.svg' },
+    { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/nav-parcels.svg' },
+    { to: '/dashboard/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
+    { to: '/dashboard/operations', label: 'Operaciones', icon: '/nav-operations.svg' },
+    { to: '/dashboard/services', label: 'Servicios', icon: '/nav-services.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
   ],
   pilot: [
-    { to: '/dashboard', label: 'Inicio', icon: '🏠' },
-    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/drone-pilot.svg' },
-    { to: '/dashboard/operations', label: 'Historial', icon: '/operational-system.svg' },
-    { to: '/dashboard/marketplace', label: 'Red de Pilotos', icon: '/location.svg' },
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-home.svg' },
+    { to: '/dashboard/assignments', label: 'Asignaciones', icon: '/nav-assignments.svg' },
+    { to: '/dashboard/operations', label: 'Historial', icon: '/nav-operations.svg' },
+    { to: '/dashboard/marketplace', label: 'Red de Pilotos', icon: '/nav-pilot.svg' },
   ],
   insurer: [
     // "Inspecciones" was a placeholder. The real flow is: insurer sees a
     // critical alert → solicits drone inspection → it shows up under
     // Operaciones (V2 nav addition when there's volume). For demo we
     // surface the loop from the Alertas page directly.
-    { to: '/dashboard', label: 'Inicio', icon: '/insurance2.svg' },
-    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/location.svg' },
-    { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/siren.svg' },
-    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-insurance.svg' },
+    { to: '/dashboard/b2b/parcels', label: 'Parcelas Aseguradas', icon: '/nav-parcels.svg' },
+    { to: '/dashboard/b2b/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
   ],
   admin: [
-    { to: '/dashboard', label: 'Inicio', icon: '/system-administration.svg' },
-    { to: '/dashboard/admin/dispatch', label: 'Despacho', icon: '/drone-pilot.svg' },
-    { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/user.svg' },
-    { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/location.svg' },
-    { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/siren.svg' },
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-admin.svg' },
+    { to: '/dashboard/admin/dispatch', label: 'Despacho', icon: '/nav-pilot.svg' },
+    { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/nav-users.svg' },
+    { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/nav-parcels.svg' },
+    { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
   ],
   cooperative: [
     // The cooperative dashboard already aggregates parcels + alerts per
@@ -41,8 +46,8 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     // nothing (user owns no parcels) or duplicate info. V2 brings:
     //  · /dashboard/cooperative/socios — full member admin
     //  · /dashboard/cooperative/reports — exportable reports
-    { to: '/dashboard', label: 'Inicio', icon: '/provider-cooperative.svg' },
-    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/drone-pilot.svg' },
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-cooperative.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
   ],
 };
 
