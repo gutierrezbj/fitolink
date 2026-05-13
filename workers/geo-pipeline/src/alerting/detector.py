@@ -5,7 +5,7 @@ V2 (future): CNN-based temporal pattern analysis.
 """
 import structlog
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 from ..config import NDVI_ANOMALY_DROP_THRESHOLD, NDVI_CRITICAL_THRESHOLD, NDVI_HIGH_THRESHOLD
 
@@ -24,6 +24,12 @@ class AnomalyResult:
     confidence: float
     ndvi_delta: float
     reason: str
+    # ML feedback loop (Sprint feedback loop · paso 2). Cuando V2/RandomForest
+    # crea la alerta, guardamos el snapshot de features que la generó. Esto
+    # permite reentrenar el modelo con ground truth real (Alert.resolvedBy).
+    # V1 threshold no calcula features → puede dejarse None.
+    detection_features: Optional[dict] = None
+    detection_model: Optional[str] = None  # 'v1_threshold' | 'v2_random_forest'
 
 
 def detect_anomaly(
@@ -107,4 +113,5 @@ def detect_anomaly(
         confidence=round(confidence, 2),
         ndvi_delta=round(delta, 4),
         reason=reason,
+        detection_model='v1_threshold',
     )

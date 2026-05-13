@@ -393,6 +393,15 @@ def run_pipeline() -> None:
                         'createdAt': datetime.now(),
                         'updatedAt': datetime.now(),
                     }
+                    # ── Sprint feedback loop · paso 2 ──
+                    # Si el detector calculó features (V2), persistimos el
+                    # snapshot + el nombre del modelo. Esto es ground truth
+                    # potencial para reentrenar — pareado con resolvedBy del
+                    # farmer/asesor cuando cierre la alerta.
+                    if anomaly.detection_features is not None:
+                        alert_doc['detectionFeatures'] = anomaly.detection_features
+                    if anomaly.detection_model is not None:
+                        alert_doc['detectionModel'] = anomaly.detection_model
                     db.alerts.insert_one(alert_doc)
                     alerts_created += 1
                 logger.info(

@@ -177,18 +177,26 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
     }
   }
 
-  // ── Pieza 2: Weather events (parallel fetch, then dedupe by user) ──
-  const weatherResults = await Promise.all(
-    parcels.map(async (p) => {
-      try {
-        const r = await getWeatherEventsForParcel(p._id.toString());
-        return { parcelName: p.name, events: r.events };
-      } catch (err) {
-        logger.warn({ err, parcelId: p._id.toString() }, 'digest: weather fetch failed for parcel');
-        return { parcelName: p.name, events: [] };
-      }
-    }),
-  );
+  // ── Pieza 2: Weather events ──
+  // Serializadas con pacing de 300ms para evitar HTTP 429 de Open-Meteo
+  // cuando un usuario tiene >5 parcelas (caso real Jonh con 6 parcelas
+  // disparaba el rate limit en el cron del 13-may). Open-Meteo da 10k
+  // req/día gratis pero el rate per-second es estricto. 300ms × 6 ≈ 2s
+  // extra por usuario, perfectamente asumible en el cron 7am.
+  const weatherResults: Array<{ parcelName: string; events: WeatherEvent[] }> = [];
+  for (const p of parcels) {
+    try {
+      const r = await getWeatherEventsForParcel(p._id.toString());
+      weatherResults.push({ parcelName: p.name, events: r.events });
+    } catch (err) {
+      logger.warn({ err, parcelId: p._id.toString() }, 'digest: weather fetch failed for parcel');
+      weatherResults.push({ parcelName: p.name, events: [] });
+    }
+    // Pacing entre parcelas. Sólo si hay más parcelas pendientes.
+    if (p !== parcels[parcels.length - 1]) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }
   const weatherSection = dedupeWeather(weatherResults);
 
   // ── Pieza 3: Pest advisories (parallel fetch, then dedupe by user) ──

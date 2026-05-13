@@ -384,6 +384,32 @@ class MLAnomalyDetector:
                 drought=drought_flag,
             )
 
+            # ── Sprint feedback loop · paso 2 ──
+            # Guardamos el snapshot de features que generó esta alerta. Cuando
+            # un farmer/asesor resuelva la alerta con resolvedBy=
+            # 'false_positive'|'natural_recovery'|'service', el script de
+            # retrain combinará (features, resolvedBy) como nueva muestra de
+            # entrenamiento real.
+            feature_snapshot = {
+                'current_ndvi':         features.current_ndvi,
+                'below_critical':       features.below_critical,
+                'delta_1':              features.delta_1,
+                'delta_3':              features.delta_3,
+                'delta_5':              features.delta_5,
+                'slope_3':              features.slope_3,
+                'slope_5':              features.slope_5,
+                'drop_from_recent_max': features.drop_from_recent_max,
+                'consecutive_drops':    features.consecutive_drops,
+                'volatility':           features.volatility,
+                'ndre_delta_1':         features.ndre_delta_1,
+                'seasonal_deviation':   features.seasonal_deviation,
+                'below_seasonal_min':   features.below_seasonal_min,
+                'month_sin':            features.month_sin,
+                'month_cos':            features.month_cos,
+                'crop_group_id':        features.crop_group_id,
+                'history_length':       features.history_length,
+            }
+
             return AnomalyResult(
                 is_anomaly=True,
                 alert_type=alert_type,
@@ -391,6 +417,8 @@ class MLAnomalyDetector:
                 confidence=confidence,
                 ndvi_delta=round(delta, 4),
                 reason=reason,
+                detection_features=feature_snapshot,
+                detection_model='v2_random_forest',
             )
 
         except Exception as e:
