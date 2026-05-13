@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import { inferCoverLevel, cropLabel } from '@fitolink/shared';
 import type { NdviSnapshot } from './useNdviSnapshot.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
@@ -458,22 +459,43 @@ export default function ParcelDetailPage() {
         const month = new Date(latestNdvi.date).getMonth() + 1;
         const cropType = parcel.cropType || 'otro';
 
-        // Seasonal awareness
+        // Seasonal awareness + crop context.
+        // En parcelas en establecimiento (establishmentPhase=true) o con NDVI
+        // fisiológicamente bajo (<0.30), los umbrales absolutos producen
+        // falsos positivos: el cultivo joven SIEMPRE estará "bajo umbral"
+        // hasta completar cobertura. Cambiamos a etiqueta neutra que NO
+        // induce intervención innecesaria.
         const seasonalRange = getSeasonalRange(cropType, month);
         const isSeasonallyNormal = seasonalRange ? ndvi >= seasonalRange[0] && ndvi <= seasonalRange[1] : false;
-        const isCritical = !isSeasonallyNormal && ndvi < 0.35;
-        const isAlert = !isSeasonallyNormal && ndvi < (seasonalRange?.[0] ?? 0.50);
+        const coverLevel = inferCoverLevel({ ndvi, establishmentPhase: parcel.establishmentPhase });
+        const isEstablishing = coverLevel === 'low';
+        const isCritical = !isSeasonallyNormal && !isEstablishing && ndvi < 0.35;
+        const isAlert = !isSeasonallyNormal && !isEstablishing && ndvi < (seasonalRange?.[0] ?? 0.50);
 
-        const bg = isCritical ? 'bg-red-50 border-red-200' : isAlert ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
-        const textColor = isCritical ? 'text-red-800' : isAlert ? 'text-orange-800' : 'text-green-800';
+        const bg = isEstablishing
+          ? 'bg-gray-50 border-gray-200'
+          : isCritical ? 'bg-red-50 border-red-200'
+          : isAlert ? 'bg-orange-50 border-orange-200'
+          : 'bg-green-50 border-green-200';
+        const textColor = isEstablishing
+          ? 'text-gray-700'
+          : isCritical ? 'text-red-800'
+          : isAlert ? 'text-orange-800'
+          : 'text-green-800';
 
-        const title = isCritical
+        const title = isEstablishing
+          ? (parcel.establishmentPhase
+              ? `Cultivo en establecimiento — valor esperable para ${cropLabel(cropType)}`
+              : `Cobertura vegetal baja — contexto fisiológico`)
+          : isCritical
           ? 'Estres vegetativo severo — atencion urgente'
           : isAlert
           ? 'Actividad vegetal por debajo del rango estacional'
           : 'Cultivo dentro del rango estacional normal';
 
-        const body = isCritical
+        const body = isEstablishing
+          ? `NDVI ${ndvi.toFixed(3)}. Los valores bajos son esperables hasta que el ${cropLabel(cropType)} complete cobertura. Sin acción requerida.`
+          : isCritical
           ? `NDVI ${ndvi.toFixed(3)}${isDecline ? `, bajando ${Math.abs(trend).toFixed(3)} puntos` : ''}. Perdida severa de actividad vegetal.`
           : isAlert
           ? `NDVI ${ndvi.toFixed(3)}${isDecline ? ', con tendencia descendente' : ''}. Por debajo del minimo esperado para este cultivo en este periodo.`
@@ -497,7 +519,12 @@ export default function ParcelDetailPage() {
               spatialNote = `Gradiente espacial claro: zona ${weakZone} en NDVI ${Math.min(northMean,southMean).toFixed(2)} frente a zona ${strongZone} en ${Math.max(northMean,southMean).toFixed(2)}. Posible diferencia de suelo, humedad o exposicion.`;
             } else {
               const stressPct = Math.round((pts.filter((p) => p.ndvi < 0.35).length / pts.length) * 100);
-              if (stressPct > 50) spatialNote = `Estres distribuido de forma uniforme (${stressPct}% de pixeles con NDVI < 0.35). Sugiere causa generalizada: sequia, enfermedad o carencia nutricional.`;
+              if (isEstablishing) {
+                // En establecimiento o NDVI bajo fisiológico, NO imputar
+                // "sequía / enfermedad / carencia". Es esperable que mucho
+                // píxel esté <0.35 — eso es suelo desnudo, no estrés vegetal.
+                spatialNote = `Cobertura uniformemente baja (${stressPct}% de píxeles bajo 0.35). Patrón esperable mientras el ${cropLabel(cropType)} completa su cobertura — sin diagnóstico de estrés.`;
+              } else if (stressPct > 50) spatialNote = `Estres distribuido de forma uniforme (${stressPct}% de pixeles con NDVI < 0.35). Sugiere causa generalizada: sequia, enfermedad o carencia nutricional.`;
               else if (stressPct > 15) spatialNote = `Focos de estres localizados en ${stressPct}% de la parcela. El resto mantiene actividad normal.`;
               else spatialNote = `Actividad vegetal uniforme en toda la parcela. Sin patrones espaciales de estres.`;
             }

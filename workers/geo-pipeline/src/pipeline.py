@@ -371,6 +371,25 @@ def run_pipeline() -> None:
                     {'$set': {'ndviHistory.$[last].anomalyDetected': True}},
                     array_filters=[{'last.date': new_reading['date']}],
                 )
+                # ── Sprint contexto del cultivo · supresión en establishment ──
+                # Si la parcela está marcada en fase de establecimiento, los
+                # NDVI bajos son fisiológicamente esperables (suelo desnudo
+                # dominante). Suprimimos la alerta antes de persistirla: el
+                # learned_baseline ya intenta neutralizar pero su z-score
+                # sobre 18 lecturas no basta cuando toda la historia de la
+                # parcela está en establecimiento.
+                # Mismo principio del fix de UI (inferCoverLevel en frontend
+                # + lowCoverNote en predictiveInsightService): no inducir
+                # acción donde no la hay.
+                if parcel.get('establishmentPhase') is True:
+                    logger.info(
+                        'alert_suppressed_establishment_phase',
+                        parcel=parcel_name,
+                        scene=scene_id,
+                        severity=anomaly.severity,
+                        ndvi=stats.mean,
+                    )
+                    continue  # next parcel — no alert insert
                 # Deduplicate: skip if same parcel+scene already has an open alert
                 existing = db.alerts.find_one({
                     'parcelId': parcel['_id'],

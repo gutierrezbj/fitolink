@@ -92,6 +92,11 @@ export interface NdviForecast {
   readingsUsed: number;
   // Spanish-language reason ready to drop into the morning digest
   message: string | null;
+  // Crop context (Sprint contexto del cultivo, 13-may). El frontend usa este
+  // flag para suprimir badges/pills alarmistas cuando alreadyCritical es
+  // esperable (parcela en establecimiento). El message ya viene matizado;
+  // este flag permite también atenuar la UI (color, tono).
+  establishmentPhase: boolean;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -159,6 +164,7 @@ export function computeNdviForecast(parcel: {
     confidence: 'none',
     readingsUsed: history.length,
     message: null,
+    establishmentPhase: parcel.establishmentPhase === true,
   };
 
   if (history.length === 0) {

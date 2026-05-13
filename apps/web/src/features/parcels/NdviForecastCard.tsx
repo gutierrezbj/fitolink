@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
+import { inferCoverLevel } from '@fitolink/shared';
 
 /**
  * Ola 1.5 · Pieza 1 — NDVI trend forecast card.
@@ -33,6 +34,7 @@ interface NdviForecast {
   confidence: Confidence;
   readingsUsed: number;
   message: string | null;
+  establishmentPhase: boolean;
 }
 
 interface Props {
@@ -161,15 +163,37 @@ export default function NdviForecastCard({ parcelId }: Props) {
         </div>
       </div>
 
-      {/* Pill summary */}
-      {data.alreadyCritical && (
-        <div className="px-5 py-3 border-t border-agrom-rule/30 bg-agrom-paper">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider ${toneClass}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
-            Por debajo de umbral · acción recomendada
-          </span>
-        </div>
-      )}
+      {/* Pill summary — contextualizada por nivel de cobertura del cultivo.
+          En parcelas en establecimiento (o NDVI fisiológicamente bajo) el
+          alreadyCritical es esperable, no acción real. Cambiamos el mensaje
+          de "acción recomendada" a "esperable en establecimiento" para no
+          inducir intervención innecesaria. */}
+      {data.alreadyCritical && (() => {
+        const cover = inferCoverLevel({
+          ndvi: data.currentNdvi,
+          establishmentPhase: data.establishmentPhase,
+        });
+        if (cover === 'low') {
+          return (
+            <div className="px-5 py-3 border-t border-agrom-rule/30 bg-agrom-paper">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider bg-gray-100 text-gray-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                {data.establishmentPhase
+                  ? 'En establecimiento · valor esperable'
+                  : 'Cobertura baja · contexto fisiológico'}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div className="px-5 py-3 border-t border-agrom-rule/30 bg-agrom-paper">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider ${toneClass}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+              Por debajo de umbral · acción recomendada
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 }
