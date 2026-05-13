@@ -196,6 +196,11 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 | Feedback loop IA: Alert.detectionFeatures (17 floats) snapshotea features del detector V2; retrain_from_ground_truth.py reentrena RF cuando hay >=20 alerts resueltas; fix Open-Meteo pacing 300ms para evitar HTTP 429 | ✅ Done 2026-05-13 · commit e532282 |
 | Sprint Contexto del Cultivo: helper `inferCoverLevel` en packages/shared + matización en 5 sitios (badge térmico MpcContextWidget, mensaje digest matutino, pill NdviForecastCard, diagnóstico isCritical, stressPct intra-parcela, supresión alerts pipeline V2). Cierra falsos positivos en parcelas con `establishmentPhase=true` | ✅ Done 2026-05-13 · commits a7de5b3, 30faa95, 7d912a8 |
 | Seed `closeEstablishmentFalsePositives.ts`: cierra alerts legacy del detector pre-fix en parcelas en establecimiento como `resolved · false_positive` (2 cerradas en producción · ZONA 2 pistachar Jonh) | ✅ Done 2026-05-13 · commit 322efc4 |
+| Dominio @agrom.es operativo (Hostinger): johnj/giusepper/gerardop. `DEMO_REQUEST_CC` + email del cliente pistacho migrados a `johnj@agrom.es`. SMTP sender se queda en AlertasAgrom@systemrapid.io. Giuseppe + Gerardo (comerciales) documentados sin enganchar al flujo | ✅ Done 2026-05-13 · commit e8c7f59 |
+| Identity Sweep · paleta unificada: eliminada `agrom-*` (efímera mayo). 244 ocurrencias web + 145 referencias HTML emails migradas a paleta histórica FitoLink (brand/terra/earth + grays Tailwind nativos) | ✅ Done 2026-05-13 · commits 578cf16 + c82d427 |
+| Identity Sweep · verde editorial alineado a `brand-600 #46632e` (mismo que el botón "Acceder" de la landing) en lugar de `brand-700`. Hover states bajan a `brand-700` | ✅ Done 2026-05-13 · commit c82d427 |
+| Identity Sweep · tipografía unificada: fuera Fraunces + IBM Plex Sans (efímera mayo). Sistema oficial = Instrument Serif (display) + DM Sans (body) + IBM Plex Mono (eyebrows). Google Fonts <link> reducido en index.html + email HTML | ✅ Done 2026-05-13 · commit 05b514b |
+| Identity Sprint AgroOps v0.2 en Notion: hereda de FitoLink (no de AgroM directo). Cambio comunicado a sesión paralela `gutierrezbj/AgroOPs` antes de que la sesión construya UI sobre tokens v0.1 obsoletos | ✅ Done 2026-05-13 · Notion only |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
