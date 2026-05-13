@@ -84,10 +84,10 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
         </p>
         <div className="w-12 h-[2px] bg-terra-500 mx-auto mt-3 mb-6" />
 
-        <h1 className="font-display text-3xl text-brand-600 leading-tight">
+        <h1 className="font-display text-4xl text-brand-600 leading-tight">
           {firstName ? `Bienvenido a AgroM, ${firstName}.` : 'Bienvenido a AgroM.'}
         </h1>
-        <p className="font-display italic text-gray-500 mt-2 text-lg">
+        <p className="text-gray-500 mt-2 text-base">
           Su pistachar, olivar o cereal — empezamos por sus parcelas.
         </p>
 
@@ -97,25 +97,25 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
           </p>
           <ol className="space-y-4 text-brand-900 text-sm leading-relaxed">
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-terra-500 leading-none w-5">I</span>
+              <span className="font-mono text-xs text-terra-500 leading-none w-6 pt-1 tracking-wider">01</span>
               <span>
-                <b className="font-display text-brand-600">Suba el archivo KMZ</b> de su parcela
+                <b className="text-brand-600 font-semibold">Suba el archivo KMZ</b> de su parcela
                 — el que descarga de SIGPAC, Mapping o de su técnico. También se puede dibujar
                 el perímetro a mano sobre el mapa.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-terra-500 leading-none w-5">II</span>
+              <span className="font-mono text-xs text-terra-500 leading-none w-6 pt-1 tracking-wider">02</span>
               <span>
-                <b className="font-display text-brand-600">Elija el cultivo y la provincia.</b>
+                <b className="text-brand-600 font-semibold">Elija el cultivo y la provincia.</b>{' '}
                 Nuestro sistema consulta el satélite europeo Sentinel-2 sobre sus coordenadas y
                 empieza a generar informes.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="font-display text-2xl text-terra-500 leading-none w-5">III</span>
+              <span className="font-mono text-xs text-terra-500 leading-none w-6 pt-1 tracking-wider">03</span>
               <span>
-                <b className="font-display text-brand-600">Su primer informe llega en ~5 días.</b>
+                <b className="text-brand-600 font-semibold">Su primer informe llega en ~5 días.</b>{' '}
                 Cada 5 días el satélite pasa sobre su parcela y los datos se incorporan al
                 informe diario que recibe a las 7 de la mañana.
               </span>
@@ -125,7 +125,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
 
         <button
           onClick={() => navigate('/dashboard/parcels/new')}
-          className="inline-block bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-brand-600 transition-colors shadow-sm"
+          className="inline-block bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
         >
           Subir mi primera parcela →
         </button>

@@ -226,7 +226,7 @@ export default function RegisterPage() {
         <button
           onClick={handleRegister}
           disabled={!selectedRole || !acceptedTerms || loading}
-          className="w-full bg-brand-600 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-brand-600 text-white py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>

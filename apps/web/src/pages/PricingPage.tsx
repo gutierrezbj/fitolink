@@ -99,7 +99,7 @@ export default function PricingPage() {
           </Link>
           <nav className="flex items-center gap-5 text-sm text-gray-500">
             <Link to="/" className="hover:text-brand-600">Inicio</Link>
-            <Link to="/login" className="bg-brand-600 text-white px-4 py-1.5 rounded-lg hover:bg-brand-600 transition-colors">Acceder</Link>
+            <Link to="/login" className="bg-brand-600 text-white px-4 py-1.5 rounded-lg hover:bg-brand-700 transition-colors">Acceder</Link>
           </nav>
         </div>
       </header>
@@ -215,7 +215,7 @@ export default function PricingPage() {
               </p>
               <Link
                 to="/login"
-                className="inline-block mt-6 bg-brand-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-600 transition-colors"
+                className="inline-block mt-6 bg-brand-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-700 transition-colors"
               >
                 Ver demo público →
               </Link>
@@ -328,7 +328,7 @@ export default function PricingPage() {
                 <button
                   type="submit"
                   disabled={submitting || !form.acceptedTerms || !form.name || !form.email}
-                  className="w-full bg-brand-600 text-white font-semibold py-3 rounded-lg hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-brand-600 text-white font-semibold py-3 rounded-lg hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? 'Enviando…' : 'Solicitar demo →'}
                 </button>

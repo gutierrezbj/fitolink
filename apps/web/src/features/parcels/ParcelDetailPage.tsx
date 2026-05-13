@@ -592,7 +592,7 @@ export default function ParcelDetailPage() {
               {(isCritical || isAlert) && activeAlerts.length > 0 && (
                 <button
                   onClick={() => { setServiceModal({ alert: activeAlerts[0] }); setServiceStep(1); setServiceType('inspection'); setServiceNotes(''); }}
-                  className="mt-4 bg-brand-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-brand-600 transition-colors font-medium w-full"
+                  className="mt-4 bg-brand-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors font-medium w-full"
                 >
                   Solicitar servicio de dron
                 </button>
@@ -902,7 +902,7 @@ export default function ParcelDetailPage() {
                   <button
                     onClick={() => requestServiceMutation.mutate({ alert: serviceModal.alert, type: serviceType, notes: serviceNotes })}
                     disabled={requestServiceMutation.isPending}
-                    className={`flex-1 text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium disabled:opacity-50 ${serviceType === 'inspection' ? 'bg-brand-600 hover:bg-brand-600' : 'bg-terra-500 hover:bg-terra-600'}`}
+                    className={`flex-1 text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium disabled:opacity-50 ${serviceType === 'inspection' ? 'bg-brand-600 hover:bg-brand-700' : 'bg-terra-500 hover:bg-terra-600'}`}
                   >
                     {requestServiceMutation.isPending ? 'Enviando...' : 'Confirmar solicitud'}
                   </button>

@@ -186,7 +186,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={!demoEmail.trim() || loading !== null}
-                  className="bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading === 'email' ? '...' : 'Entrar'}
                 </button>
