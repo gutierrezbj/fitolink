@@ -84,7 +84,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
         </p>
         <div className="w-12 h-[2px] bg-terra-500 mx-auto mt-3 mb-6" />
 
-        <h1 className="font-display text-3xl text-brand-700 leading-tight">
+        <h1 className="font-display text-3xl text-brand-600 leading-tight">
           {firstName ? `Bienvenido a AgroM, ${firstName}.` : 'Bienvenido a AgroM.'}
         </h1>
         <p className="font-display italic text-gray-500 mt-2 text-lg">
@@ -99,7 +99,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
             <li className="flex gap-3">
               <span className="font-display text-2xl text-terra-500 leading-none w-5">I</span>
               <span>
-                <b className="font-display text-brand-700">Suba el archivo KMZ</b> de su parcela
+                <b className="font-display text-brand-600">Suba el archivo KMZ</b> de su parcela
                 — el que descarga de SIGPAC, Mapping o de su técnico. También se puede dibujar
                 el perímetro a mano sobre el mapa.
               </span>
@@ -107,7 +107,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
             <li className="flex gap-3">
               <span className="font-display text-2xl text-terra-500 leading-none w-5">II</span>
               <span>
-                <b className="font-display text-brand-700">Elija el cultivo y la provincia.</b>
+                <b className="font-display text-brand-600">Elija el cultivo y la provincia.</b>
                 Nuestro sistema consulta el satélite europeo Sentinel-2 sobre sus coordenadas y
                 empieza a generar informes.
               </span>
@@ -115,7 +115,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
             <li className="flex gap-3">
               <span className="font-display text-2xl text-terra-500 leading-none w-5">III</span>
               <span>
-                <b className="font-display text-brand-700">Su primer informe llega en ~5 días.</b>
+                <b className="font-display text-brand-600">Su primer informe llega en ~5 días.</b>
                 Cada 5 días el satélite pasa sobre su parcela y los datos se incorporan al
                 informe diario que recibe a las 7 de la mañana.
               </span>
@@ -125,7 +125,7 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
 
         <button
           onClick={() => navigate('/dashboard/parcels/new')}
-          className="inline-block bg-brand-700 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-brand-900 transition-colors shadow-sm"
+          className="inline-block bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-brand-600 transition-colors shadow-sm"
         >
           Subir mi primera parcela →
         </button>
@@ -256,7 +256,7 @@ export default function DashboardHome() {
             <h2 className="text-sm font-semibold text-gray-700">Mapa de Parcelas</h2>
             <button
               onClick={() => navigate('/dashboard/parcels')}
-              className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+              className="text-xs text-brand-600 hover:text-brand-600 font-medium"
             >
               Gestionar →
             </button>
@@ -295,7 +295,7 @@ export default function DashboardHome() {
                 <h2 className="text-sm font-semibold text-gray-700">Parcela mas delicada</h2>
                 <button
                   onClick={() => navigate(`/dashboard/parcels/${worstParcel._id}`)}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                  className="text-xs text-brand-600 hover:text-brand-600 font-medium"
                 >
                   Ver →
                 </button>
@@ -326,7 +326,7 @@ export default function DashboardHome() {
               </h2>
               <button
                 onClick={() => navigate('/dashboard/alerts')}
-                className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                className="text-xs text-brand-600 hover:text-brand-600 font-medium"
               >
                 Ver todas →
               </button>
@@ -352,7 +352,7 @@ export default function DashboardHome() {
                 </div>
                 <button
                   onClick={() => navigate('/dashboard/alerts')}
-                  className="w-full text-xs text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-300 bg-brand-50 hover:bg-brand-100 py-2 rounded-lg text-center transition-colors font-medium mt-2"
+                  className="w-full text-xs text-brand-600 hover:text-brand-600 border border-brand-200 hover:border-brand-300 bg-brand-50 hover:bg-brand-100 py-2 rounded-lg text-center transition-colors font-medium mt-2"
                 >
                   Ver historial completo →
                 </button>

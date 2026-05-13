@@ -57,7 +57,7 @@ export default function PestAdvisoriesCard({ parcelId }: Props) {
   return (
     <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
-      <div className="bg-brand-700 px-4 py-2.5 flex items-center justify-between">
+      <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
           § AVISOS FITOSANITARIOS EN SU COMARCA
         </p>
@@ -86,7 +86,7 @@ export default function PestAdvisoriesCard({ parcelId }: Props) {
                 <span className={`w-1 flex-shrink-0 ${tone.strip}`} />
                 <div className="flex-1 px-4 py-3">
                   <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-700">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-600">
                       <span className="text-terra-500">§</span>{' '}
                       {adv.pestName}
                       {adv.scientificName && (
@@ -112,7 +112,7 @@ export default function PestAdvisoriesCard({ parcelId }: Props) {
                   {(adv.sourceRef || adv.sourceUrl) && (
                     <p className="font-mono text-[10px] uppercase tracking-wider text-gray-500 mt-2">
                       {adv.sourceUrl ? (
-                        <a href={adv.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-700 transition-colors underline-offset-2 hover:underline">
+                        <a href={adv.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 transition-colors underline-offset-2 hover:underline">
                           {adv.source}{adv.sourceRef ? ` · ${adv.sourceRef}` : ''} ↗
                         </a>
                       ) : (

@@ -94,7 +94,7 @@ export default function WeatherEventsCard({ parcelId }: Props) {
   return (
     <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
-      <div className="bg-brand-700 px-4 py-2.5 flex items-center justify-between">
+      <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
           § METEO 7 DÍAS — EVENTOS A VIGILAR
         </p>
@@ -124,7 +124,7 @@ export default function WeatherEventsCard({ parcelId }: Props) {
               <span className={`w-1 flex-shrink-0 ${TONE[event.severity].strip}`} />
               <div className="flex-1 px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-700 flex items-center gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-600 flex items-center gap-2">
                     <span className="text-base text-terra-500 leading-none">{TYPE_GLYPH[event.type]}</span>
                     {TYPE_LABEL[event.type]}
                     <span className="text-gray-500">·</span>

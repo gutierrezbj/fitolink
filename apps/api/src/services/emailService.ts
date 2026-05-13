@@ -50,7 +50,7 @@ const STAGING_BASE = 'https://fitolink.systemrapid.io';
 // código de templates; solo cambian los valores hex.
 
 const AGROM_PALETTE = {
-  deep:    '#354b23', // brand-700 · verde topographic FitoLink
+  deep:    '#46632e', // brand-600 · verde topographic FitoLink (mismo que el botón "Acceder" de la landing)
   terra:   '#d45220', // terra-500 · naranja vivo FitoLink
   ink:     '#18230f', // brand-900 · texto principal verde casi negro
   paper:   '#fdf8f0', // earth-50  · fondo cálido tierra

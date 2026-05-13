@@ -28,7 +28,7 @@ export default function TermsPage() {
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
           § AGROM · FITOLINK
         </p>
-        <h1 className="font-display text-4xl text-brand-700 mt-3 leading-tight">
+        <h1 className="font-display text-4xl text-brand-600 mt-3 leading-tight">
           Términos y Condiciones de Uso
         </h1>
         <p className="font-display italic text-gray-500 mt-2">
@@ -37,7 +37,7 @@ export default function TermsPage() {
         <div className="w-12 h-[2px] bg-terra-500 mt-6 mb-10" />
 
         <section className="prose prose-agrom max-w-none text-brand-900 leading-relaxed">
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 01 · Quiénes somos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 01 · Quiénes somos</h2>
           <p>
             AgroM · FitoLink (en adelante, &laquo;el Servicio&raquo;) es una plataforma
             de inteligencia agraria de precisión operada por SystemRapid SL. El
@@ -46,12 +46,12 @@ export default function TermsPage() {
           </p>
           <p>
             Para cualquier consulta sobre estos términos, escribe a{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-600 underline">
               juang@systemrapid.io
             </a>.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 02 · Qué hace el Servicio</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 02 · Qué hace el Servicio</h2>
           <p>
             El Servicio procesa datos satelitales (Sentinel-2 de Copernicus, Landsat
             y otros) y meteorológicos sobre las parcelas que el usuario registra,
@@ -64,7 +64,7 @@ export default function TermsPage() {
             trazabilidad digital y emitir documentación para cumplimiento PAC.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 03 · Alta y uso de la cuenta</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 03 · Alta y uso de la cuenta</h2>
           <p>
             Para usar el Servicio es necesario crear una cuenta facilitando un email
             válido y un nombre. El usuario es responsable de la veracidad de los
@@ -76,7 +76,7 @@ export default function TermsPage() {
             comercialmente en la plataforma.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 04 · Uso aceptable</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 04 · Uso aceptable</h2>
           <p>El usuario se compromete a no utilizar el Servicio para:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li>Registrar parcelas sobre las que no tiene derecho de uso o propiedad.</li>
@@ -85,7 +85,7 @@ export default function TermsPage() {
             <li>Cualquier actividad ilícita o contraria a la normativa agraria, fitosanitaria o de protección de datos vigente.</li>
           </ul>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 05 · Naturaleza de los datos satelitales</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 05 · Naturaleza de los datos satelitales</h2>
           <p>
             El Servicio se apoya en proveedores externos de datos satelitales
             (Copernicus, Microsoft Planetary Computer) y meteorológicos
@@ -102,7 +102,7 @@ export default function TermsPage() {
             información del Servicio.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 06 · Modelo económico</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 06 · Modelo económico</h2>
           <p>
             La monitorización satelital y los informes diarios se ofrecen de forma
             gratuita durante la fase de validación del Servicio. La aplicación
@@ -115,11 +115,11 @@ export default function TermsPage() {
             preaviso de 30 días, comunicado por email a la dirección registrada.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 07 · Baja</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 07 · Baja</h2>
           <p>
             El usuario puede dar de baja su cuenta en cualquier momento escribiendo
             a{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-600 underline">
               juang@systemrapid.io
             </a>{' '}
             o respondiendo &laquo;BAJA&raquo; al informe matutino diario.
@@ -131,7 +131,7 @@ export default function TermsPage() {
             anterior.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 08 · Propiedad intelectual</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 08 · Propiedad intelectual</h2>
           <p>
             Los algoritmos, modelos de detección, interfaces y materiales gráficos
             del Servicio son propiedad de SystemRapid SL. Los datos brutos
@@ -146,7 +146,7 @@ export default function TermsPage() {
             del Servicio.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 09 · Limitación de responsabilidad</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 09 · Limitación de responsabilidad</h2>
           <p>
             En la medida permitida por la ley, la responsabilidad de SystemRapid SL
             por daños derivados del uso del Servicio queda limitada al importe
@@ -155,7 +155,7 @@ export default function TermsPage() {
             supuestos de dolo o negligencia grave.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 10 · Modificación de los términos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 10 · Modificación de los términos</h2>
           <p>
             Estos términos pueden actualizarse para reflejar cambios en el
             Servicio o en la normativa. Las modificaciones sustanciales se
@@ -164,7 +164,7 @@ export default function TermsPage() {
             nuevos términos implica su aceptación.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 11 · Ley aplicable</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 11 · Ley aplicable</h2>
           <p>
             Estos términos se rigen por la legislación española. Para cualquier
             controversia, las partes se someten a los Juzgados y Tribunales de la
@@ -174,10 +174,10 @@ export default function TermsPage() {
         </section>
 
         <div className="mt-16 border-t border-earth-300/40 pt-6 flex justify-between items-center text-sm">
-          <Link to="/" className="text-brand-700 hover:underline">
+          <Link to="/" className="text-brand-600 hover:underline">
             ← Volver al inicio
           </Link>
-          <Link to="/privacy" className="text-brand-700 hover:underline">
+          <Link to="/privacy" className="text-brand-600 hover:underline">
             Política de privacidad →
           </Link>
         </div>

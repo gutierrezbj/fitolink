@@ -68,7 +68,7 @@ export default function NdviForecastCard({ parcelId }: Props) {
   if (isLoading || !data) {
     return (
       <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
-        <div className="bg-brand-700 px-4 py-2.5">
+        <div className="bg-brand-600 px-4 py-2.5">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
             § PROYECCIÓN — ANÁLISIS PREDICTIVO
           </p>
@@ -98,7 +98,7 @@ export default function NdviForecastCard({ parcelId }: Props) {
   return (
     <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
-      <div className="bg-brand-700 px-4 py-2.5">
+      <div className="bg-brand-600 px-4 py-2.5">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
           § PROYECCIÓN — ANÁLISIS PREDICTIVO
         </p>

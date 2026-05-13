@@ -84,7 +84,7 @@ export default function DashboardLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-brand-50 text-brand-700'
+                    ? 'bg-brand-50 text-brand-600'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
@@ -105,7 +105,7 @@ export default function DashboardLayout() {
             {user.avatar ? (
               <img src={user.avatar} alt="" className="w-8 h-8 rounded-full" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold text-sm">
+              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-semibold text-sm">
                 {user.name[0]}
               </div>
             )}

@@ -135,9 +135,9 @@ export default function LoginPage() {
 
         <p className="text-xs text-gray-500 mb-6 leading-relaxed">
           Al acceder, aceptas los{' '}
-          <Link to="/terms" className="text-brand-700 hover:underline">términos de uso</Link>
+          <Link to="/terms" className="text-brand-600 hover:underline">términos de uso</Link>
           {' y la '}
-          <Link to="/privacy" className="text-brand-700 hover:underline">política de privacidad</Link>
+          <Link to="/privacy" className="text-brand-600 hover:underline">política de privacidad</Link>
           {' de AgroM FitoLink.'}
         </p>
 
@@ -180,13 +180,13 @@ export default function LoginPage() {
                     setDemoEmailError(null);
                   }}
                   placeholder="tu@email.com"
-                  className="flex-1 px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-700 focus:border-brand-700 outline-none"
+                  className="flex-1 px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-600 focus:border-brand-600 outline-none"
                   disabled={loading !== null}
                 />
                 <button
                   type="submit"
                   disabled={!demoEmail.trim() || loading !== null}
-                  className="bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading === 'email' ? '...' : 'Entrar'}
                 </button>

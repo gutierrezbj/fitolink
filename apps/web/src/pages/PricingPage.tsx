@@ -98,8 +98,8 @@ export default function PricingPage() {
             <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-8 w-auto" />
           </Link>
           <nav className="flex items-center gap-5 text-sm text-gray-500">
-            <Link to="/" className="hover:text-brand-700">Inicio</Link>
-            <Link to="/login" className="bg-brand-700 text-white px-4 py-1.5 rounded-lg hover:bg-brand-900 transition-colors">Acceder</Link>
+            <Link to="/" className="hover:text-brand-600">Inicio</Link>
+            <Link to="/login" className="bg-brand-600 text-white px-4 py-1.5 rounded-lg hover:bg-brand-600 transition-colors">Acceder</Link>
           </nav>
         </div>
       </header>
@@ -110,7 +110,7 @@ export default function PricingPage() {
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
             § AGROM · MODELO COMERCIAL
           </p>
-          <h1 className="font-display text-4xl md:text-5xl text-brand-700 mt-3 leading-tight">
+          <h1 className="font-display text-4xl md:text-5xl text-brand-600 mt-3 leading-tight">
             Primero le demostramos el valor.
           </h1>
           <p className="font-display italic text-xl text-gray-500 mt-3">
@@ -126,7 +126,7 @@ export default function PricingPage() {
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
               § 01 · MONITORIZACIÓN
             </p>
-            <h2 className="font-display text-3xl text-brand-700 mt-3">Gratis</h2>
+            <h2 className="font-display text-3xl text-brand-600 mt-3">Gratis</h2>
             <p className="font-display italic text-gray-500 text-sm">durante la fase de validación</p>
             <div className="w-10 h-[2px] bg-terra-500 my-5" />
 
@@ -159,7 +159,7 @@ export default function PricingPage() {
           </div>
 
           {/* Drone — sales-led */}
-          <div className="bg-brand-700 text-white rounded-2xl p-8 relative overflow-hidden">
+          <div className="bg-brand-600 text-white rounded-2xl p-8 relative overflow-hidden">
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
               § 02 · APLICACIÓN FITOSANITARIA
             </p>
@@ -204,7 +204,7 @@ export default function PricingPage() {
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-terra-500">
                 § MENSAJE RECIBIDO
               </p>
-              <h2 className="font-display text-3xl text-brand-700 mt-3">Gracias.</h2>
+              <h2 className="font-display text-3xl text-brand-600 mt-3">Gracias.</h2>
               <p className="font-display italic text-gray-500 mt-2 text-lg">
                 Te contactamos en menos de 24 horas.
               </p>
@@ -215,7 +215,7 @@ export default function PricingPage() {
               </p>
               <Link
                 to="/login"
-                className="inline-block mt-6 bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-900 transition-colors"
+                className="inline-block mt-6 bg-brand-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-600 transition-colors"
               >
                 Ver demo público →
               </Link>
@@ -225,7 +225,7 @@ export default function PricingPage() {
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
                 § HABLAMOS ANTES
               </p>
-              <h2 className="font-display text-2xl md:text-3xl text-brand-700 mt-3">
+              <h2 className="font-display text-2xl md:text-3xl text-brand-600 mt-3">
                 Cuéntanos sobre tu explotación.
               </h2>
               <p className="text-gray-500 text-sm mt-2">
@@ -309,12 +309,12 @@ export default function PricingPage() {
                         setForm({ ...form, acceptedTerms: e.target.checked });
                         if (e.target.checked) setError('');
                       }}
-                      className="mt-1 w-4 h-4 accent-brand-700 cursor-pointer flex-shrink-0"
+                      className="mt-1 w-4 h-4 accent-brand-600 cursor-pointer flex-shrink-0"
                     />
                     <span className="text-sm text-brand-900 leading-snug">
                       He leído y acepto los{' '}
-                      <Link to="/terms" target="_blank" rel="noopener" className="text-brand-700 underline">Términos de Uso</Link>{' y la '}
-                      <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-700 underline">Política de Privacidad</Link>.
+                      <Link to="/terms" target="_blank" rel="noopener" className="text-brand-600 underline">Términos de Uso</Link>{' y la '}
+                      <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-600 underline">Política de Privacidad</Link>.
                     </span>
                   </label>
                 </div>
@@ -328,14 +328,14 @@ export default function PricingPage() {
                 <button
                   type="submit"
                   disabled={submitting || !form.acceptedTerms || !form.name || !form.email}
-                  className="w-full bg-brand-700 text-white font-semibold py-3 rounded-lg hover:bg-brand-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-brand-600 text-white font-semibold py-3 rounded-lg hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? 'Enviando…' : 'Solicitar demo →'}
                 </button>
 
                 <p className="text-[11px] text-gray-500 text-center">
                   O escríbenos directamente a{' '}
-                  <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
+                  <a href="mailto:juang@systemrapid.io" className="text-brand-600 underline">
                     juang@systemrapid.io
                   </a>
                 </p>
@@ -345,7 +345,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-12 text-center text-sm">
-          <Link to="/" className="text-brand-700 hover:underline">
+          <Link to="/" className="text-brand-600 hover:underline">
             ← Volver al inicio
           </Link>
         </div>
@@ -357,9 +357,9 @@ export default function PricingPage() {
             AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN · 2026
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            <Link to="/terms" className="hover:text-brand-700 mx-2">Términos</Link>
+            <Link to="/terms" className="hover:text-brand-600 mx-2">Términos</Link>
             ·
-            <Link to="/privacy" className="hover:text-brand-700 mx-2">Privacidad</Link>
+            <Link to="/privacy" className="hover:text-brand-600 mx-2">Privacidad</Link>
           </p>
         </div>
       </footer>

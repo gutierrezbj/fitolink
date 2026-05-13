@@ -137,7 +137,7 @@ export default function RegisterPage() {
                 onClick={() => setSelectedRole(role.value)}
                 className={`w-full text-left p-4 rounded-lg border transition-all flex items-start gap-3 ${
                   isActive
-                    ? 'border-brand-700 bg-earth-100/40'
+                    ? 'border-brand-600 bg-earth-100/40'
                     : 'border-earth-300/40 hover:border-earth-300 hover:bg-earth-50'
                 }`}
               >
@@ -170,7 +170,7 @@ export default function RegisterPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+34 612 345 678"
-            className="w-full px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-700 focus:border-brand-700 outline-none"
+            className="w-full px-3 py-2 border border-earth-300/40 rounded-lg text-sm focus:ring-2 focus:ring-brand-600 focus:border-brand-600 outline-none"
           />
           <p className="text-[10px] text-gray-500 mt-1.5 leading-relaxed">
             Sólo se usa para avisos críticos de campo. Nunca para marketing.
@@ -187,15 +187,15 @@ export default function RegisterPage() {
                 setAcceptedTerms(e.target.checked);
                 if (e.target.checked) setError('');
               }}
-              className="mt-1 w-4 h-4 text-brand-700 border-earth-300/60 rounded focus:ring-brand-700 accent-brand-700 cursor-pointer flex-shrink-0"
+              className="mt-1 w-4 h-4 text-brand-600 border-earth-300/60 rounded focus:ring-brand-600 accent-brand-600 cursor-pointer flex-shrink-0"
             />
             <span className="text-sm text-brand-900 leading-snug">
               He leído y acepto los{' '}
-              <Link to="/terms" target="_blank" rel="noopener" className="text-brand-700 underline font-medium">
+              <Link to="/terms" target="_blank" rel="noopener" className="text-brand-600 underline font-medium">
                 Términos de Uso
               </Link>{' '}
               y la{' '}
-              <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-700 underline font-medium">
+              <Link to="/privacy" target="_blank" rel="noopener" className="text-brand-600 underline font-medium">
                 Política de Privacidad
               </Link>{' '}
               de AgroM FitoLink.
@@ -226,7 +226,7 @@ export default function RegisterPage() {
         <button
           onClick={handleRegister}
           disabled={!selectedRole || !acceptedTerms || loading}
-          className="w-full bg-brand-700 text-white py-3 rounded-lg font-semibold hover:bg-brand-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-brand-600 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>

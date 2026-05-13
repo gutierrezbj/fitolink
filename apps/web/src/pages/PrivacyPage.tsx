@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500">
           § AGROM · FITOLINK
         </p>
-        <h1 className="font-display text-4xl text-brand-700 mt-3 leading-tight">
+        <h1 className="font-display text-4xl text-brand-600 mt-3 leading-tight">
           Política de Privacidad
         </h1>
         <p className="font-display italic text-gray-500 mt-2">
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
         <div className="w-12 h-[2px] bg-terra-500 mt-6 mb-10" />
 
         <section className="text-brand-900 leading-relaxed">
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 01 · Responsable del tratamiento</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 01 · Responsable del tratamiento</h2>
           <p>
             SystemRapid SL (en adelante, &laquo;AgroM&raquo;) es la entidad
             responsable del tratamiento de los datos personales recogidos a
@@ -48,12 +48,12 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-3">
             Contacto para consultas sobre privacidad y ejercicio de derechos:{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-600 underline">
               juang@systemrapid.io
             </a>
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 02 · Qué datos tratamos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 02 · Qué datos tratamos</h2>
           <p>Los datos que recogemos directamente del usuario:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Datos identificativos</b>: nombre, email, teléfono (opcional), avatar de Google (opcional).</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             <li><b>Datos técnicos mínimos</b>: dirección IP en logs del servidor, fecha y hora de acceso. Sin tracking ni huella digital del navegador.</li>
           </ul>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 03 · Para qué los usamos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 03 · Para qué los usamos</h2>
           <ul className="list-disc pl-6 mt-2 space-y-2">
             <li><b>Prestar el Servicio</b>: procesar imágenes satelitales sobre las parcelas, generar alertas, enviar el informe matutino diario.</li>
             <li><b>Comunicación operativa</b>: avisos críticos de salud del cultivo, confirmación de aplicaciones drone, baja del Servicio.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             comercial ni los vendemos a terceros.</b>
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 04 · Base legal</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 04 · Base legal</h2>
           <p>El tratamiento se ampara en:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Ejecución del contrato</b>: para todo lo necesario para prestar el Servicio que el usuario ha contratado al darse de alta.</li>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
             <li><b>Interés legítimo</b>: para la seguridad de la plataforma (logs técnicos, prevención de abuso).</li>
           </ul>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 05 · Con quién compartimos los datos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 05 · Con quién compartimos los datos</h2>
           <p>
             AgroM no comparte los datos del usuario con terceros para fines
             comerciales. Los proveedores tecnológicos que procesan datos en
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
             de datos personales identificativos.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 06 · Cuánto tiempo conservamos los datos</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 06 · Cuánto tiempo conservamos los datos</h2>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Datos de la cuenta</b>: mientras la cuenta esté activa, más 4 años tras la baja para cumplir con obligaciones legales (registros PAC y fiscales).</li>
             <li><b>Datos satelitales</b>: serie temporal Sentinel-2 desde el alta de la parcela + contexto histórico MODIS de 5 años para la zona geográfica donde se ubica.</li>
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
             obligatoria.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 07 · Derechos del usuario</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 07 · Derechos del usuario</h2>
           <p>El usuario puede ejercer en cualquier momento los siguientes derechos:</p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li><b>Acceso</b>: solicitar copia de los datos que tenemos sobre él.</li>
@@ -131,13 +131,13 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-3">
             Para ejercer cualquiera de estos derechos, escribe a{' '}
-            <a href="mailto:juang@systemrapid.io" className="text-brand-700 underline">
+            <a href="mailto:juang@systemrapid.io" className="text-brand-600 underline">
               juang@systemrapid.io
             </a>{' '}
             indicando claramente cuál ejerces. Respondemos en un plazo máximo de 30 días.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 08 · Cookies</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 08 · Cookies</h2>
           <p>
             FitoLink utiliza únicamente cookies técnicas estrictamente necesarias
             para el funcionamiento de la sesión (token de autenticación). No
@@ -145,7 +145,7 @@ export default function PrivacyPage() {
             compartimos tu actividad con plataformas de tracking.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 09 · Seguridad</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 09 · Seguridad</h2>
           <p>
             Los datos se transmiten cifrados en tránsito (HTTPS/TLS) y se
             almacenan en una base de datos con acceso restringido a personal
@@ -157,7 +157,7 @@ export default function PrivacyPage() {
             informaremos sin demora indebida según establece el RGPD.
           </p>
 
-          <h2 className="font-display text-2xl text-brand-700 mt-10 mb-3">§ 10 · Cambios en esta política</h2>
+          <h2 className="font-display text-2xl text-brand-600 mt-10 mb-3">§ 10 · Cambios en esta política</h2>
           <p>
             Si modificamos esta política, te avisaremos por email con al menos
             30 días de antelación cuando los cambios sean sustanciales.
@@ -165,10 +165,10 @@ export default function PrivacyPage() {
         </section>
 
         <div className="mt-16 border-t border-earth-300/40 pt-6 flex justify-between items-center text-sm">
-          <Link to="/terms" className="text-brand-700 hover:underline">
+          <Link to="/terms" className="text-brand-600 hover:underline">
             ← Términos y condiciones
           </Link>
-          <Link to="/" className="text-brand-700 hover:underline">
+          <Link to="/" className="text-brand-600 hover:underline">
             Volver al inicio →
           </Link>
         </div>
