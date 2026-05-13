@@ -7,7 +7,7 @@ import type { UserRole } from '@fitolink/shared';
 /**
  * RegisterPage — paso final del alta tras OAuth Google.
  *
- * Identidad visual AgroM (paleta + Fraunces + Plex Sans/Mono). Flujo:
+ * Identidad visual FitoLink (paleta brand/terra/earth + Instrument Serif + DM Sans + Plex Mono). Flujo:
  * el usuario clicó "Iniciar sesión con Google" en LoginPage, no existe
  * en nuestra BD, /auth/login/google falló → redirige aquí con la
  * credential. Aquí elige rol, acepta T&C+privacidad y se crea cuenta.

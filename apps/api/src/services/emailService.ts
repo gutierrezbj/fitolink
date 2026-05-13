@@ -64,10 +64,12 @@ const AGROM_PALETTE = {
   info:    '#64748b', // slate-500 · informational
 } as const;
 
-// AgroM-approved type stack with email-safe fallbacks (Outlook desktop
-// can't load custom fonts, so fallbacks must carry the same character).
-const FONT_DISPLAY = "'Fraunces', 'Georgia', 'Cambria', serif";
-const FONT_BODY = "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+// FitoLink type stack para emails — alineado con la LandingPage del repo:
+// Instrument Serif (display), DM Sans (body), IBM Plex Mono (eyebrows técnicos).
+// Email-safe fallbacks: Outlook desktop no carga custom fonts, así que los
+// fallbacks (Georgia, system sans, Courier) cargan el mismo carácter editorial.
+const FONT_DISPLAY = "'Instrument Serif', 'Georgia', serif";
+const FONT_BODY = "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const FONT_MONO = "'IBM Plex Mono', 'SF Mono', 'Consolas', 'Courier New', monospace";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -200,7 +202,7 @@ function renderAlertEmail(p: AlertEmailPayload): string {
 <!-- Email-safe font import (Gmail picks up, Outlook desktop falls back to serif/sans system) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:${c.paper};font-family:${FONT_BODY};color:${c.ink};">
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${c.paper};padding:28px 12px;">

@@ -63,13 +63,18 @@ export default {
         //   agrom-info   → slate-500
       },
       fontFamily: {
-        sans:  ['DM Sans', 'system-ui', 'sans-serif'],
-        serif: ['Instrument Serif', 'Georgia', 'serif'],
-        // Editorial type stack (Identity Sprint AgroM v0.1, mayo · se mantiene
-        // porque la decisión fue retirar paleta agrom-* pero conservar la
-        // tipografía editorial — Fraunces/Plex se ven bien con la paleta FitoLink).
-        display: ['Fraunces', 'Georgia', 'Cambria', 'serif'],
-        body:    ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        // FitoLink como base del ecosistema (decisión JuanCho 13-may-2026).
+        // Las 3 familias activas son las que usa la LandingPage histórica.
+        sans:    ['DM Sans', 'system-ui', 'sans-serif'],
+        serif:   ['Instrument Serif', 'Georgia', 'serif'],
+        // Aliases editoriales para no tocar las 97 referencias `font-display`
+        // y `font-mono` en componentes (login, pricing, terms, parcel badges,
+        // emails). `font-display` ahora apunta a Instrument Serif. `font-body`
+        // y body global por defecto = DM Sans.
+        display: ['Instrument Serif', 'Georgia', 'serif'],
+        body:    ['DM Sans', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        // Mono se conserva (LandingPage no usa mono pero los eyebrows
+        // técnicos `§ 01 · ESTADO DE SUS PARCELAS` la necesitan).
         mono:    ['"IBM Plex Mono"', '"SF Mono"', 'Consolas', 'monospace'],
       },
     },
