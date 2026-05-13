@@ -192,6 +192,10 @@ Service: `apps/api/src/services/emailService.ts` (Gmail SMTP nodemailer alineado
 | Sprint Alta usuarios · Ronda 1: T&C + Privacidad + checkbox /register + audit trail RGPD + cooperative en role picker | ✅ Done 2026-05-12 · commit 73e073c |
 | Sprint Alta usuarios · Ronda 2: Empty state DashboardHome + aviso "5 días" ParcelDetailPage + emails bienvenida + email primera parcela (idempotente) | ✅ Done 2026-05-12 · commit 44d3640 |
 | Sprint Alta usuarios · Ronda 3: PricingPage modelo C (gratis monitor + dron €/ha sales-led) + formulario "Solicitar demo" → POST /contact/demo-request → email a JuanCho + cc Jonh con reply-to al prospect | ✅ Done 2026-05-12 · commit 5b3c15f |
+| Sweep Honestidad: 26 afirmaciones falsas corregidas en copy comercial (PricingPage + LandingPage + ServicesPage + PrivacyPage + docs/comercial). Riesgo legal de publicidad engañosa eliminado. Regla CRITICAL_no_inventar establecida en memoria del proyecto | ✅ Done 2026-05-12 · commit a4b3281 |
+| Feedback loop IA: Alert.detectionFeatures (17 floats) snapshotea features del detector V2; retrain_from_ground_truth.py reentrena RF cuando hay >=20 alerts resueltas; fix Open-Meteo pacing 300ms para evitar HTTP 429 | ✅ Done 2026-05-13 · commit e532282 |
+| Sprint Contexto del Cultivo: helper `inferCoverLevel` en packages/shared + matización en 5 sitios (badge térmico MpcContextWidget, mensaje digest matutino, pill NdviForecastCard, diagnóstico isCritical, stressPct intra-parcela, supresión alerts pipeline V2). Cierra falsos positivos en parcelas con `establishmentPhase=true` | ✅ Done 2026-05-13 · commits a7de5b3, 30faa95, 7d912a8 |
+| Seed `closeEstablishmentFalsePositives.ts`: cierra alerts legacy del detector pre-fix en parcelas en establecimiento como `resolved · false_positive` (2 cerradas en producción · ZONA 2 pistachar Jonh) | ✅ Done 2026-05-13 · commit 322efc4 |
 
 ## Deploy
 - **URL:** https://fitolink.systemrapid.io/login?demo
