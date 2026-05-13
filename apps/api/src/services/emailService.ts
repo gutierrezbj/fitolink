@@ -965,7 +965,7 @@ export interface DemoRequestPayload {
 }
 
 const DEMO_REQUEST_TO = 'gutierrezbj@gmail.com';
-const DEMO_REQUEST_CC = 'jawerjohn1993@gmail.com';
+const DEMO_REQUEST_CC = 'johnj@agrom.es';
 
 /**
  * Notifica al equipo comercial (JuanCho + Jonh) que ha llegado un lead.
