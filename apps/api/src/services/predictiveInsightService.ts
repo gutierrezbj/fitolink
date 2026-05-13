@@ -1,5 +1,6 @@
 import { Parcel, type INdviReading } from '../models/Parcel.js';
 import { AppError } from '../utils/AppError.js';
+import { inferCoverLevel, lowCoverNote, cropLabel } from '@fitolink/shared';
 
 /**
  * Predictive insights — Ola 1.5 · Pieza 1.
@@ -132,6 +133,8 @@ export function computeNdviForecast(parcel: {
   name: string;
   cropType: string;
   ndviHistory?: INdviReading[];
+  /** Si true, la mensajería evita imputar alarmas a NDVI bajos esperables. */
+  establishmentPhase?: boolean;
 }): NdviForecast {
   const history = (parcel.ndviHistory ?? [])
     .filter((r) => typeof r.mean === 'number' && r.date)
@@ -215,10 +218,29 @@ export function computeNdviForecast(parcel: {
   else if (history.length >= 4) confidence = 'medium';
   else if (history.length >= MIN_FOR_FORECAST) confidence = 'low';
 
-  // Compose the Spanish message (Tipo A friendly, no NDVI/NDRE jargon)
+  // Compose the Spanish message (Tipo A friendly, no NDVI/NDRE jargon).
+  //
+  // Contexto del cultivo: antes de imputar "umbral cruzado" o "revisar en
+  // persona", chequear cobertura vegetal real. Una parcela de pistachar
+  // recién plantada cruza el umbral de cualquier modo — el mensaje
+  // alarmista sería falso positivo. Mismo principio que el badge térmico
+  // matizado del MpcContextWidget.
+  const cover = inferCoverLevel({
+    ndvi: currentNdvi,
+    establishmentPhase: parcel.establishmentPhase,
+  });
+
   let message: string | null = null;
-  if (alreadyCritical) {
-    message = `${parcel.name} está por debajo del umbral normal para ${parcel.cropType} en este mes. Revisar en persona o programar inspección dron.`;
+  if (cover === 'low' && (alreadyCritical || trend === 'descending')) {
+    // Cobertura baja por establecimiento o NDVI fisiológicamente bajo →
+    // los umbrales absolutos no aplican. Mensaje neutro contextual.
+    message = lowCoverNote({
+      parcelName: parcel.name,
+      cropType: parcel.cropType,
+      establishmentPhase: parcel.establishmentPhase,
+    });
+  } else if (alreadyCritical) {
+    message = `${parcel.name} está por debajo del umbral normal para el ${cropLabel(parcel.cropType)} en este mes. Revisar en persona o programar inspección dron.`;
   } else if (confidence === 'none' || confidence === 'low') {
     message = `Aún pocas lecturas para proyectar tendencia (${history.length}). Disponible a partir de la 4ª lectura del pipeline.`;
   } else if (trend === 'descending' && projectedCriticalDate) {
@@ -229,7 +251,7 @@ export function computeNdviForecast(parcel: {
   } else if (trend === 'ascending') {
     message = `${parcel.name} en mejora — recuperando vigor respecto a la última quincena.`;
   } else {
-    message = `${parcel.name} estable, dentro del rango habitual para ${parcel.cropType} en este mes.`;
+    message = `${parcel.name} estable, dentro del rango habitual para el ${cropLabel(parcel.cropType)} en este mes.`;
   }
 
   return {
@@ -258,7 +280,7 @@ export function computeNdviForecast(parcel: {
  */
 export async function getNdviForecastForParcel(parcelId: string): Promise<NdviForecast> {
   const parcel = await Parcel.findById(parcelId)
-    .select('_id name cropType ndviHistory')
+    .select('_id name cropType ndviHistory establishmentPhase')
     .lean();
   if (!parcel) throw AppError.notFound('Parcela');
   return computeNdviForecast(parcel as Parameters<typeof computeNdviForecast>[0]);
@@ -270,7 +292,7 @@ export async function getNdviForecastForParcel(parcelId: string): Promise<NdviFo
  */
 export async function getNdviForecastsForOwner(ownerId: string): Promise<NdviForecast[]> {
   const parcels = await Parcel.find({ ownerId, isActive: true })
-    .select('_id name cropType ndviHistory')
+    .select('_id name cropType ndviHistory establishmentPhase')
     .lean();
   return parcels.map((p) =>
     computeNdviForecast(p as Parameters<typeof computeNdviForecast>[0]),

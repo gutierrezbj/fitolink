@@ -4,7 +4,13 @@
  * Surfaces the long-term context that distinguishes FitoLink from a
  * "this week's NDVI" service: 5-year MODIS baseline + climate normals +
  * 30-day actual weather anomaly. All free, all global.
+ *
+ * El badge térmico se matiza con `inferCoverLevel` para no etiquetar
+ * "Estrés crítico" a parcelas con suelo dominantemente expuesto
+ * (establecimiento, NDVI bajo): allí un delta LST-aire alto es física
+ * del suelo desnudo al sol, no estrés del cultivo.
  */
+import { inferCoverLevel, cropLabel } from '@fitolink/shared';
 
 type ModisMonth = { month: number; mean: number; std: number; n: number };
 type ClimateMonth = {
@@ -67,25 +73,6 @@ interface Props {
 }
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-/** Cultivos en castellano para el badge contextual. Si falta uno, cae al cropType crudo. */
-const CROP_LABELS: Record<string, string> = {
-  olivo: 'olivar',
-  vinedo: 'viñedo',
-  pistacho: 'pistachar',
-  almendro: 'almendro',
-  cereal: 'cereal',
-  citrico: 'cítrico',
-  frutal: 'frutal',
-  hortaliza: 'hortícola',
-  girasol: 'girasol',
-  maiz: 'maíz',
-  algodon: 'algodón',
-  arroz: 'arrozal',
-  remolacha: 'remolacha',
-  patata: 'patata',
-  leguminosa: 'leguminosa',
-};
 
 const DROUGHT_STYLE: Record<string, { label: string; bg: string; text: string; border: string }> = {
   none:     { label: 'Normal',         bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200' },
@@ -246,21 +233,18 @@ export default function MpcContextWidget({
         {thermal && (() => {
           const delta = thermal.lstDeltaAirC;
           let badge: { label: string; bg: string; text: string; border: string } | null = null;
-          const cropLabel = cropType ? ` ${CROP_LABELS[cropType] ?? cropType}` : '';
-
-          const lowCover = (currentNdvi !== null && currentNdvi !== undefined && currentNdvi < 0.30) || establishmentPhase === true;
-          const partialCover = !lowCover && currentNdvi !== null && currentNdvi !== undefined && currentNdvi < 0.45;
+          const cover = inferCoverLevel({ ndvi: currentNdvi, establishmentPhase });
 
           if (delta !== null && delta !== undefined) {
-            if (lowCover) {
+            if (cover === 'low') {
               // Suelo expuesto — neutralizamos. Es física del suelo desnudo, no estrés.
               badge = {
                 label: establishmentPhase
-                  ? `Suelo expuesto · esperable en establecimiento${cropLabel ? ' del' + cropLabel.toLowerCase() : ''}`
+                  ? `Suelo expuesto · esperable en establecimiento del ${cropLabel(cropType)}`
                   : 'Suelo expuesto · NDVI bajo',
                 bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200',
               };
-            } else if (partialCover) {
+            } else if (cover === 'partial') {
               // Cobertura parcial — umbral más permisivo (suelo aún contribuye al LST).
               if (delta >= 12) badge = { label: 'Estrés térmico', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' };
               else if (delta >= 7) badge = { label: 'Templado', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' };
