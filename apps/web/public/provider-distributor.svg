@@ -1,21 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Background circle: warm orange (distinguishes from green services) -->
-  <circle cx="32" cy="32" r="32" fill="#c2410c"/>
-  <!-- Crate / box -->
-  <rect x="14" y="22" width="36" height="28" rx="2" fill="#fff"/>
-  <!-- Top flap fold lines -->
-  <line x1="14" y1="28" x2="50" y2="28" stroke="#c2410c" stroke-width="1.2"/>
-  <!-- Vertical separators on the box -->
-  <line x1="26" y1="22" x2="26" y2="50" stroke="#fed7aa" stroke-width="1.2"/>
-  <line x1="38" y1="22" x2="38" y2="50" stroke="#fed7aa" stroke-width="1.2"/>
-  <!-- Capsule pill in the central panel -->
-  <rect x="29" y="33" width="6" height="12" rx="3" fill="#c2410c"/>
-  <line x1="29" y1="39" x2="35" y2="39" stroke="#fff" stroke-width="0.9"/>
-  <!-- Leaf in left panel -->
-  <path d="M17 36 q3 -6 8 -2 q-2 6 -8 2 z" fill="#65a30d"/>
-  <!-- Bottle in right panel -->
-  <path d="M44 31 v-3 h2 v3 q3 2 3 5 v9 q0 2 -2 2 h-4 q-2 0 -2 -2 v-9 q0 -3 3 -5 z" fill="#fed7aa" stroke="#c2410c" stroke-width="0.9"/>
-  <!-- Telemetry signal arc top right -->
-  <path d="M45 16 Q53 16 53 8" stroke="#fbbf24" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-  <circle cx="53" cy="8" r="1.5" fill="#fbbf24"/>
+  <circle cx="32" cy="32" r="32" fill="#46632e"/>
+  <!-- Phytosanitary bottle -->
+  <!-- Cap -->
+  <rect x="27" y="13" width="10" height="5" rx="1" fill="#fff"/>
+  <!-- Neck -->
+  <rect x="29" y="18" width="6" height="4" fill="#fff"/>
+  <!-- Bottle body -->
+  <path d="M22 26 C22 23 25 22 29 22 L35 22 C39 22 42 23 42 26 L42 49 C42 50 41 51 40 51 L24 51 C23 51 22 50 22 49 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Label -->
+  <rect x="25" y="32" width="14" height="13" fill="#fff"/>
+  <!-- Leaf inside label (agro) -->
+  <path d="M28 38 Q32 34 36 38 Q36 42 32 43 Q28 42 28 38 Z" fill="#46632e"/>
+  <line x1="32" y1="39" x2="32" y2="43" stroke="#46632e" stroke-width="1"/>
 </svg>
