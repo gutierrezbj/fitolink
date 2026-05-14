@@ -153,14 +153,12 @@ function Navbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">F</span>
-          </div>
-          <span className="text-lg font-semibold text-brand-800 tracking-tight">
-            FitoLink
+        <Link to="/" className="flex flex-col items-start leading-none gap-1">
+          <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-6 w-auto" />
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-gray-500 ml-px">
+            FitoLink &middot; del pixel al tratamiento
           </span>
-        </div>
+        </Link>
         <div className="hidden md:flex items-center gap-8 text-sm">
           <a href="#como-funciona" className="text-gray-500 hover:text-brand-700 transition-colors">Proceso</a>
           <a href="#roles" className="text-gray-500 hover:text-brand-700 transition-colors">Roles</a>
@@ -765,12 +763,12 @@ function Footer() {
     <footer className="bg-gray-950 text-gray-400 py-12">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">F</span>
-            </div>
-            <span className="text-sm text-gray-500">
-              &copy; 2026 FitoLink &mdash; <span className="text-gray-400">SystemRapid</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-gray-300">
+              AgroM &middot; FitoLink
+            </span>
+            <span className="text-xs text-gray-500">
+              &copy; 2026 AgroM &mdash; <span className="text-gray-400">Inteligencia agraria de precisi&oacute;n</span>
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm flex-wrap justify-center">
