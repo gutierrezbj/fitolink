@@ -326,7 +326,7 @@ function EntityDetail({ entity, onBack, onRequestCoop, distance }: EntityDetailP
           ) : (
             <div className="bg-gray-50 rounded-lg px-3 py-2">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider">Verificado</p>
-              <p className="text-sm font-bold text-gray-800">FitoLink ✓</p>
+              <p className="text-sm font-bold text-gray-800">AgroM ✓</p>
             </div>
           )}
         </div>
@@ -435,7 +435,7 @@ function EntityDetail({ entity, onBack, onRequestCoop, distance }: EntityDetailP
             Solicitar contacto cooperativa →
           </button>
           <p className="text-[10px] text-center text-amber-700/80 mt-1.5">
-            El equipo FitoLink te contactará en &lt; 48 h
+            El equipo de AgroM te contactará en &lt; 48 h
           </p>
         </div>
       )}
@@ -470,7 +470,7 @@ function CooperativeLeadModal({ provider, onClose }: {
       return res.data;
     },
     onSuccess: () => {
-      toast.success('Solicitud enviada · te contactará el equipo FitoLink');
+      toast.success('Solicitud enviada · te contactará el equipo de AgroM');
       onClose();
     },
     onError: (e: { response?: { data?: { error?: { message?: string } } }; message?: string }) => {
@@ -493,7 +493,7 @@ function CooperativeLeadModal({ provider, onClose }: {
           <h2 className="font-bold text-gray-900 text-lg">{provider.name}</h2>
           <p className="text-sm text-gray-500 mb-4">{provider.brand}</p>
           <p className="text-sm text-gray-700 mb-4 leading-relaxed">
-            Solicitas información sobre el programa FitoLink para cooperativas.
+            Solicitas información sobre el programa AgroM para cooperativas.
             El equipo te contactará en menos de 48 h con condiciones, precios y un plan piloto adaptado.
           </p>
           <div className="bg-gray-50 rounded-xl p-3 mb-4 text-[11px] text-gray-600 space-y-0.5">
@@ -670,7 +670,7 @@ export default function MarketplacePage() {
       );
     }
     if (user?.role === 'pilot') return <>Directorio: {totalAll} entidades en tu zona operativa.</>;
-    return <>Directorio: {totalAll} entidades certificadas en la red FitoLink.</>;
+    return <>Directorio: {totalAll} entidades certificadas por AgroM.</>;
   })();
 
   return (

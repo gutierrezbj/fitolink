@@ -189,7 +189,7 @@ export default function OperationDetailPage() {
                   <span className="text-lg">🚁</span>
                   <div>
                     <p className="text-sm font-bold text-blue-800">{op.pilotId.company}</p>
-                    <p className="text-xs text-blue-500">Empresa certificada FitoLink</p>
+                    <p className="text-xs text-blue-500">Empresa certificada por AgroM</p>
                   </div>
                 </div>
               )}

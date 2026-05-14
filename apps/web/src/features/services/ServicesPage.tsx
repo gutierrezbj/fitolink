@@ -234,7 +234,7 @@ function RequestModal({
               <span className="text-white text-sm">👨‍🌾</span>
             </div>
             <div>
-              <p className="text-xs font-bold text-brand-800">Un experto FitoLink te contactará en breve</p>
+              <p className="text-xs font-bold text-brand-800">Un experto de AgroM te contactará en breve</p>
               <p className="text-[11px] text-brand-600 mt-0.5">Coordinamos la visita y te confirmamos disponibilidad en menos de 24h</p>
             </div>
           </div>
