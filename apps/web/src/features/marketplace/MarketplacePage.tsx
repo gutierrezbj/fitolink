@@ -92,13 +92,13 @@ function getCompanyColor(company?: string) {
 
 function makePilotMarker(company: string | undefined, selected = false) {
   const c = getCompanyColor(company);
-  const r = selected ? 18 : 14;
+  const r = selected ? 15 : 12;
   const size = r * 3;
   const cx = r * 1.5;
   const arm = r * 0.5;
   const rotorR = r * 0.18;
   const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <circle cx="${cx}" cy="${cx}" r="${r*1.4}" fill="${c.primary}" opacity="0.18"/>
+    <circle cx="${cx}" cy="${cx}" r="${r*1.2}" fill="${c.primary}" opacity="0.14"/>
     <circle cx="${cx}" cy="${cx}" r="${r}" fill="${c.primary}" stroke="white" stroke-width="2.5"/>
     <line x1="${cx}" y1="${cx}" x2="${cx - arm}" y2="${cx - arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
     <line x1="${cx}" y1="${cx}" x2="${cx + arm}" y2="${cx - arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
@@ -123,7 +123,7 @@ function makePilotMarker(company: string | undefined, selected = false) {
  *  juego con los SVG estáticos del marketplace. */
 function makeProviderMarker(category: ProviderCategory, selected = false) {
   const style = CATEGORY_STYLE[category];
-  const r = selected ? 18 : 14;
+  const r = selected ? 15 : 12;
   const size = r * 3;
   const cx = r * 1.5;
 
