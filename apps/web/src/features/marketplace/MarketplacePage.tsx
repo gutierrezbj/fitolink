@@ -86,27 +86,30 @@ function getCompanyColor(company?: string) {
   return company ? (COMPANY_COLORS[company] || PILOT_DEFAULT) : PILOT_DEFAULT;
 }
 
+// ── Marker glyph language — comparte el ADN visual del set nav-*.svg /
+// provider-*.svg / service-*.svg: círculo color categoría + trazos blancos
+// finos. Cada categoría aporta un glifo blanco recognizable a 28-36 px.
+
 function makePilotMarker(company: string | undefined, selected = false) {
   const c = getCompanyColor(company);
   const r = selected ? 18 : 14;
-  const arm = r * 0.55;
-  const rotor = r * 0.28;
-  const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${r*3}" height="${r*3}" viewBox="0 0 ${r*3} ${r*3}">
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${r*1.4}" fill="${c.primary}" opacity="0.18"/>
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${r}" fill="${c.primary}" stroke="white" stroke-width="2.5"/>
-    <g stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none">
-      <line x1="${r*1.5 - arm}" y1="${r*1.5 - arm}" x2="${r*1.5 + arm}" y2="${r*1.5 + arm}"/>
-      <line x1="${r*1.5 + arm}" y1="${r*1.5 - arm}" x2="${r*1.5 - arm}" y2="${r*1.5 + arm}"/>
-    </g>
-    <g fill="white">
-      <circle cx="${r*1.5 - arm}" cy="${r*1.5 - arm}" r="${rotor}"/>
-      <circle cx="${r*1.5 + arm}" cy="${r*1.5 - arm}" r="${rotor}"/>
-      <circle cx="${r*1.5 - arm}" cy="${r*1.5 + arm}" r="${rotor}"/>
-      <circle cx="${r*1.5 + arm}" cy="${r*1.5 + arm}" r="${rotor}"/>
-    </g>
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${rotor*0.7}" fill="${c.primary}" stroke="white" stroke-width="0.8"/>
-  </svg>`);
   const size = r * 3;
+  const cx = r * 1.5;
+  const arm = r * 0.5;
+  const rotorR = r * 0.18;
+  const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cx}" r="${r*1.4}" fill="${c.primary}" opacity="0.18"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="${c.primary}" stroke="white" stroke-width="2.5"/>
+    <line x1="${cx}" y1="${cx}" x2="${cx - arm}" y2="${cx - arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cx}" x2="${cx + arm}" y2="${cx - arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cx}" x2="${cx - arm}" y2="${cx + arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cx}" x2="${cx + arm}" y2="${cx + arm}" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="${cx - arm}" cy="${cx - arm}" r="${rotorR}" fill="white"/>
+    <circle cx="${cx + arm}" cy="${cx - arm}" r="${rotorR}" fill="white"/>
+    <circle cx="${cx - arm}" cy="${cx + arm}" r="${rotorR}" fill="white"/>
+    <circle cx="${cx + arm}" cy="${cx + arm}" r="${rotorR}" fill="white"/>
+    <circle cx="${cx}" cy="${cx}" r="${rotorR*1.4}" fill="white"/>
+  </svg>`);
   return L.divIcon({
     html: `<img src="data:image/svg+xml,${svg}" width="${size}" height="${size}"/>`,
     className: '',
@@ -115,16 +118,50 @@ function makePilotMarker(company: string | undefined, selected = false) {
   });
 }
 
-/** Marker used for the non-pilot categories — coloured ring with a glyph hint. */
+/** Marker para categorías non-pilot. Cada categoría tiene su glifo blanco
+ *  ─ botella (distribuidor), hoja (asesor), 3 puntos (cooperativa) ─ a
+ *  juego con los SVG estáticos del marketplace. */
 function makeProviderMarker(category: ProviderCategory, selected = false) {
   const style = CATEGORY_STYLE[category];
   const r = selected ? 18 : 14;
-  const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${r*3}" height="${r*3}" viewBox="0 0 ${r*3} ${r*3}">
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${r*1.4}" fill="${style.primary}" opacity="0.18"/>
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${r}" fill="${style.primary}" stroke="white" stroke-width="2.5"/>
-    <circle cx="${r*1.5}" cy="${r*1.5}" r="${r*0.42}" fill="white"/>
-  </svg>`);
   const size = r * 3;
+  const cx = r * 1.5;
+
+  let glyph = '';
+  if (category === 'phyto-distributor') {
+    // Botella: cuello + cuerpo (línea fina blanca)
+    const bw = r * 0.55;
+    const bh = r * 0.95;
+    const left = cx - bw / 2;
+    const top = cx - bh / 2 + r * 0.1;
+    const neckW = r * 0.28;
+    glyph = `
+      <rect x="${cx - neckW/2}" y="${top - r*0.22}" width="${neckW}" height="${r*0.18}" fill="white"/>
+      <rect x="${left}" y="${top}" width="${bw}" height="${bh*0.85}" rx="${r*0.08}" fill="none" stroke="white" stroke-width="1.6"/>
+      <rect x="${left + r*0.1}" y="${top + bh*0.42}" width="${bw - r*0.2}" height="${bh*0.32}" fill="white"/>`;
+  } else if (category === 'agronomist') {
+    // Hoja: forma de almendra con nervio central
+    const w = r * 0.7;
+    const h = r * 0.9;
+    glyph = `
+      <path d="M ${cx} ${cx - h/2} Q ${cx + w} ${cx - h*0.1} ${cx} ${cx + h/2} Q ${cx - w} ${cx - h*0.1} ${cx} ${cx - h/2} Z" fill="white"/>
+      <line x1="${cx}" y1="${cx - h/2 + r*0.1}" x2="${cx}" y2="${cx + h/2 - r*0.1}" stroke="${style.primary}" stroke-width="1.2"/>`;
+  } else if (category === 'cooperative') {
+    // 3 cabezas (vista grupo)
+    const dotR = r * 0.18;
+    const ox = r * 0.4;
+    const oy = r * 0.22;
+    glyph = `
+      <circle cx="${cx}" cy="${cx - oy*1.2}" r="${dotR}" fill="white"/>
+      <circle cx="${cx - ox}" cy="${cx + oy*0.6}" r="${dotR}" fill="white"/>
+      <circle cx="${cx + ox}" cy="${cx + oy*0.6}" r="${dotR}" fill="white"/>`;
+  }
+
+  const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cx}" r="${r*1.4}" fill="${style.primary}" opacity="0.18"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="${style.primary}" stroke="white" stroke-width="2.5"/>
+    ${glyph}
+  </svg>`);
   return L.divIcon({
     html: `<img src="data:image/svg+xml,${svg}" width="${size}" height="${size}"/>`,
     className: '',
