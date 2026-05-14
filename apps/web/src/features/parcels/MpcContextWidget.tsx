@@ -107,19 +107,17 @@ export default function MpcContextWidget({
   const drought = recentClimate?.droughtFlag ? DROUGHT_STYLE[recentClimate.droughtFlag] : null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      {/* Header strip — Microsoft branding */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-white" viewBox="0 0 23 23" fill="currentColor">
-            <rect x="1" y="1" width="10" height="10" />
-            <rect x="12" y="1" width="10" height="10" opacity="0.85" />
-            <rect x="1" y="12" width="10" height="10" opacity="0.85" />
-            <rect x="12" y="12" width="10" height="10" opacity="0.7" />
-          </svg>
-          <p className="text-xs font-bold text-white tracking-wide">CONTEXTO HISTÓRICO · MS PLANETARY COMPUTER</p>
-        </div>
-        <span className="text-[10px] text-white/80 font-medium">Gratis · Global</span>
+    <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
+      {/* Brand strip header — armonizado con el resto de cards de la parcela.
+          La fuente real (MS Planetary Computer) se cita en el footer técnico
+          de cada bloque (MOD13Q1, TerraClimate, L8/L9), no como brand strip. */}
+      <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
+          § CONTEXTO HISTÓRICO · MS PLANETARY COMPUTER
+        </p>
+        <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">
+          Gratis · Global
+        </p>
       </div>
 
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -165,8 +163,8 @@ export default function MpcContextWidget({
             {climateMonth && (
               <div className="bg-gray-50 rounded-lg p-2 space-y-0.5">
                 <p className="text-[10px] text-gray-500">{MONTH_NAMES[currentMonth - 1]} normal</p>
-                <p className="text-sm font-semibold text-gray-700">
-                  💧 {climateMonth.precip.toFixed(0)} mm · 🌡 {climateMonth.tmin.toFixed(0)}–{climateMonth.tmax.toFixed(0)}°C
+                <p className="text-sm font-semibold text-gray-700 tabular-nums">
+                  {climateMonth.precip.toFixed(0)} mm · {climateMonth.tmin.toFixed(0)}–{climateMonth.tmax.toFixed(0)}°C
                 </p>
                 {climateBaseline.aridityIndex !== undefined && climateBaseline.aridityIndex !== null && (
                   <p className="text-[10px] text-gray-500">Índice aridez {climateBaseline.aridityIndex.toFixed(2)}</p>
@@ -201,7 +199,7 @@ export default function MpcContextWidget({
               )}
               <div className="text-[10px] text-gray-500 space-y-0.5">
                 {recentClimate.tempMeanC !== undefined && recentClimate.tempMeanC !== null && (
-                  <p>🌡 Media {recentClimate.tempMeanC.toFixed(1)}°C
+                  <p>Media {recentClimate.tempMeanC.toFixed(1)}°C
                     {recentClimate.tempAnomalyC !== undefined && recentClimate.tempAnomalyC !== null && Math.abs(recentClimate.tempAnomalyC) >= 0.5 && (
                       <span className={`ml-1 font-bold ${recentClimate.tempAnomalyC > 0 ? 'text-orange-600' : 'text-blue-600'}`}>
                         ({recentClimate.tempAnomalyC > 0 ? '+' : ''}{recentClimate.tempAnomalyC.toFixed(1)}°C)
@@ -209,13 +207,13 @@ export default function MpcContextWidget({
                     )}
                   </p>
                 )}
-                <p>☔ {recentClimate.daysWithRain} días con lluvia
+                <p>{recentClimate.daysWithRain} días con lluvia
                   {recentClimate.lastRainDaysAgo !== undefined && recentClimate.lastRainDaysAgo !== null && (
                     <span className="text-gray-400"> · última hace {recentClimate.lastRainDaysAgo}d</span>
                   )}
                 </p>
                 {recentClimate.et0TotalMm !== undefined && recentClimate.et0TotalMm !== null && (
-                  <p>🌬 ET₀ {recentClimate.et0TotalMm.toFixed(0)} mm</p>
+                  <p>ET₀ {recentClimate.et0TotalMm.toFixed(0)} mm</p>
                 )}
               </div>
             </div>
@@ -280,9 +278,9 @@ export default function MpcContextWidget({
                 )}
                 <div className="text-[10px] text-gray-500 space-y-0.5">
                   {thermal.airTempC !== undefined && thermal.airTempC !== null && (
-                    <p>🌡 Aire {thermal.airTempC.toFixed(1)} °C (Open-Meteo)</p>
+                    <p>Aire {thermal.airTempC.toFixed(1)} °C (Open-Meteo)</p>
                   )}
-                  <p>🛰 {thermal.scenesUsed} escena{thermal.scenesUsed !== 1 ? 's' : ''} L8/L9</p>
+                  <p>{thermal.scenesUsed} escena{thermal.scenesUsed !== 1 ? 's' : ''} L8/L9</p>
                 </div>
               </div>
             </div>

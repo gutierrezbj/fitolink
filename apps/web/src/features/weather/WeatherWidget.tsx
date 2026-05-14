@@ -105,38 +105,31 @@ export default function WeatherWidget({ lat, lon, parcelName }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      {/* Header — branded sky gradient (Open-Meteo / ECMWF) */}
-      <div className="bg-gradient-to-r from-sky-700 to-sky-500 px-4 py-3 text-white">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🌤️</span>
-            <div>
-              <h2 className="text-sm font-bold tracking-tight">Pronóstico 7 días</h2>
-              <p className="text-[10px] text-sky-100">
-                Open-Meteo · ECMWF · {parcelName ?? `${lat.toFixed(2)}, ${lon.toFixed(2)}`}
-              </p>
-            </div>
-          </div>
-          {/* Mode toggle */}
-          <div className="flex items-center bg-white/15 rounded-full p-0.5 text-[11px]">
-            <button
-              onClick={() => setMode('phyto')}
-              className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
-                mode === 'phyto' ? 'bg-white text-sky-700' : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Fitosanitario
-            </button>
-            <button
-              onClick={() => setMode('inspection')}
-              className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
-                mode === 'inspection' ? 'bg-white text-sky-700' : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Inspección
-            </button>
-          </div>
+    <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
+      {/* Brand strip header — armonizado con el resto de cards de la parcela.
+          Fuente real (Open-Meteo · ECMWF) citada en el eyebrow, sin gradiente
+          sky-corporate. */}
+      <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
+          § PRONÓSTICO 7 DÍAS · OPEN-METEO ECMWF
+        </p>
+        <div className="flex items-center bg-white/15 rounded-full p-0.5 text-[11px]">
+          <button
+            onClick={() => setMode('phyto')}
+            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+              mode === 'phyto' ? 'bg-white text-brand-700' : 'text-white/80 hover:text-white'
+            }`}
+          >
+            Fitosanitario
+          </button>
+          <button
+            onClick={() => setMode('inspection')}
+            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+              mode === 'inspection' ? 'bg-white text-brand-700' : 'text-white/80 hover:text-white'
+            }`}
+          >
+            Inspección
+          </button>
         </div>
       </div>
 
@@ -167,7 +160,7 @@ export default function WeatherWidget({ lat, lon, parcelName }: Props) {
                 {daily.precipSum.toFixed(1)} mm
               </p>
               <p className="text-[9px] text-gray-500 tabular-nums">
-                💨 {daily.windSpeedMax.toFixed(1)} m/s
+                {daily.windSpeedMax.toFixed(1)} m/s
               </p>
               <div className={`mt-1 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                 <span>{style.emoji}</span>
