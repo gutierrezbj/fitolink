@@ -155,13 +155,13 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-            <span className="text-white text-sm font-bold" style={{ fontFamily: 'Instrument Serif, serif' }}>F</span>
+            <span className="text-white text-sm font-bold">F</span>
           </div>
-          <span className="text-lg font-semibold text-brand-800 tracking-tight" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <span className="text-lg font-semibold text-brand-800 tracking-tight">
             FitoLink
           </span>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <div className="hidden md:flex items-center gap-8 text-sm">
           <a href="#como-funciona" className="text-gray-500 hover:text-brand-700 transition-colors">Proceso</a>
           <a href="#roles" className="text-gray-500 hover:text-brand-700 transition-colors">Roles</a>
           <a href="#stats" className="text-gray-500 hover:text-brand-700 transition-colors">Ventajas</a>
@@ -209,15 +209,15 @@ function Hero() {
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-200/60 mb-8 animate-[fadeUp_0.8s_ease_both]"
         >
           <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-          <span className="text-xs font-medium text-brand-700 tracking-wide uppercase" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <span className="text-xs font-medium text-brand-700 tracking-wide uppercase">
             Agricultura de precisi&oacute;n
           </span>
         </div>
 
         {/* Headline */}
         <h1
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.95] tracking-tight text-gray-900 mb-6 animate-[fadeUp_0.8s_ease_0.1s_both]"
-          style={{ fontFamily: 'Instrument Serif, serif' }}
+          className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.95] tracking-tight text-gray-900 mb-6 animate-[fadeUp_0.8s_ease_0.1s_both]"
+         
         >
           Del pixel al<br />
           <span className="relative">
@@ -232,7 +232,7 @@ function Hero() {
         {/* Subtitle */}
         <p
           className="max-w-2xl mx-auto text-lg sm:text-xl text-gray-500 leading-relaxed mb-10 animate-[fadeUp_0.8s_ease_0.2s_both]"
-          style={{ fontFamily: 'DM Sans, sans-serif' }}
+         
         >
           Conectamos la detecci&oacute;n satelital Sentinel-2 con pilotos de drones certificados.
           Monitoriza, diagnostica y trata tus cultivos con trazabilidad completa.
@@ -243,7 +243,7 @@ function Hero() {
           <Link
             to="/login"
             className="group relative px-8 py-4 bg-terra-500 text-white rounded-2xl text-base font-semibold overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-terra-500/30 hover:-translate-y-0.5"
-            style={{ fontFamily: 'DM Sans, sans-serif' }}
+           
           >
             <span className="relative z-10 flex items-center gap-2">
               Empieza gratis
@@ -256,7 +256,7 @@ function Hero() {
           <a
             href="#como-funciona"
             className="px-8 py-4 text-gray-600 rounded-2xl text-base font-medium border border-gray-200 hover:border-brand-300 hover:text-brand-700 transition-all"
-            style={{ fontFamily: 'DM Sans, sans-serif' }}
+           
           >
             Ver c&oacute;mo funciona
           </a>
@@ -265,7 +265,7 @@ function Hero() {
         {/* Trust bar */}
         <div
           className="mt-16 w-full max-w-3xl mx-auto animate-[fadeUp_0.8s_ease_0.5s_both]"
-          style={{ fontFamily: 'DM Sans, sans-serif' }}
+         
         >
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center rounded-2xl bg-brand-50/80 border border-brand-100 backdrop-blur-sm px-4 py-4 sm:py-3 gap-4 sm:gap-0 sm:divide-x sm:divide-brand-200/50">
             {/* Sentinel-2 */}
@@ -338,15 +338,15 @@ function PacPain() {
 
         {/* Header */}
         <div className={`text-center mb-16 transition-all duration-700 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] uppercase text-red-400 mb-5" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] uppercase text-red-400 mb-5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             El problema real
           </span>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6" style={{ fontFamily: 'Instrument Serif, serif' }}>
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6">
             Sin evidencia t&eacute;cnica,<br />
             <span className="text-red-400">pierdes tus ayudas PAC</span>
           </h2>
-          <p className="max-w-2xl mx-auto text-lg text-gray-400 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="max-w-2xl mx-auto text-lg text-gray-400 leading-relaxed">
             La PAC exige documentaci&oacute;n t&eacute;cnica de cada tratamiento. Sin ella, la inspecci&oacute;n te deniega la subvenci&oacute;n. Cada a&ntilde;o.
           </p>
         </div>
@@ -355,39 +355,39 @@ function PacPain() {
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-5 mb-16 transition-all duration-700 delay-150 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {/* Pain 1 */}
           <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
-            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+            <div className="font-serif text-5xl font-bold text-red-400 mb-3 leading-none">
               315<span className="text-2xl">M€</span>
             </div>
-            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <h3 className="text-base font-bold text-white mb-2">
               Subvenciones PAC en juego
             </h3>
-            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <p className="text-sm text-gray-500 leading-relaxed">
               El Estado subvenciona 315M&euro;/a&ntilde;o en seguros agrarios. Sin cuaderno de campo digital actualizado, tu expediente queda bloqueado en inspecci&oacute;n.
             </p>
           </div>
 
           {/* Pain 2 */}
           <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
-            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+            <div className="font-serif text-5xl font-bold text-red-400 mb-3 leading-none">
               0<span className="text-2xl"> pruebas</span>
             </div>
-            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <h3 className="text-base font-bold text-white mb-2">
               Cuando llega el siniestro
             </h3>
-            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <p className="text-sm text-gray-500 leading-relaxed">
               Granizo, sequ&iacute;a, DANA. El perito llega despu&eacute;s del da&ntilde;o. Sin historial NDVI previo, no puedes demostrar el estado del cultivo antes del evento.
             </p>
           </div>
 
           {/* Pain 3 */}
           <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
-            <div className="text-5xl font-bold text-red-400 mb-3 leading-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+            <div className="font-serif text-5xl font-bold text-red-400 mb-3 leading-none">
               100<span className="text-2xl">%</span>
             </div>
-            <h3 className="text-base font-bold text-white mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <h3 className="text-base font-bold text-white mb-2">
               Trazabilidad obligatoria
             </h3>
-            <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <p className="text-sm text-gray-500 leading-relaxed">
               La normativa fitosanitaria exige registrar cada aplicaci&oacute;n: producto, dosis, operador ROPO, condiciones meteo. Manual es inviable. El margen de error es cero.
             </p>
           </div>
@@ -399,11 +399,11 @@ function PacPain() {
             <svg className="w-5 h-5 text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
             </svg>
-            <p className="text-base font-semibold text-brand-200" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <p className="text-base font-semibold text-brand-200">
               FitoLink es tu proveedor de evidencia t&eacute;cnica para cumplimiento PAC
             </p>
           </div>
-          <p className="mt-4 text-sm text-gray-500 text-center max-w-xl" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="mt-4 text-sm text-gray-500 text-center max-w-xl">
             Cada vuelo queda registrado digitalmente con fecha, parcela, producto, dosis y condiciones meteo. Informaci&oacute;n lista para incorporar al cuaderno de explotaci&oacute;n seg&uacute;n normativa PAC.
           </p>
         </div>
@@ -483,13 +483,13 @@ function HowItWorks() {
         <div className={`text-center mb-20 transition-all duration-700 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <span
             className="text-xs font-semibold tracking-[0.2em] uppercase text-brand-600 mb-4 block"
-            style={{ fontFamily: 'DM Sans, sans-serif' }}
+           
           >
             Proceso
           </span>
           <h2
-            className="text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05]"
-            style={{ fontFamily: 'Instrument Serif, serif' }}
+            className="font-serif text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05]"
+           
           >
             Del sat&eacute;lite a tu parcela<br />
             <span className="text-brand-600">en cuatro pasos</span>
@@ -507,16 +507,16 @@ function HowItWorks() {
               style={{ transitionDelay: reveal.visible ? `${i * 120}ms` : '0ms' }}
             >
               {/* Step number */}
-              <span className="text-[80px] font-bold leading-none text-brand-500/[0.06] absolute top-4 right-6 select-none" style={{ fontFamily: 'Instrument Serif, serif' }}>
+              <span className="text-[80px] font-bold leading-none text-brand-500/[0.06] absolute top-4 right-6 select-none">
                 {step.num}
               </span>
 
               <div className="relative z-10">
                 <div className="mb-5">{step.icon}</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {step.title}
                 </h3>
-                <p className="text-sm text-gray-500 leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <p className="text-sm text-gray-500 leading-relaxed">
                   {step.desc}
                 </p>
               </div>
@@ -603,10 +603,10 @@ function Roles() {
 
       <div className="relative max-w-6xl mx-auto px-6" ref={reveal.ref}>
         <div className={`text-center mb-20 transition-all duration-700 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-brand-600 mb-4 block" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-brand-600 mb-4 block">
             Para cada rol
           </span>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05]" style={{ fontFamily: 'Instrument Serif, serif' }}>
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05]">
             Una plataforma,<br />
             <span className="text-brand-600">cuatro perspectivas</span>
           </h2>
@@ -622,15 +622,15 @@ function Roles() {
               style={{ transitionDelay: reveal.visible ? `${i * 150}ms` : '0ms' }}
             >
               <div className="mb-6">{role.icon}</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">
                 {role.title}
               </h3>
-              <p className="text-sm text-gray-400 mb-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <p className="text-sm text-gray-400 mb-6">
                 {role.subtitle}
               </p>
               <ul className="space-y-3">
                 {role.features.map((f) => (
-                  <li key={f} className="flex items-start gap-3 text-sm text-gray-600" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  <li key={f} className="flex items-start gap-3 text-sm text-gray-600">
                     <svg className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
@@ -667,10 +667,10 @@ function Stats() {
 
       <div className="relative max-w-6xl mx-auto px-6" ref={reveal.ref}>
         <div className={`text-center mb-20 transition-all duration-700 ${reveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-brand-300 mb-4 block" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-brand-300 mb-4 block">
             Ventajas
           </span>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05]" style={{ fontFamily: 'Instrument Serif, serif' }}>
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.05]">
             Por qu&eacute; FitoLink
           </h2>
         </div>
@@ -689,11 +689,11 @@ function Stats() {
               }`}
               style={{ transitionDelay: reveal.visible ? `${200 + i * 100}ms` : '0ms' }}
             >
-              <div className="text-4xl sm:text-5xl font-bold text-brand-400 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <div className="font-serif text-4xl sm:text-5xl font-bold text-brand-400 mb-2">
                 <Counter end={stat.value} suffix={stat.suffix} />
               </div>
-              <div className="text-base font-semibold text-white mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>{stat.label}</div>
-              <div className="text-sm text-brand-200/60" style={{ fontFamily: 'DM Sans, sans-serif' }}>{stat.sub}</div>
+              <div className="text-base font-semibold text-white mb-1">{stat.label}</div>
+              <div className="text-sm text-brand-200/60">{stat.sub}</div>
             </div>
           ))}
         </div>
@@ -701,7 +701,7 @@ function Stats() {
         {/* Certifications bar */}
         <div className={`mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-brand-300/80 transition-all duration-700 delay-500 ${
           reveal.visible ? 'opacity-100' : 'opacity-0'
-        }`} style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        }`}>
           {['Certificaci\u00f3n AESA', 'Licencia ROPO', 'Datos Copernicus', 'RGPD Compliant'].map((cert) => (
             <div key={cert} className="flex items-center gap-2">
               <svg className="w-4 h-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -733,24 +733,24 @@ function FinalCTA() {
         }`}
         ref={reveal.ref}
       >
-        <h2 className="text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05] mb-6" style={{ fontFamily: 'Instrument Serif, serif' }}>
+        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-gray-900 leading-[1.05] mb-6">
           Empieza a monitorizar<br />
           <span className="text-brand-600">tus parcelas hoy</span>
         </h2>
-        <p className="text-lg text-gray-500 mb-10 max-w-xl mx-auto" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <p className="text-lg text-gray-500 mb-10 max-w-xl mx-auto">
           Reg&iacute;strate gratis y conecta tus parcelas con la monitorizaci&oacute;n satelital Sentinel-2 en minutos.
         </p>
         <Link
           to="/login"
           className="group inline-flex items-center gap-2 px-10 py-5 bg-brand-600 text-white rounded-2xl text-lg font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-brand-500/30 hover:-translate-y-0.5"
-          style={{ fontFamily: 'DM Sans, sans-serif' }}
+         
         >
           Crear cuenta gratuita
           <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
           </svg>
         </Link>
-        <p className="mt-4 text-sm text-gray-400" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <p className="mt-4 text-sm text-gray-400">
           Sin tarjeta de cr&eacute;dito &middot; Setup en 2 minutos
         </p>
       </div>
@@ -763,11 +763,11 @@ function FinalCTA() {
 function Footer() {
   return (
     <footer className="bg-gray-950 text-gray-400 py-12">
-      <div className="max-w-6xl mx-auto px-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-              <span className="text-white text-xs font-bold" style={{ fontFamily: 'Instrument Serif, serif' }}>F</span>
+              <span className="text-white text-xs font-bold">F</span>
             </div>
             <span className="text-sm text-gray-500">
               &copy; 2026 FitoLink &mdash; <span className="text-gray-400">SystemRapid</span>
