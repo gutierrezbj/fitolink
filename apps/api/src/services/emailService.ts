@@ -39,7 +39,7 @@ if (isLive) {
   });
 }
 
-const STAGING_BASE = 'https://fitolink.systemrapid.io';
+const STAGING_BASE = 'https://fitolink.agrom.es';
 
 // ── Brand palette · FitoLink como base del ecosistema ───────────────────
 // 13-may-2026: decisión de JuanCho. Eliminamos los hex `agrom-*` introducidos
@@ -300,7 +300,7 @@ function renderAlertEmail(p: AlertEmailPayload): string {
           <td style="padding:18px 24px;background:${c.paper};border-top:1px solid ${c.rule}40;color:${c.muted};font-size:11px;text-align:center;font-family:${FONT_MONO};letter-spacing:0.5px;">
             <p style="margin:0 0 4px;">AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN</p>
             <p style="margin:0;">
-              <a href="${STAGING_BASE}" style="color:${c.muted};text-decoration:none;">fitolink.systemrapid.io</a>
+              <a href="${STAGING_BASE}" style="color:${c.muted};text-decoration:none;">fitolink.agrom.es</a>
               <span style="color:${c.rule};margin:0 8px;">·</span>
               <a href="https://agrom.es" style="color:${c.muted};text-decoration:none;">agrom.es</a>
             </p>
@@ -554,7 +554,7 @@ function renderDigestHtml(d: DigestPayload): string {
               <br>
               <a href="https://agrom.es" style="color:${c.deep};text-decoration:none;">agrom.es</a>
               <span style="color:${c.rule};margin:0 6px;">·</span>
-              <a href="${STAGING_BASE}" style="color:${c.deep};text-decoration:none;">fitolink.systemrapid.io</a>
+              <a href="${STAGING_BASE}" style="color:${c.deep};text-decoration:none;">fitolink.agrom.es</a>
             </p>
           </td>
         </tr>
@@ -829,7 +829,7 @@ function renderWelcomeEmail(p: WelcomeEmailPayload): string {
           <br>
           <a href="https://agrom.es" style="color:${c.deep};text-decoration:none;">agrom.es</a>
           <span style="color:${c.rule};margin:0 6px;">·</span>
-          <a href="${STAGING_BASE}" style="color:${c.deep};text-decoration:none;">fitolink.systemrapid.io</a>
+          <a href="${STAGING_BASE}" style="color:${c.deep};text-decoration:none;">fitolink.agrom.es</a>
         </p>
       </td></tr>
 

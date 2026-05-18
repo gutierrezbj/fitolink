@@ -451,7 +451,7 @@ def build(out_path):
     # URL — left
     c.setFillColor(DEEP)
     c.setFont('MonoBold', 8.5)
-    c.drawString(MARGIN_X, fy + 3.5 * mm, 'fitolink.systemrapid.io')
+    c.drawString(MARGIN_X, fy + 3.5 * mm, 'fitolink.agrom.es')
 
     # Equipo — center
     c.setFillColor(LABEL)

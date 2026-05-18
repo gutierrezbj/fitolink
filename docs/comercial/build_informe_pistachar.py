@@ -59,7 +59,7 @@ CONTENT_W = PAGE_W - 2 * MARGIN_X
 WORDMARK = '/Users/juanguti/dev/srs/fitolink/apps/web/public/brand/agrom-wordmark.png'
 
 # ── API config ───────────────────────────────────────────────────────────
-API_BASE = 'https://fitolink.systemrapid.io/api/v1'
+API_BASE = 'https://fitolink.agrom.es/api/v1'
 DEMO_GOOGLE_ID = 'john-pistacho-real'
 
 

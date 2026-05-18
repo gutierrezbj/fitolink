@@ -17,7 +17,7 @@ Sentinel-2 (cada 5 días) → NDVI/NDRE → Detección anomalías (IA)
     → Registro trazable completo
 ```
 
-**URL staging:** https://fitolink.systemrapid.io
+**URL operativa:** https://fitolink.agrom.es (subdominio SaaS bajo dominio empresa AgroM. `fitolink.systemrapid.io` retirado 18-may-2026)
 **Repo:** https://github.com/gutierrezbj/fitolink
 **Servidor:** 187.77.71.102 (root, /opt/fitolink)
 

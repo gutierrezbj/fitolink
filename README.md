@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://fitolink.systemrapid.io/favicon.svg" width="60" alt="FitoLink" />
+  <img src="https://fitolink.agrom.es/favicon.svg" width="60" alt="FitoLink" />
 </p>
 
 <h1 align="center">FitoLink</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://fitolink.systemrapid.io">🌐 Demo</a> ·
+  <a href="https://fitolink.agrom.es">🌐 Demo</a> ·
   <a href="#quick-start">🚀 Quick Start</a> ·
   <a href="#arquitectura">📐 Arquitectura</a>
 </p>

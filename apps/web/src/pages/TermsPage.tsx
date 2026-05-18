@@ -41,8 +41,8 @@ export default function TermsPage() {
           <p>
             AgroM · FitoLink (en adelante, &laquo;el Servicio&raquo;) es una plataforma
             de inteligencia agraria de precisión operada por SystemRapid SL. El
-            Servicio se ofrece a través del dominio agrom.es y subdominios técnicos
-            como fitolink.systemrapid.io.
+            Servicio se ofrece a través del dominio agrom.es y su subdominio
+            de producto fitolink.agrom.es.
           </p>
           <p>
             Para cualquier consulta sobre estos términos, escribe a{' '}
