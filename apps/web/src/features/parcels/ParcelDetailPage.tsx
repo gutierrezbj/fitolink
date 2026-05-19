@@ -541,7 +541,7 @@ export default function ParcelDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Card 1: Health gauge + stats */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-5">
-              <HealthScoreGauge ndvi={ndvi} size={100} showLabel />
+              <HealthScoreGauge ndvi={ndvi} size={100} showLabel establishmentPhase={parcel.establishmentPhase} />
               <div className="flex-1 grid grid-cols-2 gap-y-3">
                 <div>
                   <p className="text-xs text-gray-400">Tendencia</p>

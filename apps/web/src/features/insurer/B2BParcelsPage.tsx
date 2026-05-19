@@ -41,6 +41,7 @@ type Parcel = {
   geometry?: object;
   ndviHistory?: { mean: number; date: string; anomalyDetected?: boolean }[];
   isActive: boolean;
+  establishmentPhase?: boolean;
 };
 
 export default function B2BParcelsPage() {
@@ -183,7 +184,7 @@ export default function B2BParcelsPage() {
               {/* NDVI gauge */}
               {selNdvi !== undefined && (
                 <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl">
-                  <HealthScoreGauge ndvi={selNdvi} size={100} showLabel />
+                  <HealthScoreGauge ndvi={selNdvi} size={100} showLabel establishmentPhase={selected.establishmentPhase} />
                   <div className="space-y-2">
                     <div>
                       <p className="text-xs text-gray-500">NDVI actual</p>

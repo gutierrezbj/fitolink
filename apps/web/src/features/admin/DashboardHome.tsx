@@ -188,13 +188,14 @@ export default function DashboardHome() {
   });
 
   // Best and worst parcel by NDVI
-  const parcelsWithNdvi = parcels.filter((p: { ndviHistory: { mean: number }[] }) => p.ndviHistory?.length > 0);
-  const worstParcel = parcelsWithNdvi.reduce((worst: { ndviHistory: { mean: number }[] } | null, p: { ndviHistory: { mean: number }[] }) => {
+  type ParcelLite = { _id: string; name: string; ndviHistory: { mean: number }[]; establishmentPhase?: boolean };
+  const parcelsWithNdvi = parcels.filter((p: ParcelLite) => p.ndviHistory?.length > 0);
+  const worstParcel = parcelsWithNdvi.reduce((worst: ParcelLite | null, p: ParcelLite) => {
     const pNdvi = p.ndviHistory[p.ndviHistory.length - 1].mean;
     if (!worst) return p;
     const wNdvi = worst.ndviHistory[worst.ndviHistory.length - 1].mean;
     return pNdvi < wNdvi ? p : worst;
-  }, null) as { _id: string; name: string; ndviHistory: { mean: number }[] } | null;
+  }, null) as ParcelLite | null;
 
   const avgNdvi = parcelsWithNdvi.length > 0
     ? parcelsWithNdvi.reduce((s: number, p: { ndviHistory: { mean: number }[] }) => s + p.ndviHistory[p.ndviHistory.length - 1].mean, 0) / parcelsWithNdvi.length
@@ -305,6 +306,7 @@ export default function DashboardHome() {
                   ndvi={worstParcel.ndviHistory[worstParcel.ndviHistory.length - 1].mean}
                   size={90}
                   showLabel
+                  establishmentPhase={worstParcel.establishmentPhase}
                 />
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{worstParcel.name}</p>
