@@ -83,6 +83,19 @@ export const createParcelSchema = z.object({
   sigpacRef: z.string().optional(),
   isInsured: z.boolean().default(false),
   insurerId: z.string().optional(),
+  /**
+   * Año de plantación del cultivo (opcional). Si está informado, el
+   * sistema arranca calibrado y deduce establishmentPhase. Si no, la
+   * parcela entra en modo Calibración pasiva durante CALIBRATION_DAYS.
+   * Sprint Calibración del Cultivo · 14-may-2026.
+   */
+  plantingYear: z.number().int().min(1900).max(2100).optional(),
+  /**
+   * Override manual del agricultor o admin para indicar "cultivo joven
+   * en establecimiento". Si viene, pisa la inferencia automática desde
+   * plantingYear + ESTABLISHMENT_YEARS[cropType].
+   */
+  establishmentPhase: z.boolean().optional(),
 });
 
 export const updateParcelSchema = createParcelSchema.partial();

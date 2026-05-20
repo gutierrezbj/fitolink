@@ -157,6 +157,16 @@ def run_pipeline() -> None:
         parcel_id = str(parcel['_id'])
         parcel_name = parcel.get('name', 'Unknown')
 
+        # Sprint Demo Aula Jaén · 18-may-2026
+        # Las parcelas sintéticas usadas en clases/demos pedagógicas tienen
+        # todos sus datos (ndviHistory, MPC enrichments, alerts) hand-crafted
+        # en el seed para ilustrar escenarios concretos. Si el pipeline las
+        # procesa, sobrescribe esos datos con lecturas Sentinel-2 reales de
+        # coordenadas que pueden no coincidir con la narrativa pedagógica.
+        if parcel.get('isSyntheticDemo') is True:
+            logger.info('parcel_skip_synthetic_demo', parcel_id=parcel_id, name=parcel_name)
+            continue
+
         try:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=10)

@@ -107,10 +107,42 @@ export interface IParcel extends Document {
    *   · "Estrés térmico crítico" (LST-aire alto es esperable con suelo desnudo)
    *   · NDVI bajo (esperable, no enfermedad)
    *   · Forecast NDVI proyectando umbral crítico (la línea es otra fase)
-   * Establecido manualmente vía seed o admin. Un detector V3 futuro lo
-   * inferirá automáticamente de NDVI + edad de la parcela.
+   * Establecido automáticamente al crear parcela (combinación de
+   * plantingYear + tabla ESTABLISHMENT_YEARS), o manualmente por el
+   * agricultor / admin. Un detector V3 futuro lo inferirá automáticamente
+   * de la serie NDVI cuando la parcela acumule suficientes lecturas.
    */
   establishmentPhase?: boolean;
+  /**
+   * Año de plantación informado por el agricultor en el alta de la parcela.
+   * Opcional. Si está informado, el sistema arranca calibrado: deduce
+   * automáticamente establishmentPhase mediante inferEstablishmentFromAge
+   * y NO entra en modo Calibración (calibratingUntil queda null). Si el
+   * agricultor no lo sabe, queda undefined y la parcela entra en modo
+   * Calibración pasivo durante CALIBRATION_DAYS días.
+   */
+  plantingYear?: number;
+  /**
+   * Fecha hasta la cual la parcela está en modo Calibración inicial.
+   * Activado al crear la parcela cuando plantingYear no está informado —
+   * el sistema necesita observar suficientes lecturas Sentinel-2 antes
+   * de aplicar umbrales absolutos. Mientras Date.now() < calibratingUntil:
+   *   · Pipeline V2 suprime alerts severity 'high' y 'critical'
+   *   · UI muestra HealthScoreGauge en modo "Calibrando"
+   *   · Digest matutino emite mensaje suave informativo
+   * Si el agricultor edita el plantingYear después del alta, este campo
+   * se setea a null automáticamente (sistema ya calibrado).
+   */
+  calibratingUntil?: Date | null;
+  /**
+   * Flag pedagógico — parcela sintética usada en demos / clases (caso
+   * "Aula Jaén Jesús"). El pipeline V2 IGNORA estas parcelas: no consulta
+   * Copernicus ni reescribe ndviHistory, no genera alerts automáticas.
+   * Toda la data (lecturas NDVI, MPC enrichments, alertas, operations)
+   * viene hand-crafted desde el seed para ilustrar escenarios concretos.
+   * Sprint Demo Aula Jaén · 18-may-2026.
+   */
+  isSyntheticDemo?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -236,6 +268,9 @@ const parcelSchema = new Schema<IParcel>(
     thermal: { type: thermalSchema, default: undefined },
     isActive: { type: Boolean, default: true },
     establishmentPhase: { type: Boolean, default: false },
+    plantingYear: { type: Number, min: 1900, max: 2100 },
+    calibratingUntil: { type: Date, default: null },
+    isSyntheticDemo: { type: Boolean, default: false },
   },
   {
     timestamps: true,

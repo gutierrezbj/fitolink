@@ -109,9 +109,13 @@ def main() -> int:
     client = MongoClient(MONGODB_URI)
     db = client.get_default_database()
 
-    query: dict = {'isActive': True}
+    # Sprint Demo Aula Jaén · 18-may-2026: skip parcelas pedagógicas
+    # sintéticas. Su MPC baseline viene hand-crafted desde el seed.
+    query: dict = {'isActive': True, 'isSyntheticDemo': {'$ne': True}}
     if args.parcel:
         query['_id'] = ObjectId(args.parcel)
+        # Override del filtro synthetic si se pide explicit por ObjectId
+        query.pop('isSyntheticDemo', None)
 
     parcels = list(db.parcels.find(query))
     if not parcels:

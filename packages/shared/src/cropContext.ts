@@ -100,3 +100,69 @@ export function lowCoverNote(input: {
   }
   return `${where}presenta cobertura vegetal baja (suelo predominantemente expuesto). Antes de actuar, conviene verificar si es la fase normal del ${crop} o si es estrés real.`;
 }
+
+/**
+ * Años típicos en establecimiento por cultivo perenne. Consenso agronómico
+ * conservador — preferimos asumir más años (menos falsos positivos de
+ * alerta) que menos (más falsos positivos). Anuales no aparecen porque
+ * no tienen fase de establecimiento — cada campaña empieza de cero.
+ *
+ * Usado al crear parcela: si plantingYear está informado y
+ * (hoy - plantingYear) <= ESTABLISHMENT_YEARS[cropType] entonces el
+ * sistema marca automáticamente establishmentPhase=true.
+ */
+export const ESTABLISHMENT_YEARS: Record<string, number> = {
+  pistacho: 7,   // Plena producción 8º año
+  olivo: 5,      // Olivo de seto: 3, tradicional: 7. Promedio 5.
+  almendro: 4,
+  citrico: 4,
+  frutal: 4,
+  vinedo: 3,
+};
+
+/** Período por defecto de calibración pasiva (sin plantingYear). */
+export const CALIBRATION_DAYS = 60;
+
+/**
+ * Si plantingYear está informado, calcula si el cultivo está aún en
+ * establecimiento según la tabla. Devuelve undefined si el cultivo no
+ * es perenne o si plantingYear no está informado.
+ */
+export function inferEstablishmentFromAge(
+  cropType: string | undefined | null,
+  plantingYear: number | undefined | null,
+  currentYear: number = new Date().getUTCFullYear(),
+): boolean | undefined {
+  if (!cropType || !plantingYear) return undefined;
+  const yearsThreshold = ESTABLISHMENT_YEARS[cropType];
+  if (yearsThreshold === undefined) return false; // cultivo anual, no aplica
+  const age = currentYear - plantingYear;
+  return age >= 0 && age < yearsThreshold;
+}
+
+/**
+ * Devuelve true si la parcela está aún en período de calibración inicial
+ * (sin plantingYear, sistema esperando suficientes lecturas para inferir
+ * el estado del cultivo). Se usa para suavizar alertas y mensajería.
+ */
+export function isCalibrating(input: {
+  calibratingUntil?: Date | string | null;
+}): boolean {
+  if (!input.calibratingUntil) return false;
+  const until = input.calibratingUntil instanceof Date
+    ? input.calibratingUntil
+    : new Date(input.calibratingUntil);
+  return until.getTime() > Date.now();
+}
+
+/** Días restantes de calibración (>= 0). 0 si ya terminó o no aplica. */
+export function calibrationDaysLeft(input: {
+  calibratingUntil?: Date | string | null;
+}): number {
+  if (!input.calibratingUntil) return 0;
+  const until = input.calibratingUntil instanceof Date
+    ? input.calibratingUntil
+    : new Date(input.calibratingUntil);
+  const ms = until.getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}

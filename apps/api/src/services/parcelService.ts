@@ -3,7 +3,12 @@ import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 import { sendFirstParcelEmail } from './emailService.js';
 import { logger } from '../utils/logger.js';
-import type { CreateParcel, UpdateParcel } from '@fitolink/shared';
+import {
+  CALIBRATION_DAYS,
+  inferEstablishmentFromAge,
+  type CreateParcel,
+  type UpdateParcel,
+} from '@fitolink/shared';
 
 /**
  * Fire-and-forget: si esta es la primera parcela activa del usuario,
@@ -35,9 +40,49 @@ async function maybeSendFirstParcelEmail(ownerId: string, justCreated: IParcel |
   }
 }
 
+/**
+ * Aplica la lógica de calibración inicial cuando se crea una parcela:
+ *
+ *  · Si el agricultor informó `plantingYear`, el sistema arranca
+ *    calibrado. Inferimos `establishmentPhase` automáticamente desde
+ *    la tabla ESTABLISHMENT_YEARS y dejamos `calibratingUntil = null`.
+ *    El override manual del usuario (si vino `establishmentPhase`
+ *    explícito en el payload) siempre gana sobre el cálculo automático.
+ *
+ *  · Si NO informó `plantingYear`, entra en modo Calibración pasiva
+ *    durante CALIBRATION_DAYS días. Pipeline, badges y digest se
+ *    suavizan mientras tanto, hasta que el agricultor edite los datos
+ *    del cultivo o pase el plazo. `establishmentPhase` queda en false
+ *    por defecto — no asumimos lo peor sin info.
+ *
+ * Sprint Calibración del Cultivo · 14-may-2026.
+ */
+function applyCalibrationOnCreate(data: CreateParcel): Partial<IParcel> {
+  const out: Partial<IParcel> = {};
+
+  // Establishment inference desde plantingYear + cropType
+  if (data.plantingYear !== undefined && data.plantingYear !== null) {
+    const inferred = inferEstablishmentFromAge(data.cropType, data.plantingYear);
+    // Override manual gana: si el usuario explícitamente marcó establishmentPhase
+    // en el payload, respetamos su decisión. Si no, usamos la inferencia.
+    if (data.establishmentPhase === undefined && inferred !== undefined) {
+      out.establishmentPhase = inferred;
+    }
+    out.calibratingUntil = null; // Sistema calibrado, no necesita observar pasivo
+  } else {
+    // Sin plantingYear → modo Calibración pasiva
+    const until = new Date();
+    until.setUTCDate(until.getUTCDate() + CALIBRATION_DAYS);
+    out.calibratingUntil = until;
+  }
+
+  return out;
+}
+
 export async function createParcel(ownerId: string, data: CreateParcel): Promise<IParcel> {
   const parcel = await Parcel.create({
     ...data,
+    ...applyCalibrationOnCreate(data),
     ownerId,
   });
   void maybeSendFirstParcelEmail(ownerId, parcel);
@@ -50,7 +95,11 @@ export async function createParcelsBulk(
 ): Promise<IParcel[]> {
   // insertMany is a single round-trip and atomic at the DB level. If one
   // doc fails validation, none are inserted (ordered: true is the default).
-  const docs = parcels.map((p) => ({ ...p, ownerId }));
+  const docs = parcels.map((p) => ({
+    ...p,
+    ...applyCalibrationOnCreate(p),
+    ownerId,
+  }));
   const created = await Parcel.insertMany(docs, { ordered: true });
   const createdArr = created as unknown as IParcel[];
   void maybeSendFirstParcelEmail(ownerId, createdArr);

@@ -21,6 +21,13 @@ const DEMO_ACCOUNTS = [
   // que vea sus 6 parcelas (348 ha en establecimiento) con los insights
   // Ola 1.5 corriendo en sus propios datos satelitales.
   { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
+  // Aula Jaén Jesús — cuenta pedagógica del profesor Jesús Vivar
+  // (UPM Agricultura Precisión). 6 parcelas sintéticas Jaén que ilustran
+  // escenarios canónicos: olivar sano, intensivo seto, pistachar calibrando,
+  // almendro establecimiento, olivar estrés hídrico (alerta crítica activa),
+  // olivar heterogéneo. Seed: seedProfessorDemo.ts. Flag isSyntheticDemo
+  // hace que el pipeline las ignore.
+  { label: 'Aula Jaén Jesús', googleId: 'jesus-vivar-edu', icon: '/smart-farming.svg',           color: 'bg-earth-50 border-earth-300/50 text-earth-700 hover:bg-earth-100' },
   { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 

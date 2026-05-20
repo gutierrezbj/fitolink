@@ -5,8 +5,13 @@ import { api } from '@/lib/api.js';
 import ParcelDrawMap from './ParcelDrawMap.js';
 import SigpacLookup from './SigpacLookup.js';
 import KmzImporter from './KmzImporter.js';
+import { ESTABLISHMENT_YEARS, CALIBRATION_DAYS, cropLabel } from '@fitolink/shared';
 
 type CreateMode = 'draw' | 'import';
+
+// Selector de años: últimos 35 años + cubo "antes" implícito en el primer año
+const CURRENT_YEAR = new Date().getUTCFullYear();
+const YEAR_OPTIONS = Array.from({ length: 35 }, (_, i) => CURRENT_YEAR - i);
 
 const CROP_TYPES = [
   { value: 'olivo', label: 'Olivo' },
@@ -50,6 +55,12 @@ export default function CreateParcelPage() {
   const [geometry, setGeometry] = useState<GeoJSON.Polygon | null>(null);
   const [areaHa, setAreaHa] = useState(0);
 
+  // Sprint Calibración del Cultivo · 14-may-2026
+  // Si el agricultor lo sabe, arrancamos calibrados. Si no, modo Calibración
+  // pasiva durante CALIBRATION_DAYS para no soltar falsas alarmas en frío.
+  const [plantingYear, setPlantingYear] = useState<number | null>(null);
+  const [dontKnowPlantingYear, setDontKnowPlantingYear] = useState(false);
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!geometry) throw new Error('Dibuja la parcela en el mapa');
@@ -60,6 +71,7 @@ export default function CreateParcelPage() {
         cropType,
         province,
         sigpacRef: sigpacRef || undefined,
+        plantingYear: !dontKnowPlantingYear && plantingYear ? plantingYear : undefined,
       });
       return res.data.data;
     },
