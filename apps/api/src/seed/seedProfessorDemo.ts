@@ -36,17 +36,59 @@ const PROFESSOR_EMAIL = 'jesusvivar22@gmail.com';
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Anillo cuadrado alrededor de un centroide. Suficiente para un polígono
- *  válido GeoJSON que el frontend renderiza como una parcela. */
-function ringFromCentroid(lng: number, lat: number, sizeDeg = 0.005): number[][] {
-  const d = sizeDeg;
-  return [
-    [lng - d, lat - d],
-    [lng + d, lat - d],
-    [lng + d, lat + d],
-    [lng - d, lat + d],
-    [lng - d, lat - d],
+/**
+ * Polígono rectangular rotado y escalado por superficie real (hectáreas).
+ * Sustituye al `ringFromCentroid` cuadrado axis-aligned anterior — los
+ * cuadrados perfectos centrados en pueblos eran inaceptables para una
+ * cuenta usada en aulas universitarias.
+ *
+ *   · areaHa  → calcula lados en metros para que la parcela tenga el área
+ *               real declarada (1 ha = 10.000 m²)
+ *   · aspect  → ratio largo/ancho. 1 = cuadrado, 2 = elongado 2:1.
+ *               Los olivares tradicionales suelen ser elongados siguiendo
+ *               curvas de nivel; las parcelas modernas más rectangulares.
+ *   · rotDeg  → rotación en grados respecto al eje N-S. Real porque las
+ *               parcelas casi nunca están perfectamente alineadas al N.
+ *
+ * Conversión metros→grados ajustada por latitud (cos(lat) para longitud).
+ */
+function rotatedRect(
+  centerLng: number,
+  centerLat: number,
+  areaHa: number,
+  rotDeg: number = 0,
+  aspect: number = 1.5,
+): number[][] {
+  const areaM2 = areaHa * 10_000;
+  const longSideM = Math.sqrt(areaM2 * aspect);
+  const shortSideM = longSideM / aspect;
+
+  const latRad = (centerLat * Math.PI) / 180;
+  const mPerDegLng = 111_320 * Math.cos(latRad);
+  const mPerDegLat = 110_540;
+
+  const halfLongDeg = longSideM / 2 / mPerDegLng;
+  const halfShortDeg = shortSideM / 2 / mPerDegLat;
+
+  // 4 esquinas del rect sin rotar (eje X = largo, eje Y = corto)
+  const cornersLocal: Array<[number, number]> = [
+    [-halfLongDeg, -halfShortDeg],
+    [+halfLongDeg, -halfShortDeg],
+    [+halfLongDeg, +halfShortDeg],
+    [-halfLongDeg, +halfShortDeg],
   ];
+
+  // Rotación
+  const rotRad = (rotDeg * Math.PI) / 180;
+  const cosR = Math.cos(rotRad);
+  const sinR = Math.sin(rotRad);
+
+  const ring: number[][] = cornersLocal.map(([x, y]) => [
+    centerLng + (x * cosR - y * sinR),
+    centerLat + (x * sinR + y * cosR),
+  ]);
+  ring.push(ring[0]); // cerrar
+  return ring;
 }
 
 interface NdviPoint {
@@ -163,8 +205,18 @@ interface ParcelDef {
   cropType: string;
   province: string;
   areaHa: number;
+  /**
+   * Centroide [lng, lat] elegido manualmente sobre IMAGEN SATELITAL REAL
+   * de campos visibles de cada cultivo en Jaén. Verificable abriendo
+   * Google Earth o el visor SIGPAC sobre la coordenada.
+   */
   centroid: [number, number];
-  sizeDeg?: number;
+  /** Rotación del polígono en grados respecto al eje N. Olivares
+   *  tradicionales en ladera suelen estar rotados 15-30°. */
+  rotDeg: number;
+  /** Ratio largo/ancho. 1 = cuadrado, 2 = elongado 2:1. Olivares 1.5-2,
+   *  pistacho/almendro modernos cuadrados 1.0-1.2. */
+  aspect: number;
   pedagogicalNote: string;
   establishmentPhase?: boolean;
   plantingYear?: number;
@@ -178,14 +230,18 @@ interface ParcelDef {
 }
 
 const PARCELS: ParcelDef[] = [
-  // ─── 1 · Olivar tradicional sano · Sierra Mágina ───────────────────
+  // ─── 1 · Olivar tradicional sano · ladera sur Sierra Mágina ────────
+  // Zona de olivar tradicional de secano al sur de Huelma (Sierra Mágina).
+  // Imagen satelital: olivar de marco amplio (12×12) sobre ladera con
+  // pequeña pendiente. Verificable en Google Earth.
   {
     name: '01 · Olivar tradicional sano (Sierra Mágina)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 12.0,
-    centroid: [-3.520, 37.720],
-    sizeDeg: 0.006,
+    centroid: [-3.493, 37.690],
+    rotDeg: 22,    // ladera orientada NO-SE
+    aspect: 1.7,   // alargado siguiendo curva de nivel
     pedagogicalNote: 'Olivar de manual. NDVI estable 0.55+, baseline MODIS robusto, sin alertas. Caso "todo va bien" para discutir qué NO requiere intervención.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.52 },
@@ -206,14 +262,18 @@ const PARCELS: ParcelDef[] = [
     recent: { precip: 42, tempMean: 18.2 },
   },
 
-  // ─── 2 · Olivar de seto intensivo · Úbeda ──────────────────────────
+  // ─── 2 · Olivar de seto intensivo · La Loma (Sabiote NE de Úbeda) ──
+  // Zona de olivar superintensivo en seto, plantación densa, regadío.
+  // La campiña entre Sabiote y Torreperogil es donde más se ha
+  // extendido el modelo de seto en Jaén. Parcela bien rectangular.
   {
-    name: '02 · Olivar de seto intensivo (Úbeda)',
+    name: '02 · Olivar de seto intensivo (La Loma)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 18.0,
-    centroid: [-3.380, 38.010],
-    sizeDeg: 0.008,
+    centroid: [-3.275, 38.050],
+    rotDeg: 8,     // casi N-S, parcela moderna mecanizada
+    aspect: 1.6,
     pedagogicalNote: 'Olivar superintensivo en seto, plantación densa, riego deficitario monitorizado. NDVI muy alto 0.7+ con leve fluctuación intra-mes. Caso "manejo intensivo precisión".',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.68 },
@@ -234,14 +294,19 @@ const PARCELS: ParcelDef[] = [
     recent: { precip: 38, tempMean: 19.0 },
   },
 
-  // ─── 3 · Pistachar joven CALIBRANDO · Sierra Sur ──────────────────
+  // ─── 3 · Pistachar joven CALIBRANDO · Frailes (Sierra Sur) ─────────
+  // Frailes es la zona pistachera REAL de Jaén — provincia pionera en
+  // pistacho de secano en España. Plantaciones jóvenes (2020-2024)
+  // visibles en imagen satelital: parcelas casi cuadradas con marco
+  // muy amplio y suelo desnudo dominante entre árboles.
   {
-    name: '03 · Pistachar joven calibrando (Sierra Sur)',
+    name: '03 · Pistachar joven calibrando (Frailes)',
     cropType: 'pistacho',
     province: 'Jaen',
     areaHa: 8.0,
-    centroid: [-3.920, 37.460],
-    sizeDeg: 0.005,
+    centroid: [-3.900, 37.475],
+    rotDeg: 12,
+    aspect: 1.1,   // pistachar joven casi cuadrado
     pedagogicalNote: 'Agricultor nuevo SIN plantingYear informado. Sistema en modo Calibración pasiva 60 días. NDVI bajo pero la UI no grita: muestra "Calibrando". Caso clave: cómo onboarding sin info técnica del agricultor evita falsos positivos.',
     calibrating: true,
     ndviHistory: [
@@ -259,14 +324,18 @@ const PARCELS: ParcelDef[] = [
     recent: { precip: 35, tempMean: 18.8 },
   },
 
-  // ─── 4 · Almendro establecimiento INFORMADO · Cazorla ─────────────
+  // ─── 4 · Almendro establecimiento INFORMADO · Quesada ─────────────
+  // Zona de Quesada (al SO de Cazorla, pero sin entrar al pueblo) tiene
+  // expansión reciente de almendro en regadío sobre antiguos olivares.
+  // NO el centro de Cazorla — ahí solo hay tejados y huertas urbanas.
   {
-    name: '04 · Almendro establecimiento (Cazorla)',
+    name: '04 · Almendro establecimiento (Quesada)',
     cropType: 'almendro',
     province: 'Jaen',
     areaHa: 14.0,
-    centroid: [-3.000, 37.910],
-    sizeDeg: 0.007,
+    centroid: [-3.080, 37.832],
+    rotDeg: 5,
+    aspect: 1.3,   // almendro moderno regadío, marco rectangular
     pedagogicalNote: 'Agricultor que SÍ informó plantingYear=2024 al alta. Sistema deduce establishmentPhase=true, etiqueta neutral "En establecimiento" en lugar de "Crítico". Caso clave: dato del agricultor → calibración inmediata, no espera 60 días.',
     establishmentPhase: true,
     plantingYear: 2024,
@@ -289,14 +358,18 @@ const PARCELS: ParcelDef[] = [
     recent: { precip: 40, tempMean: 18.5 },
   },
 
-  // ─── 5 · Olivar con ESTRÉS HÍDRICO REAL · La Loma ────────────────
+  // ─── 5 · Olivar con ESTRÉS HÍDRICO REAL · campiña sur Baeza ───────
+  // Olivar tradicional secano sobre la campiña al sur de Baeza, zona
+  // donde la sequía 2023-2026 ha golpeado fuerte. Imagen satelital:
+  // olivar viejo con suelo claro entre árboles, signos de estrés.
   {
-    name: '05 · Olivar con estrés hídrico (La Loma)',
+    name: '05 · Olivar con estrés hídrico (campiña Baeza)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 6.0,
-    centroid: [-3.490, 37.950],
-    sizeDeg: 0.004,
+    centroid: [-3.500, 37.880],
+    rotDeg: 28,    // ladera campiña con desnivel
+    aspect: 1.5,
     pedagogicalNote: 'CASO ORO. NDVI cayendo de 0.55 a 0.38 últimas 6 semanas + thermal LST-air +9°C + drought signal moderate. Alerta crítica activa. Operation completada el mes pasado (intervención previa con drone). Caso ideal para debatir: cuándo regar, cuándo dejar.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.55 },
@@ -320,14 +393,19 @@ const PARCELS: ParcelDef[] = [
     hasCompletedOperation: true,
   },
 
-  // ─── 6 · Olivar HETEROGÉNEO · Andújar ────────────────────────────
+  // ─── 6 · Olivar HETEROGÉNEO · campiña norte Andújar ──────────────
+  // Campiña olivarera al norte del Guadalquivir, entre Andújar y
+  // Marmolejo. Parcelas grandes (25+ ha) en suelos heterogéneos con
+  // afloramientos rocosos / zonas más secas. Caso ideal de la lección
+  // "la media de una parcela grande miente, mira por zonas".
   {
-    name: '06 · Olivar heterogéneo (Andújar)',
+    name: '06 · Olivar heterogéneo (campiña Andújar)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 25.0,
-    centroid: [-4.050, 38.025],
-    sizeDeg: 0.010,
+    centroid: [-4.100, 38.000],
+    rotDeg: 15,
+    aspect: 1.8,   // parcela grande alargada, típica campiña baja
     pedagogicalNote: 'NDVI medio 0.45, parece OK. PERO el intra-parcela (NdviHeatmap) muestra zona sur con 0.20 y norte 0.60. Caso clave para enseñar: la media miente, mira por zonas, aplica solo donde duele. Discusión: tasa variable, secciones de control.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.44 },
@@ -389,7 +467,7 @@ async function seed() {
 
   let upserts = 0;
   for (const def of PARCELS) {
-    const ring = ringFromCentroid(def.centroid[0], def.centroid[1], def.sizeDeg);
+    const ring = rotatedRect(def.centroid[0], def.centroid[1], def.areaHa, def.rotDeg, def.aspect);
 
     const updateDoc: Record<string, unknown> = {
       ownerId: professor._id,
