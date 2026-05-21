@@ -37,56 +37,86 @@ const PROFESSOR_EMAIL = 'jesusvivar22@gmail.com';
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Polígono rectangular rotado y escalado por superficie real (hectáreas).
- * Sustituye al `ringFromCentroid` cuadrado axis-aligned anterior — los
- * cuadrados perfectos centrados en pueblos eran inaceptables para una
- * cuenta usada en aulas universitarias.
- *
- *   · areaHa  → calcula lados en metros para que la parcela tenga el área
- *               real declarada (1 ha = 10.000 m²)
- *   · aspect  → ratio largo/ancho. 1 = cuadrado, 2 = elongado 2:1.
- *               Los olivares tradicionales suelen ser elongados siguiendo
- *               curvas de nivel; las parcelas modernas más rectangulares.
- *   · rotDeg  → rotación en grados respecto al eje N-S. Real porque las
- *               parcelas casi nunca están perfectamente alineadas al N.
- *
- * Conversión metros→grados ajustada por latitud (cos(lat) para longitud).
+ * PRNG determinista (Mulberry32) — para perturbar los vértices del
+ * polígono con randomness reproducible. Mismo seed = mismo polígono
+ * en cada re-run del seed, así la parcela tiene una identidad estable.
  */
-function rotatedRect(
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+/**
+ * Polígono IRREGULAR con N vértices (8 por defecto), escalado por área
+ * real (ha), rotado y con perturbaciones deterministas por seed.
+ *
+ * Parcelas reales NO son rectángulos — siguen contornos de terreno,
+ * caminos, lindes con vecinos. Este helper genera vértices distribuidos
+ * sobre una elipse (rotada según orientación dominante de la parcela),
+ * con cada vértice perturbado en radio (±15%) y ángulo (±0.075 rad)
+ * de forma reproducible vía Mulberry32.
+ *
+ * Sustituye al `rotatedRect` anterior (rectángulo de 4 esquinas). Los
+ * rectángulos perfectos no engañan al ojo de un profesor de precision ag.
+ *
+ *   · areaHa  → área real en hectáreas (1 ha = 10.000 m²)
+ *   · rotDeg  → orientación dominante (eje largo) en grados desde N
+ *   · aspect  → ratio largo/corto (1=redondo, 2=elipsoide 2:1)
+ *   · seed    → entero que determina la forma irregular concreta
+ */
+function realisticPolygon(
   centerLng: number,
   centerLat: number,
   areaHa: number,
-  rotDeg: number = 0,
-  aspect: number = 1.5,
+  rotDeg: number,
+  aspect: number,
+  seed: number,
 ): number[][] {
-  const areaM2 = areaHa * 10_000;
-  const longSideM = Math.sqrt(areaM2 * aspect);
-  const shortSideM = longSideM / aspect;
+  const N_VERTICES = 8;
+  const rand = mulberry32(seed * 100 + 7);
 
+  // Semi-ejes de la elipse base: área = π·a·b, a/b = aspect
+  // → a = √(area·aspect/π), b = √(area/(aspect·π))
+  const areaM2 = areaHa * 10_000;
+  const semiLongM = Math.sqrt((areaM2 * aspect) / Math.PI);
+  const semiShortM = Math.sqrt(areaM2 / (aspect * Math.PI));
+
+  // Conversión metros→grados (latitud corrige longitud por cos)
   const latRad = (centerLat * Math.PI) / 180;
   const mPerDegLng = 111_320 * Math.cos(latRad);
   const mPerDegLat = 110_540;
+  const semiLongDeg = semiLongM / mPerDegLng;
+  const semiShortDeg = semiShortM / mPerDegLat;
 
-  const halfLongDeg = longSideM / 2 / mPerDegLng;
-  const halfShortDeg = shortSideM / 2 / mPerDegLat;
-
-  // 4 esquinas del rect sin rotar (eje X = largo, eje Y = corto)
-  const cornersLocal: Array<[number, number]> = [
-    [-halfLongDeg, -halfShortDeg],
-    [+halfLongDeg, -halfShortDeg],
-    [+halfLongDeg, +halfShortDeg],
-    [-halfLongDeg, +halfShortDeg],
-  ];
-
-  // Rotación
   const rotRad = (rotDeg * Math.PI) / 180;
   const cosR = Math.cos(rotRad);
   const sinR = Math.sin(rotRad);
 
-  const ring: number[][] = cornersLocal.map(([x, y]) => [
-    centerLng + (x * cosR - y * sinR),
-    centerLat + (x * sinR + y * cosR),
-  ]);
+  const ring: number[][] = [];
+  for (let i = 0; i < N_VERTICES; i++) {
+    // Ángulo base distribuido uniformemente alrededor del centroide
+    const thetaBase = (i / N_VERTICES) * 2 * Math.PI;
+    // Perturbación angular pequeña ±0.075 rad (~±4°)
+    const thetaPerturb = (rand() - 0.5) * 0.15;
+    const theta = thetaBase + thetaPerturb;
+    // Perturbación radial 0.85-1.15 del radio base
+    const radiusScale = 0.85 + rand() * 0.30;
+
+    // Coordenadas locales sobre elipse (sin rotar)
+    const xLocal = semiLongDeg * Math.cos(theta) * radiusScale;
+    const yLocal = semiShortDeg * Math.sin(theta) * radiusScale;
+
+    // Aplicar rotación
+    const xRot = xLocal * cosR - yLocal * sinR;
+    const yRot = xLocal * sinR + yLocal * cosR;
+
+    ring.push([centerLng + xRot, centerLat + yRot]);
+  }
   ring.push(ring[0]); // cerrar
   return ring;
 }
@@ -481,8 +511,18 @@ async function seed() {
   }
 
   let upserts = 0;
-  for (const def of PARCELS) {
-    const ring = rotatedRect(def.centroid[0], def.centroid[1], def.areaHa, def.rotDeg, def.aspect);
+  for (let idx = 0; idx < PARCELS.length; idx++) {
+    const def = PARCELS[idx];
+    // Seed determinista por índice de parcela → cada parcela tiene su
+    // identidad irregular estable entre re-runs del seed.
+    const ring = realisticPolygon(
+      def.centroid[0],
+      def.centroid[1],
+      def.areaHa,
+      def.rotDeg,
+      def.aspect,
+      idx + 1,
+    );
 
     const updateDoc: Record<string, unknown> = {
       ownerId: professor._id,
