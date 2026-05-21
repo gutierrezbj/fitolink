@@ -52,22 +52,20 @@ function mulberry32(seed: number): () => number {
 }
 
 /**
- * Polígono IRREGULAR con N vértices (8 por defecto), escalado por área
- * real (ha), rotado y con perturbaciones deterministas por seed.
+ * Polígono REALISTA — parcela agrícola con quiebros tipo lindero real.
  *
- * Parcelas reales NO son rectángulos — siguen contornos de terreno,
- * caminos, lindes con vecinos. Este helper genera vértices distribuidos
- * sobre una elipse (rotada según orientación dominante de la parcela),
- * con cada vértice perturbado en radio (±15%) y ángulo (±0.075 rad)
- * de forma reproducible vía Mulberry32.
+ * Estrategia: rectángulo base rotado, cada lado subdividido en 3 segmentos
+ * con vértices intermedios desplazados PERPENDICULARMENTE al lado. Las
+ * esquinas también se desplazan ligeramente. Resultado: 16 vértices con
+ * lados que claramente NO son rectos — exactamente como una parcela
+ * agrícola sigue caminos, lindes vecinales y curvas de nivel.
  *
- * Sustituye al `rotatedRect` anterior (rectángulo de 4 esquinas). Los
- * rectángulos perfectos no engañan al ojo de un profesor de precision ag.
+ *   areaHa  → área real (1 ha = 10.000 m²). Se respeta aproximadamente.
+ *   rotDeg  → orientación dominante del eje largo
+ *   aspect  → ratio largo/corto (1.5 olivar tradicional, 1.0 pistachar joven)
+ *   seed    → entero que determina la forma concreta (estable entre re-runs)
  *
- *   · areaHa  → área real en hectáreas (1 ha = 10.000 m²)
- *   · rotDeg  → orientación dominante (eje largo) en grados desde N
- *   · aspect  → ratio largo/corto (1=redondo, 2=elipsoide 2:1)
- *   · seed    → entero que determina la forma irregular concreta
+ * Salida: 17 puntos (16 vértices + cierre), polígono visiblemente irregular.
  */
 function realisticPolygon(
   centerLng: number,
@@ -77,46 +75,63 @@ function realisticPolygon(
   aspect: number,
   seed: number,
 ): number[][] {
-  const N_VERTICES = 8;
   const rand = mulberry32(seed * 100 + 7);
 
-  // Semi-ejes de la elipse base: área = π·a·b, a/b = aspect
-  // → a = √(area·aspect/π), b = √(area/(aspect·π))
+  // Lados del rect base en metros desde area = lado² · aspect⁻¹·aspect = lado_long · lado_short
   const areaM2 = areaHa * 10_000;
-  const semiLongM = Math.sqrt((areaM2 * aspect) / Math.PI);
-  const semiShortM = Math.sqrt(areaM2 / (aspect * Math.PI));
+  const longSideM = Math.sqrt(areaM2 * aspect);
+  const shortSideM = longSideM / aspect;
 
-  // Conversión metros→grados (latitud corrige longitud por cos)
+  // Conversión metros → grados a esta latitud
   const latRad = (centerLat * Math.PI) / 180;
   const mPerDegLng = 111_320 * Math.cos(latRad);
   const mPerDegLat = 110_540;
-  const semiLongDeg = semiLongM / mPerDegLng;
-  const semiShortDeg = semiShortM / mPerDegLat;
+  const halfLongDeg = longSideM / 2 / mPerDegLng;
+  const halfShortDeg = shortSideM / 2 / mPerDegLat;
 
+  // 4 esquinas del rect SIN rotar, con desplazamiento aleatorio en cada
+  // esquina (±20% del lado corto) para que no sean ángulos perfectos de 90°
+  const cornerJitter = halfShortDeg * 0.40;
+  const cornersLocal: Array<[number, number]> = [
+    [-halfLongDeg + (rand() - 0.5) * cornerJitter, -halfShortDeg + (rand() - 0.5) * cornerJitter],
+    [+halfLongDeg + (rand() - 0.5) * cornerJitter, -halfShortDeg + (rand() - 0.5) * cornerJitter],
+    [+halfLongDeg + (rand() - 0.5) * cornerJitter, +halfShortDeg + (rand() - 0.5) * cornerJitter],
+    [-halfLongDeg + (rand() - 0.5) * cornerJitter, +halfShortDeg + (rand() - 0.5) * cornerJitter],
+  ];
+
+  // Para cada lado, insertar 3 vértices intermedios con desplazamiento
+  // PERPENDICULAR al lado. Magnitud: hasta 25% de la longitud del lado.
+  const ringLocal: Array<[number, number]> = [];
+  for (let i = 0; i < 4; i++) {
+    const a = cornersLocal[i];
+    const b = cornersLocal[(i + 1) % 4];
+    ringLocal.push(a);
+
+    // Vector del lado (a→b) y su normal perpendicular (rotada 90° hacia afuera)
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const sideLen = Math.sqrt(dx * dx + dy * dy);
+    // Normal exterior: rotar (dx,dy) 90° clockwise → (dy, -dx)
+    const nx = dy / sideLen;
+    const ny = -dx / sideLen;
+
+    for (const t of [0.25, 0.5, 0.75]) {
+      const midX = a[0] + dx * t;
+      const midY = a[1] + dy * t;
+      // Offset perpendicular ±25% del lado, signo aleatorio (linde zigzag)
+      const offsetMag = sideLen * (rand() - 0.5) * 0.50;
+      ringLocal.push([midX + nx * offsetMag, midY + ny * offsetMag]);
+    }
+  }
+
+  // Aplicar rotación global y traslación al centroide
   const rotRad = (rotDeg * Math.PI) / 180;
   const cosR = Math.cos(rotRad);
   const sinR = Math.sin(rotRad);
-
-  const ring: number[][] = [];
-  for (let i = 0; i < N_VERTICES; i++) {
-    // Ángulo base distribuido uniformemente alrededor del centroide
-    const thetaBase = (i / N_VERTICES) * 2 * Math.PI;
-    // Perturbación angular pequeña ±0.075 rad (~±4°)
-    const thetaPerturb = (rand() - 0.5) * 0.15;
-    const theta = thetaBase + thetaPerturb;
-    // Perturbación radial 0.85-1.15 del radio base
-    const radiusScale = 0.85 + rand() * 0.30;
-
-    // Coordenadas locales sobre elipse (sin rotar)
-    const xLocal = semiLongDeg * Math.cos(theta) * radiusScale;
-    const yLocal = semiShortDeg * Math.sin(theta) * radiusScale;
-
-    // Aplicar rotación
-    const xRot = xLocal * cosR - yLocal * sinR;
-    const yRot = xLocal * sinR + yLocal * cosR;
-
-    ring.push([centerLng + xRot, centerLat + yRot]);
-  }
+  const ring: number[][] = ringLocal.map(([x, y]) => [
+    centerLng + (x * cosR - y * sinR),
+    centerLat + (x * sinR + y * cosR),
+  ]);
   ring.push(ring[0]); // cerrar
   return ring;
 }
