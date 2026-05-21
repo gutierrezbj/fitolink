@@ -239,7 +239,7 @@ const PARCELS: ParcelDef[] = [
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 12.0,
-    centroid: [-3.493, 37.690],
+    centroid: [-3.520, 37.620],   // S de Huelma, foothills despobladas
     rotDeg: 22,    // ladera orientada NO-SE
     aspect: 1.7,   // alargado siguiendo curva de nivel
     pedagogicalNote: 'Olivar de manual. NDVI estable 0.55+, baseline MODIS robusto, sin alertas. Caso "todo va bien" para discutir qué NO requiere intervención.',
@@ -267,11 +267,11 @@ const PARCELS: ParcelDef[] = [
   // La campiña entre Sabiote y Torreperogil es donde más se ha
   // extendido el modelo de seto en Jaén. Parcela bien rectangular.
   {
-    name: '02 · Olivar de seto intensivo (La Loma)',
+    name: '02 · Olivar de seto intensivo (Úbeda)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 18.0,
-    centroid: [-3.275, 38.050],
+    centroid: [-3.110, 38.116],   // E de Villacarrillo, heartland seto intensivo
     rotDeg: 8,     // casi N-S, parcela moderna mecanizada
     aspect: 1.6,
     pedagogicalNote: 'Olivar superintensivo en seto, plantación densa, riego deficitario monitorizado. NDVI muy alto 0.7+ con leve fluctuación intra-mes. Caso "manejo intensivo precisión".',
@@ -300,11 +300,11 @@ const PARCELS: ParcelDef[] = [
   // visibles en imagen satelital: parcelas casi cuadradas con marco
   // muy amplio y suelo desnudo dominante entre árboles.
   {
-    name: '03 · Pistachar joven calibrando (Frailes)',
+    name: '03 · Pistachar joven calibrando (Sierra Sur)',
     cropType: 'pistacho',
     province: 'Jaen',
     areaHa: 8.0,
-    centroid: [-3.900, 37.475],
+    centroid: [-3.870, 37.495],   // NE de Frailes, evita casco
     rotDeg: 12,
     aspect: 1.1,   // pistachar joven casi cuadrado
     pedagogicalNote: 'Agricultor nuevo SIN plantingYear informado. Sistema en modo Calibración pasiva 60 días. NDVI bajo pero la UI no grita: muestra "Calibrando". Caso clave: cómo onboarding sin info técnica del agricultor evita falsos positivos.',
@@ -329,11 +329,11 @@ const PARCELS: ParcelDef[] = [
   // expansión reciente de almendro en regadío sobre antiguos olivares.
   // NO el centro de Cazorla — ahí solo hay tejados y huertas urbanas.
   {
-    name: '04 · Almendro establecimiento (Quesada)',
+    name: '04 · Almendro establecimiento (Cazorla)',
     cropType: 'almendro',
     province: 'Jaen',
     areaHa: 14.0,
-    centroid: [-3.080, 37.832],
+    centroid: [-3.095, 37.815],   // S de Quesada, lejos de cualquier casco
     rotDeg: 5,
     aspect: 1.3,   // almendro moderno regadío, marco rectangular
     pedagogicalNote: 'Agricultor que SÍ informó plantingYear=2024 al alta. Sistema deduce establishmentPhase=true, etiqueta neutral "En establecimiento" en lugar de "Crítico". Caso clave: dato del agricultor → calibración inmediata, no espera 60 días.',
@@ -363,11 +363,11 @@ const PARCELS: ParcelDef[] = [
   // donde la sequía 2023-2026 ha golpeado fuerte. Imagen satelital:
   // olivar viejo con suelo claro entre árboles, signos de estrés.
   {
-    name: '05 · Olivar con estrés hídrico (campiña Baeza)',
+    name: '05 · Olivar con estrés hídrico (La Loma)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 6.0,
-    centroid: [-3.500, 37.880],
+    centroid: [-3.510, 37.880],   // campiña entre Mancha Real y Begíjar
     rotDeg: 28,    // ladera campiña con desnivel
     aspect: 1.5,
     pedagogicalNote: 'CASO ORO. NDVI cayendo de 0.55 a 0.38 últimas 6 semanas + thermal LST-air +9°C + drought signal moderate. Alerta crítica activa. Operation completada el mes pasado (intervención previa con drone). Caso ideal para debatir: cuándo regar, cuándo dejar.',
@@ -399,11 +399,11 @@ const PARCELS: ParcelDef[] = [
   // afloramientos rocosos / zonas más secas. Caso ideal de la lección
   // "la media de una parcela grande miente, mira por zonas".
   {
-    name: '06 · Olivar heterogéneo (campiña Andújar)',
+    name: '06 · Olivar heterogéneo (Andújar)',
     cropType: 'olivo',
     province: 'Jaen',
     areaHa: 25.0,
-    centroid: [-4.100, 38.000],
+    centroid: [-4.030, 38.105],   // N de Andújar, Sierra Morena foothills olive
     rotDeg: 15,
     aspect: 1.8,   // parcela grande alargada, típica campiña baja
     pedagogicalNote: 'NDVI medio 0.45, parece OK. PERO el intra-parcela (NdviHeatmap) muestra zona sur con 0.20 y norte 0.60. Caso clave para enseñar: la media miente, mira por zonas, aplica solo donde duele. Discusión: tasa variable, secciones de control.',
@@ -464,6 +464,21 @@ async function seed() {
     process.exit(1);
   }
   logger.info({ professorId: professor._id.toString() }, 'Professor user ready');
+
+  // ─── Fresh state · v1.2 ─────────────────────────────────────────────
+  // Esta es cuenta DEMO sintética. Borramos parcelas/alertas/operations
+  // viejas del profesor para evitar duplicados cuando se ajustan nombres
+  // o se añaden/quitan parcelas entre versiones del seed. Las cuentas
+  // de farmers reales NO se tocan — limpia solo lo que pertenece a
+  // este professor user.
+  const existingParcels = await Parcel.find({ ownerId: professor._id }).select('_id');
+  const existingIds = existingParcels.map((p) => p._id);
+  if (existingIds.length > 0) {
+    await Alert.deleteMany({ parcelId: { $in: existingIds } });
+    await Operation.deleteMany({ parcelId: { $in: existingIds } });
+    await Parcel.deleteMany({ _id: { $in: existingIds } });
+    logger.info({ removed: existingIds.length }, 'Removed previous demo parcels (fresh state)');
+  }
 
   let upserts = 0;
   for (const def of PARCELS) {
