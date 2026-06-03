@@ -1,4 +1,4 @@
-import { inferCoverLevel } from '@fitolink/shared';
+import { inferCoverLevel, isCalibrating, calibrationDaysLeft } from '@fitolink/shared';
 
 interface HealthScoreGaugeProps {
   ndvi: number | null;
@@ -12,6 +12,19 @@ interface HealthScoreGaugeProps {
    * tras los 5 originales del 13-may-2026.
    */
   establishmentPhase?: boolean;
+  /**
+   * Parcel.calibratingUntil — fecha hasta la cual la parcela está en
+   * modo Calibración pasiva (agricultor no informó plantingYear al alta).
+   * Mientras Date.now() < calibratingUntil, el gauge pasa a "Calibrando"
+   * con días restantes en lugar de mostrar un score puntual potencialmente
+   * engañoso sobre datos insuficientes. Sprint Calibración del Cultivo
+   * paso 3 (UI calibrando) · 14-may-2026.
+   *
+   * Precedencia: calibratingUntil > establishmentPhase > score absoluto.
+   * Una parcela puede estar calibrando Y ser potencialmente joven — la
+   * etiqueta correcta para el día 1 es "Calibrando".
+   */
+  calibratingUntil?: Date | string | null;
 }
 
 function ndviToScore(ndvi: number): number {
@@ -32,19 +45,32 @@ const ESTABLISHMENT_LOOK = {
   label: 'En establecimiento',
 };
 
-export default function HealthScoreGauge({ ndvi, size = 120, showLabel = true, establishmentPhase }: HealthScoreGaugeProps) {
+// Tono cálido para parcelas en modo Calibración: ocre/arena, sugiere
+// "el sistema está observando, aún no diagnostica". Distinto del gris
+// de establecimiento porque la causa es distinta — aquí falta info, no
+// es contexto agronómico.
+const CALIBRATION_LOOK = {
+  stroke: '#d4a85a',           // earth-300, tono arena cálido
+  text: 'text-earth-700',
+  label: 'Calibrando',
+};
+
+export default function HealthScoreGauge({ ndvi, size = 120, showLabel = true, establishmentPhase, calibratingUntil }: HealthScoreGaugeProps) {
   const score = ndvi !== null && ndvi !== undefined ? ndviToScore(ndvi) : null;
   const cover = inferCoverLevel({ ndvi, establishmentPhase });
+  const calibrating = isCalibrating({ calibratingUntil });
+  const daysLeft = calibrationDaysLeft({ calibratingUntil });
 
-  // Cuando el cultivo está en establecimiento (suelo dominantemente expuesto),
-  // un NDVI bajo es esperable y no diagnostica salud — el dial absoluto sería
-  // engañoso (rojo Crítico contradice al resto del UI que dice "valor esperable").
-  // Neutralizamos a gris y cambiamos la etiqueta.
+  // Precedencia: calibrating > establecimiento > score absoluto.
+  // Sin datos → gris "Sin datos". Calibrando → ocre "Calibrando". Cover
+  // low (establecimiento) → gris "En establecimiento". Resto → score normal.
   const colors = score === null
     ? { stroke: '#94a3b8', text: 'text-gray-400', label: 'Sin datos' }
-    : cover === 'low'
-      ? ESTABLISHMENT_LOOK
-      : scoreToColor(score);
+    : calibrating
+      ? CALIBRATION_LOOK
+      : cover === 'low'
+        ? ESTABLISHMENT_LOOK
+        : scoreToColor(score);
 
   const strokeWidth = size * 0.1;
   const radius = (size - strokeWidth) / 2;
@@ -112,7 +138,11 @@ export default function HealthScoreGauge({ ndvi, size = 120, showLabel = true, e
       {showLabel && (
         <div className="mt-1 text-center">
           <span className={`text-xs font-semibold ${colors.text}`}>{colors.label}</span>
-          {ndvi !== null && ndvi !== undefined && (
+          {calibrating ? (
+            <p className="text-[11px] text-gray-400">
+              faltan {daysLeft} día{daysLeft === 1 ? '' : 's'}
+            </p>
+          ) : ndvi !== null && ndvi !== undefined && (
             <p className="text-[11px] text-gray-400">NDVI {ndvi.toFixed(3)}</p>
           )}
         </div>

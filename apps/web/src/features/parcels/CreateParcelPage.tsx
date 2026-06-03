@@ -205,6 +205,77 @@ export default function CreateParcelPage() {
             />
           </div>
 
+          {/* ──────────── Año de plantación + modo Calibración ────────────
+              Sprint Calibración del Cultivo · paso 2 (UI alta) · 14-may-2026.
+              Si el agricultor lo sabe, el sistema arranca calibrado al
+              instante y deduce establishmentPhase via ESTABLISHMENT_YEARS.
+              Si no, calibratingUntil = hoy + 60d (modo Calibración pasiva). */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ¿Cuándo se plantó? <span className="text-gray-400">(opcional)</span>
+            </label>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              Si lo sabes, el sistema arranca calibrado. Si no, lo aprenderemos observando tu parcela durante 60 días.
+            </p>
+            <select
+              value={plantingYear ?? ''}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : null;
+                setPlantingYear(val);
+                if (val !== null) setDontKnowPlantingYear(false);
+              }}
+              disabled={dontKnowPlantingYear}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              <option value="">Seleccionar año…</option>
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={dontKnowPlantingYear}
+                onChange={(e) => {
+                  setDontKnowPlantingYear(e.target.checked);
+                  if (e.target.checked) setPlantingYear(null);
+                }}
+                className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+              />
+              <span className="text-sm text-gray-700">No lo sé — el sistema se calibra solo en 60 días</span>
+            </label>
+
+            {/* Feedback contextual: cultivo joven detectado automáticamente */}
+            {plantingYear !== null && cropType && ESTABLISHMENT_YEARS[cropType] !== undefined && (CURRENT_YEAR - plantingYear) < ESTABLISHMENT_YEARS[cropType] && (CURRENT_YEAR - plantingYear) >= 0 && (
+              <div className="mt-3 p-3 bg-earth-50 border border-earth-300/40 rounded-lg">
+                <p className="text-xs text-brand-800 leading-relaxed">
+                  <span className="font-semibold">Cultivo joven detectado.</span>{' '}
+                  {cropLabel(cropType)} de {CURRENT_YEAR - plantingYear} año{CURRENT_YEAR - plantingYear === 1 ? '' : 's'}.
+                  El sistema activará <span className="font-mono uppercase tracking-wider text-[10px]">en establecimiento</span> automáticamente — no te alertará por NDVI bajo durante el desarrollo natural.
+                </p>
+              </div>
+            )}
+
+            {/* Feedback contextual: cultivo en producción */}
+            {plantingYear !== null && cropType && ESTABLISHMENT_YEARS[cropType] !== undefined && (CURRENT_YEAR - plantingYear) >= ESTABLISHMENT_YEARS[cropType] && (
+              <div className="mt-3 p-3 bg-brand-50 border border-brand-200 rounded-lg">
+                <p className="text-xs text-brand-800 leading-relaxed">
+                  <span className="font-semibold">{cropLabel(cropType)} en producción.</span>{' '}
+                  {CURRENT_YEAR - plantingYear} años desde plantación. Umbrales NDVI estándar aplican desde la primera lectura Sentinel-2.
+                </p>
+              </div>
+            )}
+
+            {/* Feedback contextual: modo Calibración */}
+            {dontKnowPlantingYear && (
+              <div className="mt-3 p-3 bg-earth-50 border border-earth-300/40 rounded-lg">
+                <p className="text-xs text-brand-800 leading-relaxed">
+                  Tu parcela entrará en <span className="font-semibold">modo Calibración 60 días</span>. Recibirás los datos satelitales pero no alertas críticas hasta que aprendamos el patrón normal de tu parcela.
+                </p>
+              </div>
+            )}
+          </div>
+
           {mutation.isError && (
             <p className="text-sm text-red-600">
               {(mutation.error as Error).message || 'Error al crear la parcela'}

@@ -19,6 +19,7 @@ type Parcel = {
   geometry: GeoJSON.Polygon;
   ndviHistory: NdviReading[];
   establishmentPhase?: boolean;
+  calibratingUntil?: string | null;
 };
 
 function getHealthColor(ndvi: number | undefined) {
@@ -213,6 +214,7 @@ export default function ParcelsPage() {
                       size={100}
                       showLabel
                       establishmentPhase={selectedParcel.establishmentPhase}
+                      calibratingUntil={selectedParcel.calibratingUntil}
                     />
                     <div className="grid grid-cols-2 gap-3 flex-1">
                       {(() => {

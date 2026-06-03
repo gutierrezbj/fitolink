@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
-import { inferCoverLevel, cropLabel } from '@fitolink/shared';
+import { inferCoverLevel, cropLabel, isCalibrating, calibrationDaysLeft } from '@fitolink/shared';
 import type { NdviSnapshot } from './useNdviSnapshot.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
@@ -205,6 +205,8 @@ type Parcel = {
   ndviHistory: NdviReading[];
   isInsured: boolean;
   establishmentPhase?: boolean;
+  calibratingUntil?: string | null;
+  plantingYear?: number;
   modisBaseline?: ModisBaseline;
   climateBaseline?: ClimateBaseline;
   recentClimate?: RecentClimate;
@@ -407,6 +409,37 @@ export default function ParcelDetailPage() {
         </div>
       )}
 
+      {/* Banner modo Calibración — Sprint Calibración del Cultivo · paso 3.
+          Se muestra cuando la parcela ya tiene lecturas pero sigue dentro
+          del periodo de calibración pasiva (60d sin plantingYear informado).
+          Distingue del aviso "Procesando primera pasada" — aquí ya hay datos
+          pero el sistema NO emite alertas críticas hasta acumular base
+          suficiente para conocer el patrón normal de la parcela. */}
+      {(parcel.ndviHistory?.length ?? 0) > 0 && isCalibrating({ calibratingUntil: parcel.calibratingUntil }) && (
+        <div className="bg-earth-100/50 border border-earth-300/40 rounded-xl px-5 py-4 mb-4 flex items-start gap-4">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-earth-300 text-brand-800 flex items-center justify-center font-display text-lg">
+            ⏳
+          </div>
+          <div className="flex-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-1">
+              § PARCELA EN CALIBRACIÓN
+            </p>
+            <p className="font-display text-base text-brand-600 font-semibold leading-snug">
+              Aprendiendo el patrón normal de su parcela · faltan {calibrationDaysLeft({ calibratingUntil: parcel.calibratingUntil })} día{calibrationDaysLeft({ calibratingUntil: parcel.calibratingUntil }) === 1 ? '' : 's'}.
+            </p>
+            <p className="text-sm text-brand-900 mt-1.5 leading-relaxed">
+              Como no nos informaste de cuándo se plantó este cultivo, el sistema
+              observa durante 60 días para conocer su comportamiento normal antes
+              de emitir alertas críticas. Verás todos los datos satelitales como
+              siempre, pero solo recibirás avisos menores hasta completar la
+              calibración. Si conoces el año de plantación,{' '}
+              <span className="font-medium text-brand-600">edita la parcela</span>{' '}
+              para calibrar al instante.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* HERO: Map full width with NDVI overlay */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
         <div className="relative">
@@ -541,7 +574,13 @@ export default function ParcelDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Card 1: Health gauge + stats */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-5">
-              <HealthScoreGauge ndvi={ndvi} size={100} showLabel establishmentPhase={parcel.establishmentPhase} />
+              <HealthScoreGauge
+                ndvi={ndvi}
+                size={100}
+                showLabel
+                establishmentPhase={parcel.establishmentPhase}
+                calibratingUntil={parcel.calibratingUntil}
+              />
               <div className="flex-1 grid grid-cols-2 gap-y-3">
                 <div>
                   <p className="text-xs text-gray-400">Tendencia</p>
@@ -669,7 +708,11 @@ export default function ParcelDetailPage() {
 
       {/* Ola 1.5 · Pieza 1 — NDVI trend forecast (the morning-digest preview) */}
       <div className="mb-4">
-        <NdviForecastCard parcelId={parcel._id} />
+        <NdviForecastCard
+          parcelId={parcel._id}
+          calibratingUntil={parcel.calibratingUntil}
+          ndviReadingsCount={parcel.ndviHistory?.length ?? 0}
+        />
       </div>
 
       {/* Ola 1.5 · Pieza 2 — Personalised weather events from Open-Meteo */}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
-import { inferCoverLevel } from '@fitolink/shared';
+import { inferCoverLevel, isCalibrating, calibrationDaysLeft } from '@fitolink/shared';
 
 /**
  * Ola 1.5 · Pieza 1 — NDVI trend forecast card.
@@ -39,6 +39,16 @@ interface NdviForecast {
 
 interface Props {
   parcelId: string;
+  /**
+   * Sprint Calibración del Cultivo · paso 3 (UI calibrando) · 14-may.
+   * Pasado desde ParcelDetailPage cuando la parcela está en modo
+   * Calibración pasiva. Cuando isCalibrating(...)===true, la card
+   * muestra una pill informativa "Calibración · X de 8 lecturas"
+   * en lugar del análisis predictivo absoluto, que sería engañoso
+   * sin suficiente histórico.
+   */
+  calibratingUntil?: string | null;
+  ndviReadingsCount?: number;
 }
 
 const TREND_LABEL: Record<Trend, string> = {
@@ -54,7 +64,7 @@ const CONFIDENCE_LABEL: Record<Confidence, string> = {
   none:   '—',
 };
 
-export default function NdviForecastCard({ parcelId }: Props) {
+export default function NdviForecastCard({ parcelId, calibratingUntil, ndviReadingsCount }: Props) {
   const { data, isLoading } = useQuery<NdviForecast>({
     queryKey: ['ndvi-forecast', parcelId],
     queryFn: async () => {
@@ -64,6 +74,44 @@ export default function NdviForecastCard({ parcelId }: Props) {
     refetchInterval: 30 * 60 * 1000,  // server data refreshes every pipeline cycle
     staleTime: 10 * 60 * 1000,
   });
+
+  // Cuando la parcela está en modo Calibración pasiva, no tiene sentido
+  // mostrar proyección crítica absoluta — el sistema aún no conoce el patrón
+  // normal de la parcela. Sustituimos por una card explicativa que muestra
+  // progreso ("X de 8 lecturas") y deja claro que el análisis predictivo
+  // arranca al completar la calibración.
+  const calibrating = isCalibrating({ calibratingUntil });
+  const READINGS_TARGET = 8; // umbral pragmático para análisis predictivo robusto
+  if (calibrating) {
+    const readings = ndviReadingsCount ?? 0;
+    const daysLeft = calibrationDaysLeft({ calibratingUntil });
+    return (
+      <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
+        <div className="bg-brand-600 px-4 py-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
+            § PROYECCIÓN — EN CALIBRACIÓN
+          </p>
+        </div>
+        <div className="px-5 pt-5 pb-3">
+          <p className="font-display text-lg text-brand-900 leading-snug">
+            Aún aprendemos el patrón normal de su parcela.
+          </p>
+          <p className="text-sm text-brand-900 mt-2 leading-relaxed">
+            El análisis predictivo arrancará cuando completemos la calibración
+            inicial. Mientras tanto, su parcela acumula lecturas Sentinel-2 y
+            el sistema se ajusta a su comportamiento concreto, no a umbrales
+            absolutos.
+          </p>
+        </div>
+        <div className="px-5 py-3 border-t border-earth-300/30 bg-earth-50">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider bg-earth-300/40 text-brand-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-earth-300" />
+            Calibración · {readings} de {READINGS_TARGET} lecturas · faltan {daysLeft} día{daysLeft === 1 ? '' : 's'}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
     return (

@@ -188,7 +188,7 @@ export default function DashboardHome() {
   });
 
   // Best and worst parcel by NDVI
-  type ParcelLite = { _id: string; name: string; ndviHistory: { mean: number }[]; establishmentPhase?: boolean };
+  type ParcelLite = { _id: string; name: string; ndviHistory: { mean: number }[]; establishmentPhase?: boolean; calibratingUntil?: string | null };
   const parcelsWithNdvi = parcels.filter((p: ParcelLite) => p.ndviHistory?.length > 0);
   const worstParcel = parcelsWithNdvi.reduce((worst: ParcelLite | null, p: ParcelLite) => {
     const pNdvi = p.ndviHistory[p.ndviHistory.length - 1].mean;
@@ -307,6 +307,7 @@ export default function DashboardHome() {
                   size={90}
                   showLabel
                   establishmentPhase={worstParcel.establishmentPhase}
+                  calibratingUntil={worstParcel.calibratingUntil}
                 />
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{worstParcel.name}</p>
