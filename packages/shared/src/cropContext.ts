@@ -87,18 +87,45 @@ export function cropLabel(cropType: string | undefined | null): string {
  * mensajes alarmistas absolutos por una explicación honesta del contexto.
  * Usado en NdviForecastCard, en el digest matutino, en alertas del
  * pipeline cuando hace falta suprimir un falso positivo.
+ *
+ * Sprint SoilGrids · C (22-may-2026) — cuando hay perfil edáfico (soil)
+ * disponible, el mensaje se matiza según la textura dominante: arcillas
+ * retienen agua y aguantan más sequía que arenas. El consejo accionable
+ * cambia con la textura.
  */
 export function lowCoverNote(input: {
   parcelName?: string;
   cropType?: string;
   establishmentPhase?: boolean;
+  /** Perfil edáfico (Sprint SoilGrids C). Si presente, modula el mensaje. */
+  soil?: {
+    clayPct: number;
+    sandPct: number;
+    dominantTexture: string;
+  } | null;
 }): string {
   const where = input.parcelName ? `${input.parcelName} ` : '';
   const crop = cropLabel(input.cropType);
+
+  // Sufijo edáfico — explica POR QUÉ esa parcela se comporta como se comporta,
+  // dándole al agricultor info estructural que no cambia. Solo se añade si
+  // hay perfil suelo y la textura es "interpretable" (no caso franco neutral).
+  const soilSuffix = (() => {
+    if (!input.soil) return '';
+    const { clayPct, sandPct, dominantTexture } = input.soil;
+    if (clayPct >= 35) {
+      return ` Su suelo ${dominantTexture} (${clayPct.toFixed(0)}% arcilla) retiene agua varios días más que los suelos arenosos, así que el descenso será más lento pero el rebrote también lo será cuando llueva.`;
+    }
+    if (sandPct >= 65) {
+      return ` Su suelo ${dominantTexture} (${sandPct.toFixed(0)}% arena) drena rápido — pierde humedad antes que un suelo arcilloso. Vigile la próxima ventana de lluvia o riego con atención.`;
+    }
+    return '';
+  })();
+
   if (input.establishmentPhase) {
-    return `${where}está en fase de establecimiento. Los valores NDVI bajos son esperables hasta que el ${crop} complete la cobertura. Sin acción requerida.`;
+    return `${where}está en fase de establecimiento. Los valores NDVI bajos son esperables hasta que el ${crop} complete la cobertura. Sin acción requerida.${soilSuffix}`;
   }
-  return `${where}presenta cobertura vegetal baja (suelo predominantemente expuesto). Antes de actuar, conviene verificar si es la fase normal del ${crop} o si es estrés real.`;
+  return `${where}presenta cobertura vegetal baja (suelo predominantemente expuesto). Antes de actuar, conviene verificar si es la fase normal del ${crop} o si es estrés real.${soilSuffix}`;
 }
 
 /**

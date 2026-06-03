@@ -148,6 +148,8 @@ export function computeNdviForecast(parcel: {
   establishmentPhase?: boolean;
   /** Si activo (>now), la parcela está en modo Calibración pasiva. */
   calibratingUntil?: Date | string | null;
+  /** Perfil edáfico (Sprint SoilGrids C) — matiza mensajes según textura. */
+  soil?: { clayPct: number; sandPct: number; dominantTexture: string } | null;
 }): NdviForecast {
   const history = (parcel.ndviHistory ?? [])
     .filter((r) => typeof r.mean === 'number' && r.date)
@@ -271,6 +273,7 @@ export function computeNdviForecast(parcel: {
       parcelName: parcel.name,
       cropType: parcel.cropType,
       establishmentPhase: parcel.establishmentPhase,
+      soil: parcel.soil,
     });
   } else if (alreadyCritical) {
     message = `${parcel.name} está por debajo del umbral normal para el ${cropLabel(parcel.cropType)} en este mes. Revisar en persona o programar inspección dron.`;
@@ -313,7 +316,7 @@ export function computeNdviForecast(parcel: {
  */
 export async function getNdviForecastForParcel(parcelId: string): Promise<NdviForecast> {
   const parcel = await Parcel.findById(parcelId)
-    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil')
+    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil soil')
     .lean();
   if (!parcel) throw AppError.notFound('Parcela');
   return computeNdviForecast(parcel as Parameters<typeof computeNdviForecast>[0]);
@@ -325,7 +328,7 @@ export async function getNdviForecastForParcel(parcelId: string): Promise<NdviFo
  */
 export async function getNdviForecastsForOwner(ownerId: string): Promise<NdviForecast[]> {
   const parcels = await Parcel.find({ ownerId, isActive: true })
-    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil')
+    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil soil')
     .lean();
   return parcels.map((p) =>
     computeNdviForecast(p as Parameters<typeof computeNdviForecast>[0]),

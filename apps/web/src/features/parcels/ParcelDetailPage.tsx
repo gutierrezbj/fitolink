@@ -11,6 +11,7 @@ import ParcelMap from './ParcelMap.js';
 import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
+import SoilProfileCard from './SoilProfileCard.js';
 import NdviForecastCard from './NdviForecastCard.js';
 import WeatherEventsCard from './WeatherEventsCard.js';
 import PestAdvisoriesCard from './PestAdvisoriesCard.js';
@@ -207,6 +208,18 @@ type Parcel = {
   establishmentPhase?: boolean;
   calibratingUntil?: string | null;
   plantingYear?: number;
+  soil?: {
+    source: string;
+    fetchedAt: string;
+    clayPct: number;
+    sandPct: number;
+    siltPct: number;
+    organicCarbonGkg: number;
+    bulkDensityGcm3: number;
+    fieldCapacityVol: number;
+    dominantTexture: string;
+    sampledAt: { lat: number; lng: number };
+  } | null;
   modisBaseline?: ModisBaseline;
   climateBaseline?: ClimateBaseline;
   recentClimate?: RecentClimate;
@@ -741,6 +754,16 @@ export default function ParcelDetailPage() {
           establishmentPhase={parcel.establishmentPhase}
           cropType={parcel.cropType}
         />
+      </div>
+
+      {/* Soil profile — Sprint SoilGrids · B (UI card) · 22-may-2026.
+          Datos estructurales del suelo (ISRIC SoilGrids 250m). Familia
+          "información estática estructural" junto a MpcContext — el suelo
+          NO cambia, se descarga una sola vez en createParcel via fire-
+          and-forget. Si no está poblado, la card muestra CTA "Calcular
+          perfil de suelo" que dispara POST /soil/refresh. */}
+      <div className="mb-4">
+        <SoilProfileCard parcelId={parcel._id} soil={parcel.soil} />
       </div>
 
       {/* Forecast — closes the loop "we saw X happen → here's when you can act" */}
