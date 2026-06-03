@@ -25,6 +25,8 @@ router.get('/:id/insights/ndvi-forecast', parcelController.getNdviForecast);
 router.get('/:id/insights/weather-events', parcelController.getWeatherEvents);
 // Predictive insight — Curated pest advisories matching parcel crop + comarca radius
 router.get('/:id/insights/pest-advisories', getPestAdvisoriesForParcel);
+// Sprint SoilGrids — refresh manual del perfil edáfico ISRIC 250m
+router.post('/:id/soil/refresh', parcelController.refreshSoilProfile);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);

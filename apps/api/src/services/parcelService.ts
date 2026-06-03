@@ -2,6 +2,7 @@ import { Parcel, type IParcel } from '../models/Parcel.js';
 import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 import { sendFirstParcelEmail } from './emailService.js';
+import { fetchSoilProfileForParcel } from './soilService.js';
 import { logger } from '../utils/logger.js';
 import {
   CALIBRATION_DAYS,
@@ -15,6 +16,31 @@ import {
  * mandar el email "procesando" para que sepa qué esperar. Idempotente
  * por estado de la BD — si ya tenía parcelas no se manda.
  */
+/**
+ * Sprint SoilGrids — fetch fire-and-forget del perfil edáfico al crear
+ * la parcela. No bloquea la respuesta al usuario; si la API ISRIC está
+ * caída o devuelve datos incompletos, se persiste sin soil y el usuario
+ * puede dispararlo manualmente vía POST /parcels/:id/soil/refresh.
+ */
+async function maybePopulateSoil(parcel: IParcel | IParcel[]): Promise<void> {
+  const parcels = Array.isArray(parcel) ? parcel : [parcel];
+  for (const p of parcels) {
+    try {
+      const profile = await fetchSoilProfileForParcel(p);
+      await Parcel.updateOne({ _id: p._id }, { $set: { soil: profile } });
+      logger.info(
+        { parcelId: p._id.toString(), texture: profile.dominantTexture },
+        'soil_profile_auto_populated',
+      );
+    } catch (err) {
+      logger.warn(
+        { err, parcelId: p._id.toString() },
+        'soil_profile_auto_populate_failed (refresh disponible vía endpoint manual)',
+      );
+    }
+  }
+}
+
 async function maybeSendFirstParcelEmail(ownerId: string, justCreated: IParcel | IParcel[]): Promise<void> {
   try {
     // Count parcels for the user. If exactly the count we just created → first time.
@@ -86,6 +112,7 @@ export async function createParcel(ownerId: string, data: CreateParcel): Promise
     ownerId,
   });
   void maybeSendFirstParcelEmail(ownerId, parcel);
+  void maybePopulateSoil(parcel);
   return parcel;
 }
 
@@ -103,6 +130,7 @@ export async function createParcelsBulk(
   const created = await Parcel.insertMany(docs, { ordered: true });
   const createdArr = created as unknown as IParcel[];
   void maybeSendFirstParcelEmail(ownerId, createdArr);
+  void maybePopulateSoil(createdArr);
   return createdArr;
 }
 

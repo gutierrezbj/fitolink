@@ -4,6 +4,10 @@ import * as parcelService from '../services/parcelService.js';
 import * as ndviSnapshotService from '../services/ndviSnapshotService.js';
 import { getNdviForecastForParcel } from '../services/predictiveInsightService.js';
 import { getWeatherEventsForParcel } from '../services/weatherEventsService.js';
+import { fetchSoilProfileForParcel } from '../services/soilService.js';
+import { Parcel } from '../models/Parcel.js';
+import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 
 export async function create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -97,6 +101,36 @@ export async function getAll(req: AuthRequest, res: Response, next: NextFunction
     res.json({ success: true, data: parcels, meta: { total, page, limit } });
   } catch (error) {
     next(error);
+  }
+}
+
+/**
+ * Sprint SoilGrids — refresh manual del perfil edáfico.
+ * Consulta ISRIC SoilGrids v2.0 con el centroide de la parcela y
+ * guarda el resultado en parcel.soil. Idempotente: cada llamada
+ * sobrescribe el perfil anterior con datos frescos.
+ *
+ * Auth: el dueño de la parcela, admin global, o aseguradora si la
+ * parcela está en su cartera. Mismo modelo que el resto de endpoints
+ * de insight.
+ */
+export async function refreshSoilProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parcel = await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
+    const profile = await fetchSoilProfileForParcel(parcel);
+    await Parcel.updateOne({ _id: parcel._id }, { $set: { soil: profile } });
+    logger.info(
+      { parcelId: parcel._id.toString(), texture: profile.dominantTexture },
+      'soil_profile_refreshed',
+    );
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    logger.error({ err: error, parcelId: req.params.id }, 'soil_profile_refresh_failed');
+    next(error instanceof Error ? error : AppError.internal('SoilGrids fetch failed'));
   }
 }
 

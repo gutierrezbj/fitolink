@@ -70,6 +70,40 @@ export interface IRecentClimate {
   droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe' | null;
 }
 
+/**
+ * Sprint SoilGrids · 22-may-2026.
+ * Perfil edáfico estático de la parcela tomado de ISRIC SoilGrids v2.0
+ * (250m global). A diferencia de los demás enrichments (modisBaseline,
+ * climateBaseline, recentClimate, thermal) que son TEMPORALES, el suelo
+ * es PERMANENTE — fetch una vez al crear la parcela y no se recalcula
+ * salvo refresh manual del usuario o admin.
+ *
+ * Datos agregados sobre la capa agronómica (0-30 cm, donde están las
+ * raíces principales): %arcilla, %arena, %limo, carbono orgánico,
+ * densidad aparente, capacidad agua disponible (campo capacity), y la
+ * textura dominante según triángulo USDA.
+ */
+export interface ISoilProfile {
+  source: 'soilgrids-v2';
+  fetchedAt: Date;
+  /** % arcilla, capa 0-30 cm. */
+  clayPct: number;
+  /** % arena, capa 0-30 cm. */
+  sandPct: number;
+  /** % limo, capa 0-30 cm. */
+  siltPct: number;
+  /** Carbono orgánico g/kg, capa 0-30 cm. */
+  organicCarbonGkg: number;
+  /** Densidad aparente g/cm³, capa 0-30 cm. */
+  bulkDensityGcm3: number;
+  /** Contenido volumétrico de agua a -33 kPa (capacidad de campo) — cm³/cm³, 0-30 cm. */
+  fieldCapacityVol: number;
+  /** Textura dominante según triángulo USDA — castellano legible. */
+  dominantTexture: string;
+  /** Punto de la parcela donde se muestreó (centroide del polígono). */
+  sampledAt: { lat: number; lng: number };
+}
+
 // Sprint Thermal — Landsat C2 L2 surface temperature, refreshed each run
 export interface IThermal {
   source: string;            // 'landsat-c2-l2'
@@ -98,6 +132,13 @@ export interface IParcel extends Document {
   climateBaseline?: IClimateBaseline;
   recentClimate?: IRecentClimate;
   thermal?: IThermal;
+  /**
+   * Perfil edáfico desde ISRIC SoilGrids 250m v2.0. Permanente (fetch una
+   * vez al crear la parcela). El usuario o admin puede refrescarlo
+   * manualmente vía POST /parcels/:id/soil/refresh si cambian las
+   * referencias o si SoilGrids actualiza su modelo global.
+   */
+  soil?: ISoilProfile;
   isActive: boolean;
   /**
    * Crop establishment phase — true cuando la parcela está recién plantada
@@ -246,6 +287,26 @@ const thermalSchema = new Schema<IThermal>(
   { _id: false },
 );
 
+// Sprint SoilGrids — perfil edáfico estático ISRIC SoilGrids v2.0
+const soilProfileSchema = new Schema<ISoilProfile>(
+  {
+    source: { type: String, enum: ['soilgrids-v2'], required: true },
+    fetchedAt: { type: Date, required: true },
+    clayPct: { type: Number, required: true, min: 0, max: 100 },
+    sandPct: { type: Number, required: true, min: 0, max: 100 },
+    siltPct: { type: Number, required: true, min: 0, max: 100 },
+    organicCarbonGkg: { type: Number, required: true, min: 0 },
+    bulkDensityGcm3: { type: Number, required: true, min: 0 },
+    fieldCapacityVol: { type: Number, required: true, min: 0, max: 1 },
+    dominantTexture: { type: String, required: true },
+    sampledAt: {
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
+    },
+  },
+  { _id: false },
+);
+
 const parcelSchema = new Schema<IParcel>(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -266,6 +327,7 @@ const parcelSchema = new Schema<IParcel>(
     climateBaseline: { type: climateBaselineSchema, default: undefined },
     recentClimate: { type: recentClimateSchema, default: undefined },
     thermal: { type: thermalSchema, default: undefined },
+    soil: { type: soilProfileSchema, default: undefined },
     isActive: { type: Boolean, default: true },
     establishmentPhase: { type: Boolean, default: false },
     plantingYear: { type: Number, min: 1900, max: 2100 },
