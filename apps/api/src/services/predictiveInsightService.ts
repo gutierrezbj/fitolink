@@ -1,6 +1,6 @@
 import { Parcel, type INdviReading } from '../models/Parcel.js';
 import { AppError } from '../utils/AppError.js';
-import { inferCoverLevel, lowCoverNote, cropLabel } from '@fitolink/shared';
+import { inferCoverLevel, lowCoverNote, cropLabel, isCalibrating, calibrationDaysLeft } from '@fitolink/shared';
 
 /**
  * Predictive insights — Ola 1.5 · Pieza 1.
@@ -97,6 +97,12 @@ export interface NdviForecast {
   // esperable (parcela en establecimiento). El message ya viene matizado;
   // este flag permite también atenuar la UI (color, tono).
   establishmentPhase: boolean;
+  // Sprint Calibración del Cultivo · paso 4 (14-may). Cuando true, la
+  // parcela está en modo Calibración pasiva (sin plantingYear informado al
+  // alta, calibratingUntil > now). El message viene en formato suave
+  // informativo, no proyectivo — el sistema aún no conoce el patrón
+  // normal de la parcela para hacer una proyección honesta.
+  calibrating: boolean;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -140,12 +146,16 @@ export function computeNdviForecast(parcel: {
   ndviHistory?: INdviReading[];
   /** Si true, la mensajería evita imputar alarmas a NDVI bajos esperables. */
   establishmentPhase?: boolean;
+  /** Si activo (>now), la parcela está en modo Calibración pasiva. */
+  calibratingUntil?: Date | string | null;
 }): NdviForecast {
   const history = (parcel.ndviHistory ?? [])
     .filter((r) => typeof r.mean === 'number' && r.date)
     // Defensive sort: newest last
     .slice()
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const calibrating = isCalibrating({ calibratingUntil: parcel.calibratingUntil });
 
   const baseShape: NdviForecast = {
     parcelId: parcel._id.toString(),
@@ -165,7 +175,24 @@ export function computeNdviForecast(parcel: {
     readingsUsed: history.length,
     message: null,
     establishmentPhase: parcel.establishmentPhase === true,
+    calibrating,
   };
+
+  // Sprint Calibración del Cultivo · paso 4 (14-may): cuando la parcela
+  // está en modo Calibración pasiva, NO emitimos proyección crítica
+  // absoluta — el sistema aún no conoce el patrón normal y un umbral
+  // sería un falso positivo casi garantizado. El message va en formato
+  // suave informativo, que el digest matutino renderiza sin alarma.
+  if (calibrating) {
+    const daysLeft = calibrationDaysLeft({ calibratingUntil: parcel.calibratingUntil });
+    const where = parcel.name ? `${parcel.name} ` : '';
+    return {
+      ...baseShape,
+      currentNdvi: history.length > 0 ? history[history.length - 1].mean : null,
+      currentNdviDate: history.length > 0 ? isoDate(new Date(history[history.length - 1].date)) : null,
+      message: `${where}sigue calibrándose. Faltan ${daysLeft} día${daysLeft === 1 ? '' : 's'} para que el sistema conozca el patrón normal de la parcela. Hasta entonces, recibirás los datos satelitales pero no alertas críticas.`,
+    };
+  }
 
   if (history.length === 0) {
     return { ...baseShape, message: 'Sin lecturas todavía. El pipeline procesa cada 5 días.' };
@@ -286,7 +313,7 @@ export function computeNdviForecast(parcel: {
  */
 export async function getNdviForecastForParcel(parcelId: string): Promise<NdviForecast> {
   const parcel = await Parcel.findById(parcelId)
-    .select('_id name cropType ndviHistory establishmentPhase')
+    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil')
     .lean();
   if (!parcel) throw AppError.notFound('Parcela');
   return computeNdviForecast(parcel as Parameters<typeof computeNdviForecast>[0]);
@@ -298,7 +325,7 @@ export async function getNdviForecastForParcel(parcelId: string): Promise<NdviFo
  */
 export async function getNdviForecastsForOwner(ownerId: string): Promise<NdviForecast[]> {
   const parcels = await Parcel.find({ ownerId, isActive: true })
-    .select('_id name cropType ndviHistory establishmentPhase')
+    .select('_id name cropType ndviHistory establishmentPhase calibratingUntil')
     .lean();
   return parcels.map((p) =>
     computeNdviForecast(p as Parameters<typeof computeNdviForecast>[0]),

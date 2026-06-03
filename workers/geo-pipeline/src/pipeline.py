@@ -400,6 +400,27 @@ def run_pipeline() -> None:
                         ndvi=stats.mean,
                     )
                     continue  # next parcel — no alert insert
+                # ── Sprint Calibración del Cultivo · paso 4 (pipeline soft) ──
+                # Cuando la parcela está en modo Calibración pasiva (agricultor
+                # no informó plantingYear al alta, calibratingUntil = hoy+60d),
+                # NO emitimos alertas severity high/critical. El sistema aún
+                # NO conoce el patrón normal de la parcela y un umbral
+                # absoluto sería un falso positivo casi garantizado el día 1.
+                # Las alertas medium/low SÍ pasan — son informativas, no
+                # disparan acción urgente.
+                calibrating_until = parcel.get('calibratingUntil')
+                if calibrating_until is not None and anomaly.severity in ('high', 'critical'):
+                    # calibratingUntil viene de Mongo como datetime; comparamos contra now
+                    if isinstance(calibrating_until, datetime) and calibrating_until > datetime.now():
+                        logger.info(
+                            'alert_suppressed_calibrating',
+                            parcel=parcel_name,
+                            scene=scene_id,
+                            severity=anomaly.severity,
+                            ndvi=stats.mean,
+                            calibrating_until=calibrating_until.isoformat(),
+                        )
+                        continue  # next parcel — no alert insert
                 # Deduplicate: skip if same parcel+scene already has an open alert
                 existing = db.alerts.find_one({
                     'parcelId': parcel['_id'],
