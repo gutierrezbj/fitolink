@@ -37,6 +37,7 @@
 import { Types } from 'mongoose';
 import { User, type IUser } from '../models/User.js';
 import { Parcel } from '../models/Parcel.js';
+import { Alert } from '../models/Alert.js';
 import { logger } from '../utils/logger.js';
 import {
   getNdviForecastsForOwner,
@@ -50,6 +51,7 @@ import {
   getAdvisoriesForParcel,
   type ParcelPestAdvisory,
 } from './pestAdvisoryService.js';
+import { fetchActiveFiresNearParcel, type FireDetection } from './fireService.js';
 import { sendDigestEmail } from './emailService.js';
 
 // ── Demo account allow/deny lists ───────────────────────────────────────
@@ -63,6 +65,57 @@ const REAL_DATA_DEMO_GOOGLE_IDS = new Set<string>(['john-pistacho-real']);
 function isEligibleDemo(googleId: string): boolean {
   if (REAL_DATA_DEMO_GOOGLE_IDS.has(googleId)) return true;
   return !googleId.startsWith('demo-');
+}
+
+/**
+ * Sprint FIRMS · C — crea un Alert de tipo 'fire_proximity' para una parcela
+ * cuando hay foco cercano detectado, con dedupe básico: si ya hay un alert
+ * abierto del mismo tipo para esa parcela, no crea duplicado. La idea es
+ * que mientras el agricultor no marque la alerta como resuelta, no se le
+ * spamea cada mañana con el mismo evento.
+ */
+async function maybeCreateFireAlert(
+  parcelId: Types.ObjectId,
+  nearest: FireDetection,
+  severity: 'high' | 'critical',
+): Promise<void> {
+  const existingOpen = await Alert.findOne({
+    parcelId,
+    type: 'fire_proximity',
+    status: { $in: ['new', 'notified', 'acknowledged'] },
+  })
+    .select('_id')
+    .lean();
+  if (existingOpen) {
+    logger.info(
+      { parcelId: parcelId.toString(), existingAlertId: existingOpen._id.toString() },
+      'fire_alert_skip_existing_open',
+    );
+    return;
+  }
+  const confidenceMap: Record<string, number> = { h: 0.95, n: 0.75, l: 0.5 };
+  const aiConfidence = confidenceMap[nearest.confidence] ?? 0.75;
+  const created = await Alert.create({
+    parcelId,
+    type: 'fire_proximity',
+    severity,
+    detectedAt: new Date(),
+    status: 'new',
+    aiConfidence,
+    fireProximityKm: nearest.distanceKm,
+    fireSource: nearest.satellite === 'N' ? 'VIIRS_SNPP_NRT'
+              : nearest.satellite === '1' ? 'VIIRS_NOAA20_NRT'
+              : 'VIIRS_SNPP_NRT',
+  });
+  logger.info(
+    {
+      parcelId: parcelId.toString(),
+      alertId: created._id.toString(),
+      severity,
+      nearestKm: nearest.distanceKm,
+    },
+    'fire_alert_created',
+  );
 }
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -99,6 +152,25 @@ export interface DigestPestAdvisory {
   parcelNames: string[];
 }
 
+/**
+ * Sprint FIRMS · C — focos térmicos NASA FIRMS dentro del radio CRITICAL
+ * de alguna parcela del usuario. Sección DESTACADA al inicio del digest
+ * porque la urgencia es máxima: el agricultor debe saberlo antes que NDVI
+ * o meteo. Sólo entran fires < 5 km (los lejanos los ve en la card UI).
+ */
+export interface DigestFireProximity {
+  parcelId: string;
+  parcelName: string;
+  /** Distancia en km al foco más cercano detectado en esa parcela. */
+  nearestKm: number;
+  /** Número total de focos < 5 km en esa parcela en los últimos N días. */
+  fireCount: number;
+  /** Fecha (ISO yyyy-mm-dd) del foco más reciente. */
+  latestAcqDate: string;
+  /** Severity inferida: 'critical' si nearestKm < 2, 'high' si 2-5 km. */
+  severity: 'high' | 'critical';
+}
+
 export interface DigestPayload {
   user: {
     id: string;
@@ -109,6 +181,11 @@ export interface DigestPayload {
   generatedAt: string;
   parcelCount: number;
   totalHectares: number;
+  /**
+   * Sprint FIRMS · C — Focos térmicos cerca de parcelas del usuario.
+   * Va PRIMERO en el digest por urgencia. Vacío si no hay fires < 5 km.
+   */
+  fireSection: DigestFireProximity[];
   /** Forecasts grouped: only the actionable ones (descending or already critical) are surfaced. */
   ndviSection: {
     actionable: DigestParcelForecast[];
@@ -137,6 +214,8 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
   if (!isEligibleDemo(user.googleId)) return null;
 
   // ── Parcels (active only) ──
+  // geometry incluido en el select porque Sprint FIRMS · C lo necesita
+  // para calcular focos térmicos cerca de cada parcela.
   const parcels = await Parcel.find({ ownerId: user._id, isActive: true })
     .select('_id name areaHa cropType geometry')
     .lean();
@@ -147,6 +226,7 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
       generatedAt: new Date().toISOString(),
       parcelCount: 0,
       totalHectares: 0,
+      fireSection: [],
       ndviSection: { actionable: [], stableCount: 0 },
       weatherSection: [],
       pestSection: [],
@@ -155,6 +235,47 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
   }
 
   const totalHa = parcels.reduce((s, p) => s + (p.areaHa ?? 0), 0);
+
+  // ── Sprint FIRMS · C: Focos térmicos NASA FIRMS ──
+  // Va PRIMERO en el digest porque la urgencia supera a NDVI/meteo/plagas.
+  // Si FIRMS_MAP_KEY no está configurado, fetchActiveFiresNearParcel devuelve
+  // [] silencioso. Si la API falla, log y seguimos — no rompemos el digest
+  // por un fallo de FIRMS. Side-effect: crea Alert critical/high si fire < 5 km
+  // y no hay alerta abierta previa para esa parcela.
+  const FIRE_CRITICAL_KM = 2;
+  const FIRE_HIGH_KM = 5;
+  const fireSection: DigestFireProximity[] = [];
+  for (const p of parcels) {
+    try {
+      const fires = await fetchActiveFiresNearParcel(
+        { geometry: p.geometry } as { geometry: { coordinates: number[][][] } },
+        { radiusKm: FIRE_HIGH_KM, days: 7 },
+      );
+      const closeFires = fires.filter((f) => f.distanceKm <= FIRE_HIGH_KM);
+      if (closeFires.length === 0) continue;
+      const nearest = closeFires[0];
+      const severity: 'high' | 'critical' = nearest.distanceKm < FIRE_CRITICAL_KM ? 'critical' : 'high';
+      const latestAcqDate = closeFires
+        .map((f) => f.acqDate)
+        .sort()
+        .reverse()[0];
+      fireSection.push({
+        parcelId: p._id.toString(),
+        parcelName: p.name,
+        nearestKm: nearest.distanceKm,
+        fireCount: closeFires.length,
+        latestAcqDate,
+        severity,
+      });
+      // Side effect: persistir Alert si no hay una abierta de este tipo
+      // para esta parcela. Dedupe simple — una alerta abierta por parcela
+      // (cuando se resuelve, se puede generar otra al siguiente foco).
+      await maybeCreateFireAlert(p._id, nearest, severity);
+    } catch (err) {
+      logger.warn({ err, parcelId: p._id.toString() }, 'digest: FIRMS fetch failed for parcel');
+    }
+  }
+  fireSection.sort((a, b) => a.nearestKm - b.nearestKm);
 
   // ── Pieza 1: NDVI forecasts ──
   const forecasts = await getNdviForecastsForOwner(user._id.toString());
@@ -215,15 +336,20 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
 
   // ── Worth-sending rule ──
   // At least one section must have actionable content. Stable parcels +
-  // empty weather + empty pest = no email today.
+  // empty weather + empty pest = no email today. Sprint FIRMS · C: fires
+  // < 5 km son SIEMPRE worth-sending por urgencia, independiente del resto.
   const worthSending =
-    actionable.length > 0 || weatherSection.length > 0 || pestSection.length > 0;
+    fireSection.length > 0 ||
+    actionable.length > 0 ||
+    weatherSection.length > 0 ||
+    pestSection.length > 0;
 
   return {
     user: { id: user._id.toString(), name: user.name, email: user.email, role: user.role },
     generatedAt: new Date().toISOString(),
     parcelCount: parcels.length,
     totalHectares: Math.round(totalHa * 10) / 10,
+    fireSection,
     ndviSection: { actionable, stableCount },
     weatherSection,
     pestSection,

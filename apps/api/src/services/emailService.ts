@@ -419,6 +419,16 @@ export async function sendDigestEmail(payload: DigestEmailPayload): Promise<void
 }
 
 function digestSubject(d: DigestPayload): string {
+  // Sprint FIRMS · C — si hay focos térmicos, el asunto los antepone TODO
+  // con prefijo de urgencia ⚠️ para que destaque en la bandeja de entrada.
+  const criticalFires = d.fireSection.filter((f) => f.severity === 'critical').length;
+  const highFires = d.fireSection.length - criticalFires;
+  if (criticalFires > 0 || highFires > 0) {
+    const fireTag = criticalFires > 0
+      ? `${criticalFires} foco${criticalFires === 1 ? '' : 's'} térmico${criticalFires === 1 ? '' : 's'} a < 2 km`
+      : `${highFires} foco${highFires === 1 ? '' : 's'} térmico${highFires === 1 ? '' : 's'} a < 5 km`;
+    return `[AgroM · FitoLink] ⚠️ ${fireTag} — informe del día`;
+  }
   const parts: string[] = [];
   if (d.ndviSection.actionable.length > 0) parts.push(`${d.ndviSection.actionable.length} parcela${d.ndviSection.actionable.length === 1 ? '' : 's'} a vigilar`);
   if (d.weatherSection.length > 0) parts.push('meteo 7d');
@@ -440,6 +450,17 @@ function renderDigestText(d: DigestPayload): string {
   lines.push('');
   lines.push(`Resumen del ${spanishLongDate(d.generatedAt)} · ${d.parcelCount} parcela${d.parcelCount === 1 ? '' : 's'} (${d.totalHectares} ha)`);
   lines.push('');
+
+  // Sprint FIRMS · C — § 00 sólo si hay focos térmicos < 5 km
+  if (d.fireSection.length > 0) {
+    lines.push('§ 00 · FOCOS TÉRMICOS CERCANOS');
+    for (const f of d.fireSection) {
+      const label = f.severity === 'critical' ? 'CRÍTICO · ≤ 2 km' : 'ALTO · 2–5 km';
+      lines.push(`- ${f.parcelName} [${label}]: ${f.fireCount} foco${f.fireCount === 1 ? '' : 's'} a ${f.nearestKm} km. Último ${f.latestAcqDate}.`);
+    }
+    lines.push('Detección NASA FIRMS · VIIRS 375 m. Verifique con autoridades (112 / Plan INFOCA).');
+    lines.push('');
+  }
 
   lines.push('§ 01 · ESTADO DE SUS PARCELAS');
   if (d.ndviSection.actionable.length === 0) {
@@ -510,6 +531,19 @@ function renderDigestHtml(d: DigestPayload): string {
           </td>
         </tr>
 
+        <!-- § 00 — FOCOS TÉRMICOS (Sprint FIRMS · C). Va PRIMERO por urgencia.
+             Sólo se renderiza si hay fires < 5 km. Layout en banner rojo para
+             enfatizar la urgencia. -->
+        ${d.fireSection.length > 0 ? `
+        <tr>
+          <td style="padding:24px 32px 8px;background:#fef2f2;border-bottom:2px solid #b91c1c;">
+            <p style="margin:0 0 8px;color:#991b1b;font-size:12px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;font-family:${FONT_MONO};">§ 00 · FOCOS TÉRMICOS CERCANOS</p>
+            <div style="width:56px;height:2.5px;background:#b91c1c;margin-bottom:18px;"></div>
+            ${renderFireSection(d)}
+          </td>
+        </tr>
+        ` : ''}
+
         <!-- § 01 — NDVI -->
         <tr>
           <td style="padding:28px 32px 8px;">
@@ -565,6 +599,35 @@ function renderDigestHtml(d: DigestPayload): string {
 </table>
 </body>
 </html>`;
+}
+
+/**
+ * Sprint FIRMS · C — render del banner de focos térmicos al inicio del
+ * digest. Sólo se llama si fireSection.length > 0. Listado por proximidad
+ * ascendente. Severity 'critical' (< 2km) en negrita roja muy fuerte;
+ * 'high' (2-5km) en rojo más discreto.
+ */
+function renderFireSection(d: DigestPayload): string {
+  const items = d.fireSection.map((f) => {
+    const isCritical = f.severity === 'critical';
+    const bg = isCritical ? '#fee2e2' : '#fef3c7';
+    const border = isCritical ? '#b91c1c' : '#d97706';
+    const titleColor = isCritical ? '#991b1b' : '#92400e';
+    const label = isCritical ? 'CRÍTICO · ≤ 2 km' : 'ALTO · 2–5 km';
+    return `
+      <div style="background:${bg};border-left:3px solid ${border};padding:12px 14px;margin:0 0 10px;">
+        <p style="margin:0 0 4px;color:${titleColor};font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;font-family:${FONT_MONO};">${label}</p>
+        <p style="margin:0;color:#1f2937;font-size:14px;line-height:1.5;font-family:${FONT_BODY};">
+          <b>${escapeHtml(f.parcelName)}</b> — ${f.fireCount} foco${f.fireCount === 1 ? '' : 's'} térmico${f.fireCount === 1 ? '' : 's'} detectado${f.fireCount === 1 ? '' : 's'}.
+          El más cercano a <b>${f.nearestKm} km</b>. Último visto el ${f.latestAcqDate}.
+        </p>
+      </div>`;
+  }).join('');
+  return `${items}
+    <p style="margin:8px 0 0;color:#6b7280;font-size:11px;line-height:1.5;font-family:${FONT_BODY};">
+      Detección por NASA FIRMS · VIIRS 375 m · cuasi-tiempo-real. Verifique con autoridades locales
+      (112 / Plan INFOCA en Andalucía) si su finca puede estar en riesgo.
+    </p>`;
 }
 
 function renderNdviSection(d: DigestPayload): string {

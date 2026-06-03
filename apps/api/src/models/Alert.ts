@@ -39,7 +39,10 @@ export interface IAlert extends Document {
   parcelId: mongoose.Types.ObjectId;
   type: AlertType;
   severity: AlertSeverity;
+  /** NDVI medio en el momento de la alerta. 0 cuando type es fire_proximity
+   *  (no aplica — la alerta no viene de la serie satelital). */
   ndviValue: number;
+  /** Delta NDVI respecto a lectura previa. 0 cuando type es fire_proximity. */
   ndviDelta: number;
   detectedAt: Date;
   status: AlertStatus;
@@ -49,6 +52,11 @@ export interface IAlert extends Document {
   // ML feedback loop · paso 2 (Sprint feedback loop, 13-may-2026).
   detectionFeatures?: AlertDetectionFeatures;
   detectionModel?: 'v1_threshold' | 'v2_random_forest';
+  // Sprint FIRMS · C (04-jun-2026). Datos específicos cuando type es
+  // 'fire_proximity'. Distancia en km al foco más cercano detectado,
+  // y un snapshot mínimo del foco que disparó la alerta.
+  fireProximityKm?: number;
+  fireSource?: 'VIIRS_SNPP_NRT' | 'VIIRS_NOAA20_NRT' | 'MODIS_NRT';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,10 +66,14 @@ const alertSchema = new Schema<IAlert>(
     parcelId: { type: Schema.Types.ObjectId, ref: 'Parcel', required: true, index: true },
     type: { type: String, enum: ALERT_TYPES, required: true },
     severity: { type: String, enum: ALERT_SEVERITIES, required: true },
-    ndviValue: { type: Number, required: true },
-    ndviDelta: { type: Number, required: true },
+    // Sprint FIRMS: ndviValue + ndviDelta ahora con default 0 — un alert
+    // de tipo fire_proximity no viene de la serie satelital. Para los
+    // tipos ndvi_* siguen siendo el dato real que generó la alerta.
+    ndviValue: { type: Number, default: 0 },
+    ndviDelta: { type: Number, default: 0 },
     detectedAt: { type: Date, required: true, default: Date.now },
     status: { type: String, enum: ALERT_STATUSES, default: 'new' },
+    // aiConfidence sigue requerido — incluso fires tienen confianza (h/n/l de VIIRS)
     aiConfidence: { type: Number, required: true, min: 0, max: 1 },
     resolvedBy: { type: String, enum: ALERT_RESOLUTIONS },
     imagery: {
@@ -73,6 +85,9 @@ const alertSchema = new Schema<IAlert>(
     // basta con incrementar detectionModel; el campo acepta nuevas claves.
     detectionFeatures: { type: Schema.Types.Mixed },
     detectionModel: { type: String, enum: ['v1_threshold', 'v2_random_forest'] },
+    // Sprint FIRMS — campos específicos para fire_proximity alerts
+    fireProximityKm: { type: Number },
+    fireSource: { type: String, enum: ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'MODIS_NRT'] },
   },
   {
     timestamps: true,
