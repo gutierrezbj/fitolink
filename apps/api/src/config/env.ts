@@ -29,6 +29,11 @@ const envSchema = z.object({
   // ship with the code present without auto-firing in production until
   // the operator has verified a dry-run. Flip to "true" in .env when ready.
   DIGEST_CRON: z.string().optional().transform((v) => v === 'true'),
+  // NASA FIRMS API map key (free signup en https://firms.modaps.eosdis.nasa.gov/api/map_key/).
+  // Sin key, fireService devuelve array vacío y el UI muestra "Sin focos
+  // activos" sin diferenciar caso real vs falta de auth. Registro gratuito
+  // ~1 minuto, sin uso comercial restringido.
+  FIRMS_MAP_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

@@ -14,7 +14,9 @@ export const OPERATION_STATUSES = ['requested', 'assigned', 'in_progress', 'comp
 export type OperationStatus = (typeof OPERATION_STATUSES)[number];
 
 // Alert types
-export const ALERT_TYPES = ['ndvi_drop', 'ndre_anomaly', 'stress_pattern'] as const;
+// Sprint FIRMS · 04-jun-2026: añadido 'fire_proximity' — foco térmico
+// detectado por NASA FIRMS (VIIRS 375m) dentro del radio de la parcela.
+export const ALERT_TYPES = ['ndvi_drop', 'ndre_anomaly', 'stress_pattern', 'fire_proximity'] as const;
 export type AlertType = (typeof ALERT_TYPES)[number];
 
 // Alert severities

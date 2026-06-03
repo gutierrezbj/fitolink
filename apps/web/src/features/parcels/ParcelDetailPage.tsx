@@ -12,6 +12,7 @@ import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
 import SoilProfileCard from './SoilProfileCard.js';
+import FireProximityCard from './FireProximityCard.js';
 import NdviForecastCard from './NdviForecastCard.js';
 import WeatherEventsCard from './WeatherEventsCard.js';
 import PestAdvisoriesCard from './PestAdvisoriesCard.js';
@@ -772,6 +773,14 @@ export default function ParcelDetailPage() {
           const [lon, lat] = polygonCentroid(parcel.geometry);
           return <WeatherWidget lat={lat} lon={lon} parcelName={parcel.name} />;
         })()}
+      </div>
+
+      {/* Sprint FIRMS · B (UI card) · 04-jun-2026.
+          Focos térmicos NASA FIRMS cerca de la parcela. Colocado justo
+          después del pronóstico meteo porque el riesgo de incendio se
+          interpreta junto al calor/viento previsto. */}
+      <div className="mb-4">
+        <FireProximityCard parcelId={parcel._id} />
       </div>
 
       {/* Alerts */}

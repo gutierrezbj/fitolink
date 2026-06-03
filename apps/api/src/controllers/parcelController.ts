@@ -5,6 +5,7 @@ import * as ndviSnapshotService from '../services/ndviSnapshotService.js';
 import { getNdviForecastForParcel } from '../services/predictiveInsightService.js';
 import { getWeatherEventsForParcel } from '../services/weatherEventsService.js';
 import { fetchSoilProfileForParcel } from '../services/soilService.js';
+import { fetchActiveFiresNearParcel } from '../services/fireService.js';
 import { Parcel } from '../models/Parcel.js';
 import { AppError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
@@ -131,6 +132,33 @@ export async function refreshSoilProfile(req: AuthRequest, res: Response, next: 
   } catch (error) {
     logger.error({ err: error, parcelId: req.params.id }, 'soil_profile_refresh_failed');
     next(error instanceof Error ? error : AppError.internal('SoilGrids fetch failed'));
+  }
+}
+
+/**
+ * Sprint FIRMS — focos térmicos activos cerca de la parcela.
+ * Read-only, mismo auth pattern. Sin cache backend; el frontend
+ * gestiona staleTime via react-query (NASA FIRMS actualiza ~3h).
+ *
+ * Query params (todos opcionales):
+ *   radiusKm  default 25
+ *   days      default 7, max 10
+ *   includeLow  default false (filtra confidence 'l')
+ */
+export async function getNearbyFires(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parcel = await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
+    const radiusKm = req.query.radiusKm ? Number(req.query.radiusKm) : 25;
+    const days = req.query.days ? Number(req.query.days) : 7;
+    const includeLowConfidence = req.query.includeLow === 'true';
+    const fires = await fetchActiveFiresNearParcel(parcel, { radiusKm, days, includeLowConfidence });
+    res.json({ success: true, data: fires, meta: { radiusKm, days, count: fires.length } });
+  } catch (error) {
+    next(error);
   }
 }
 
