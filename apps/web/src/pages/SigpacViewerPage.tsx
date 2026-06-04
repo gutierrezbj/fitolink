@@ -95,6 +95,13 @@ export default function SigpacViewerPage() {
 
   const [fields, setFields] = useState<SigpacFields>(initialFields);
   const [found, setFound] = useState<SigpacResult | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyLink(ref: string) {
+    void navigator.clipboard.writeText(`https://fitolink.agrom.es/sigpac/${ref}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   const allFilled = Object.values(fields).every((v) => v.trim() !== '');
 
@@ -304,12 +311,30 @@ export default function SigpacViewerPage() {
                 </div>
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">Referencia</p>
-                  <p className="font-mono text-sm text-brand-900 leading-tight">{found.sigpacRef}</p>
+                  <p className="font-mono text-sm text-brand-900 leading-tight mb-3">{found.sigpacRef}</p>
                   <button
-                    onClick={() => navigator.clipboard.writeText(`https://fitolink.agrom.es/sigpac/${found.sigpacRef}`)}
-                    className="mt-2 text-[10px] uppercase tracking-wider font-mono text-brand-600 hover:text-brand-700"
+                    onClick={() => handleCopyLink(found.sigpacRef)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      copied
+                        ? 'bg-green-600 text-white'
+                        : 'bg-brand-600 text-white hover:bg-brand-700'
+                    }`}
                   >
-                    Copiar enlace compartible →
+                    {copied ? (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        ¡Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copiar enlace
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
