@@ -25,6 +25,7 @@ import { User } from '../models/User.js';
 import { Parcel } from '../models/Parcel.js';
 import { Alert } from '../models/Alert.js';
 import { Operation } from '../models/Operation.js';
+import { fetchByReference } from '../services/sigpacService.js';
 import { logger } from '../utils/logger.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
@@ -37,19 +38,15 @@ const PROFESSOR_EMAIL = 'jesusvivar22@gmail.com';
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * PRNG determinista (Mulberry32) — para perturbar los vértices del
- * polígono con randomness reproducible. Mismo seed = mismo polígono
- * en cada re-run del seed, así la parcela tiene una identidad estable.
+ * v2 (22-may-2026) · sustituidos los helpers v1.x (`mulberry32`,
+ * `realisticPolygon`) por descarga directa de geometrías catastrales
+ * reales desde SIGPAC vía `fetchByReference` del sigpacService. Cero
+ * cortijos en mitad de campo: si SIGPAC lo etiqueta como recinto
+ * agrícola con uso OV/FY/TA/etc, es agrícola por definición catastral
+ * oficial. El alumno puede pegar la referencia SIGPAC en el visor
+ * oficial (https://sigpac.mapa.gob.es/fega/visor/) y ver la misma
+ * geometría que FitoLink.
  */
-function mulberry32(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-}
 
 /**
  * Polígono REALISTA — parcela agrícola con quiebros tipo lindero real.
@@ -67,74 +64,9 @@ function mulberry32(seed: number): () => number {
  *
  * Salida: 17 puntos (16 vértices + cierre), polígono visiblemente irregular.
  */
-function realisticPolygon(
-  centerLng: number,
-  centerLat: number,
-  areaHa: number,
-  rotDeg: number,
-  aspect: number,
-  seed: number,
-): number[][] {
-  const rand = mulberry32(seed * 100 + 7);
-
-  // Lados del rect base en metros desde area = lado² · aspect⁻¹·aspect = lado_long · lado_short
-  const areaM2 = areaHa * 10_000;
-  const longSideM = Math.sqrt(areaM2 * aspect);
-  const shortSideM = longSideM / aspect;
-
-  // Conversión metros → grados a esta latitud
-  const latRad = (centerLat * Math.PI) / 180;
-  const mPerDegLng = 111_320 * Math.cos(latRad);
-  const mPerDegLat = 110_540;
-  const halfLongDeg = longSideM / 2 / mPerDegLng;
-  const halfShortDeg = shortSideM / 2 / mPerDegLat;
-
-  // 4 esquinas del rect SIN rotar, con desplazamiento aleatorio en cada
-  // esquina (±20% del lado corto) para que no sean ángulos perfectos de 90°
-  const cornerJitter = halfShortDeg * 0.40;
-  const cornersLocal: Array<[number, number]> = [
-    [-halfLongDeg + (rand() - 0.5) * cornerJitter, -halfShortDeg + (rand() - 0.5) * cornerJitter],
-    [+halfLongDeg + (rand() - 0.5) * cornerJitter, -halfShortDeg + (rand() - 0.5) * cornerJitter],
-    [+halfLongDeg + (rand() - 0.5) * cornerJitter, +halfShortDeg + (rand() - 0.5) * cornerJitter],
-    [-halfLongDeg + (rand() - 0.5) * cornerJitter, +halfShortDeg + (rand() - 0.5) * cornerJitter],
-  ];
-
-  // Para cada lado, insertar 3 vértices intermedios con desplazamiento
-  // PERPENDICULAR al lado. Magnitud: hasta 25% de la longitud del lado.
-  const ringLocal: Array<[number, number]> = [];
-  for (let i = 0; i < 4; i++) {
-    const a = cornersLocal[i];
-    const b = cornersLocal[(i + 1) % 4];
-    ringLocal.push(a);
-
-    // Vector del lado (a→b) y su normal perpendicular (rotada 90° hacia afuera)
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const sideLen = Math.sqrt(dx * dx + dy * dy);
-    // Normal exterior: rotar (dx,dy) 90° clockwise → (dy, -dx)
-    const nx = dy / sideLen;
-    const ny = -dx / sideLen;
-
-    for (const t of [0.25, 0.5, 0.75]) {
-      const midX = a[0] + dx * t;
-      const midY = a[1] + dy * t;
-      // Offset perpendicular ±25% del lado, signo aleatorio (linde zigzag)
-      const offsetMag = sideLen * (rand() - 0.5) * 0.50;
-      ringLocal.push([midX + nx * offsetMag, midY + ny * offsetMag]);
-    }
-  }
-
-  // Aplicar rotación global y traslación al centroide
-  const rotRad = (rotDeg * Math.PI) / 180;
-  const cosR = Math.cos(rotRad);
-  const sinR = Math.sin(rotRad);
-  const ring: number[][] = ringLocal.map(([x, y]) => [
-    centerLng + (x * cosR - y * sinR),
-    centerLat + (x * sinR + y * cosR),
-  ]);
-  ring.push(ring[0]); // cerrar
-  return ring;
-}
+// v1.x `realisticPolygon` eliminado en v2 — sustituido por SIGPAC real.
+// Las parcelas catastrales oficiales son ahora la fuente de verdad, no
+// polígonos sintéticos generados con perturbaciones perpendiculares.
 
 interface NdviPoint {
   daysAgo: number;
@@ -245,23 +177,32 @@ function thermalReading(lstC: number, airTempC: number, scenesUsed = 2) {
 // Definición de las 6 parcelas pedagógicas
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * Referencia SIGPAC oficial. Formato del visor MAPA:
+ *   prov / muni / agre / zona / poligono / parcela / recinto
+ * El alumno puede pegar estos números en https://sigpac.mapa.gob.es/fega/visor/
+ * y ver exactamente la misma geometría que FitoLink muestra.
+ */
+interface SigpacRef {
+  prov: string;     // siempre '23' para Jaén
+  muni: string;
+  agre: string;
+  zona: string;
+  poligono: string;
+  parcela: string;
+  recinto: string;
+}
+
 interface ParcelDef {
   name: string;
   cropType: string;
   province: string;
-  areaHa: number;
   /**
-   * Centroide [lng, lat] elegido manualmente sobre IMAGEN SATELITAL REAL
-   * de campos visibles de cada cultivo en Jaén. Verificable abriendo
-   * Google Earth o el visor SIGPAC sobre la coordenada.
+   * Aula Jaén v2 (22-may-2026): la geometría y el área vienen del catastro
+   * oficial SIGPAC. Cada `sigpacRef` se verifica con `fetchByReference` en
+   * el seed y devuelve un GeoJSON Polygon real + areaHa real. Cero invento.
    */
-  centroid: [number, number];
-  /** Rotación del polígono en grados respecto al eje N. Olivares
-   *  tradicionales en ladera suelen estar rotados 15-30°. */
-  rotDeg: number;
-  /** Ratio largo/ancho. 1 = cuadrado, 2 = elongado 2:1. Olivares 1.5-2,
-   *  pistacho/almendro modernos cuadrados 1.0-1.2. */
-  aspect: number;
+  sigpacRef: SigpacRef;
   pedagogicalNote: string;
   establishmentPhase?: boolean;
   plantingYear?: number;
@@ -283,11 +224,9 @@ const PARCELS: ParcelDef[] = [
     name: '01 · Olivar tradicional sano (Sierra Mágina)',
     cropType: 'olivo',
     province: 'Jaen',
-    areaHa: 12.0,
-    centroid: [-3.520, 37.620],   // S de Huelma, foothills despobladas
-    rotDeg: 22,    // ladera orientada NO-SE
-    aspect: 1.7,   // alargado siguiendo curva de nivel
-    pedagogicalNote: 'Olivar de manual. NDVI estable 0.55+, baseline MODIS robusto, sin alertas. Caso "todo va bien" para discutir qué NO requiere intervención.',
+    // SIGPAC 23/1/0/0/10/15/1 · Albanchez de Mágina · OV · ~1.92 ha real
+    sigpacRef: { prov: '23', muni: '1', agre: '0', zona: '0', poligono: '10', parcela: '15', recinto: '1' },
+    pedagogicalNote: 'Olivar tradicional Sierra Mágina (catastro real Albanchez). NDVI estable 0.55+, baseline MODIS robusto, sin alertas. Caso "todo va bien" para discutir qué NO requiere intervención.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.52 },
       { daysAgo: 60, ndvi: 0.54 },
@@ -312,14 +251,12 @@ const PARCELS: ParcelDef[] = [
   // La campiña entre Sabiote y Torreperogil es donde más se ha
   // extendido el modelo de seto en Jaén. Parcela bien rectangular.
   {
-    name: '02 · Olivar de seto intensivo (Úbeda)',
+    name: '02 · Olivar de seto intensivo (La Loma)',
     cropType: 'olivo',
     province: 'Jaen',
-    areaHa: 18.0,
-    centroid: [-3.110, 38.116],   // E de Villacarrillo, heartland seto intensivo
-    rotDeg: 8,     // casi N-S, parcela moderna mecanizada
-    aspect: 1.6,
-    pedagogicalNote: 'Olivar superintensivo en seto, plantación densa, riego deficitario monitorizado. NDVI muy alto 0.7+ con leve fluctuación intra-mes. Caso "manejo intensivo precisión".',
+    // SIGPAC 23/74/0/0/3/1/1 · Sabiote · OV · ~5.71 ha real
+    sigpacRef: { prov: '23', muni: '74', agre: '0', zona: '0', poligono: '3', parcela: '1', recinto: '1' },
+    pedagogicalNote: 'Olivar seto intensivo La Loma (catastro real Sabiote). NDVI alto con leve fluctuación intra-mes. Caso "manejo intensivo precisión": plantación densa, riego deficitario monitorizado.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.68 },
       { daysAgo: 60, ndvi: 0.71 },
@@ -348,11 +285,9 @@ const PARCELS: ParcelDef[] = [
     name: '03 · Pistachar joven calibrando (Sierra Sur)',
     cropType: 'pistacho',
     province: 'Jaen',
-    areaHa: 8.0,
-    centroid: [-3.870, 37.495],   // NE de Frailes, evita casco
-    rotDeg: 12,
-    aspect: 1.1,   // pistachar joven casi cuadrado
-    pedagogicalNote: 'Agricultor nuevo SIN plantingYear informado. Sistema en modo Calibración pasiva 60 días. NDVI bajo pero la UI no grita: muestra "Calibrando". Caso clave: cómo onboarding sin info técnica del agricultor evita falsos positivos.',
+    // SIGPAC 23/31/0/0/3/5/1 · Frailes · FY (frutal) · ~2.47 ha real
+    sigpacRef: { prov: '23', muni: '31', agre: '0', zona: '0', poligono: '3', parcela: '5', recinto: '1' },
+    pedagogicalNote: 'Pistachar joven en Frailes (catastro real, zona pistachera REAL de Jaén). Agricultor nuevo SIN plantingYear informado → modo Calibración pasiva 60 días. NDVI bajo pero la UI muestra "Calibrando". Caso clave: cómo onboarding sin info técnica evita falsos positivos.',
     calibrating: true,
     ndviHistory: [
       { daysAgo: 45, ndvi: 0.16 },
@@ -374,14 +309,12 @@ const PARCELS: ParcelDef[] = [
   // expansión reciente de almendro en regadío sobre antiguos olivares.
   // NO el centro de Cazorla — ahí solo hay tejados y huertas urbanas.
   {
-    name: '04 · Almendro establecimiento (Cazorla)',
+    name: '04 · Almendro establecimiento (Quesada)',
     cropType: 'almendro',
     province: 'Jaen',
-    areaHa: 14.0,
-    centroid: [-3.095, 37.815],   // S de Quesada, lejos de cualquier casco
-    rotDeg: 5,
-    aspect: 1.3,   // almendro moderno regadío, marco rectangular
-    pedagogicalNote: 'Agricultor que SÍ informó plantingYear=2024 al alta. Sistema deduce establishmentPhase=true, etiqueta neutral "En establecimiento" en lugar de "Crítico". Caso clave: dato del agricultor → calibración inmediata, no espera 60 días.',
+    // SIGPAC 23/70/0/0/3/5/1 · Quesada · FY (frutal) · catastro real
+    sigpacRef: { prov: '23', muni: '70', agre: '0', zona: '0', poligono: '3', parcela: '5', recinto: '1' },
+    pedagogicalNote: 'Almendro joven en Quesada (catastro real). Agricultor que SÍ informó plantingYear=2024 → sistema deduce establishmentPhase=true, etiqueta neutral "En establecimiento" en lugar de "Crítico". Caso clave: dato del agricultor → calibración inmediata, no espera 60 días.',
     establishmentPhase: true,
     plantingYear: 2024,
     ndviHistory: [
@@ -408,14 +341,12 @@ const PARCELS: ParcelDef[] = [
   // donde la sequía 2023-2026 ha golpeado fuerte. Imagen satelital:
   // olivar viejo con suelo claro entre árboles, signos de estrés.
   {
-    name: '05 · Olivar con estrés hídrico (La Loma)',
+    name: '05 · Olivar con estrés hídrico (Mancha Real)',
     cropType: 'olivo',
     province: 'Jaen',
-    areaHa: 6.0,
-    centroid: [-3.510, 37.880],   // campiña entre Mancha Real y Begíjar
-    rotDeg: 28,    // ladera campiña con desnivel
-    aspect: 1.5,
-    pedagogicalNote: 'CASO ORO. NDVI cayendo de 0.55 a 0.38 últimas 6 semanas + thermal LST-air +9°C + drought signal moderate. Alerta crítica activa. Operation completada el mes pasado (intervención previa con drone). Caso ideal para debatir: cuándo regar, cuándo dejar.',
+    // SIGPAC 23/61/0/0/3/5/1 · Mancha Real · OV · ~2.43 ha real
+    sigpacRef: { prov: '23', muni: '61', agre: '0', zona: '0', poligono: '3', parcela: '5', recinto: '1' },
+    pedagogicalNote: 'CASO ORO. Olivar tradicional Mancha Real (catastro real). NDVI cayendo de 0.55 a 0.38 últimas 6 semanas + thermal LST-air +9°C + drought signal moderate. Alerta crítica activa. Operation completada el mes pasado. Caso ideal para debatir: cuándo regar, cuándo dejar.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.55 },
       { daysAgo: 60, ndvi: 0.54 },
@@ -447,11 +378,9 @@ const PARCELS: ParcelDef[] = [
     name: '06 · Olivar heterogéneo (Andújar)',
     cropType: 'olivo',
     province: 'Jaen',
-    areaHa: 25.0,
-    centroid: [-4.030, 38.105],   // N de Andújar, Sierra Morena foothills olive
-    rotDeg: 15,
-    aspect: 1.8,   // parcela grande alargada, típica campiña baja
-    pedagogicalNote: 'NDVI medio 0.45, parece OK. PERO el intra-parcela (NdviHeatmap) muestra zona sur con 0.20 y norte 0.60. Caso clave para enseñar: la media miente, mira por zonas, aplica solo donde duele. Discusión: tasa variable, secciones de control.',
+    // SIGPAC 23/5/0/0/15/5/1 · Andújar · OV · ~1.29 ha real
+    sigpacRef: { prov: '23', muni: '5', agre: '0', zona: '0', poligono: '15', parcela: '5', recinto: '1' },
+    pedagogicalNote: 'Olivar Andújar Sierra Morena (catastro real). NDVI medio 0.45 parece OK. PERO el intra-parcela (NdviHeatmap) muestra zona sur con 0.20 y norte 0.60. Caso clave: la media miente, mira por zonas, aplica solo donde duele. Discusión: tasa variable, secciones de control.',
     ndviHistory: [
       { daysAgo: 65, ndvi: 0.44 },
       { daysAgo: 60, ndvi: 0.45 },
@@ -526,28 +455,49 @@ async function seed() {
   }
 
   let upserts = 0;
+  let sigpacFailures = 0;
   for (let idx = 0; idx < PARCELS.length; idx++) {
     const def = PARCELS[idx];
-    // Seed determinista por índice de parcela → cada parcela tiene su
-    // identidad irregular estable entre re-runs del seed.
-    const ring = realisticPolygon(
-      def.centroid[0],
-      def.centroid[1],
-      def.areaHa,
-      def.rotDeg,
-      def.aspect,
-      idx + 1,
+    const ref = def.sigpacRef;
+    const sigpacRefStr = `${ref.prov}/${ref.muni}/${ref.agre}/${ref.zona}/${ref.poligono}/${ref.parcela}/${ref.recinto}`;
+
+    // Aula Jaén v2 (22-may-2026): descargamos geometría real catastral
+    // desde SIGPAC en lugar de generar polígonos sintéticos. Si SIGPAC
+    // falla (404 / API caída), saltamos la parcela y logueamos — un
+    // re-run del seed cuando la API vuelva la recuperará.
+    let sigpacResult: Awaited<ReturnType<typeof fetchByReference>>;
+    try {
+      sigpacResult = await fetchByReference(
+        ref.prov, ref.muni, ref.agre, ref.zona, ref.poligono, ref.parcela, ref.recinto,
+      );
+    } catch (err) {
+      sigpacFailures += 1;
+      logger.error(
+        { err, parcelName: def.name, sigpacRef: sigpacRefStr },
+        'sigpac_fetch_failed_skipping_parcel',
+      );
+      continue;
+    }
+    logger.info(
+      {
+        parcelName: def.name,
+        sigpacRef: sigpacRefStr,
+        areaHa: sigpacResult.areaHa,
+        cropUse: sigpacResult.cropUse,
+      },
+      'sigpac_fetched',
     );
 
     const updateDoc: Record<string, unknown> = {
       ownerId: professor._id,
       name: def.name,
-      geometry: { type: 'Polygon', coordinates: [ring] },
-      areaHa: def.areaHa,
+      geometry: sigpacResult.geometry,                  // Polígono catastral REAL
+      areaHa: sigpacResult.areaHa,                      // Superficie catastral REAL
       cropType: def.cropType,
       province: def.province,
+      sigpacRef: sigpacRefStr,                          // Trazable al visor oficial
       isActive: true,
-      isSyntheticDemo: true, // <-- el flag clave: pipeline lo ignora
+      isSyntheticDemo: true,                            // pipeline lo ignora, datos hand-crafted
       ndviHistory: buildHistory(def.ndviHistory),
       modisBaseline: modisBaselineFor(def.cropType, def.modisAllTimeMean),
       climateBaseline: climateBaselineJaen(),
@@ -575,7 +525,10 @@ async function seed() {
     );
     if (result.upsertedCount > 0) upserts += 1;
   }
-  logger.info({ created: upserts, total: PARCELS.length }, 'Parcels upserted');
+  logger.info(
+    { created: upserts, total: PARCELS.length, sigpacFailures },
+    'Parcels upserted (v2 con geometrías SIGPAC reales)',
+  );
 
   // 2 · Alert crítica activa en parcela #5 (olivar con estrés hídrico)
   // Limpiamos alerts previos sintéticos de las parcelas demo y recreamos
