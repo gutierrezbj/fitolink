@@ -209,7 +209,10 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
   }
 
   // Eligibility filters happen here so callers don't have to repeat them.
-  if (user.role !== 'farmer' && user.role !== 'cooperative') return null;
+  // ADV (Agrupación de Defensa Vegetal) recibe digest matutino · vigilancia
+  // comarcal + avisos preventivos es exactamente el use case del rol.
+  // Sprint Rol ADV · 05-jun-2026.
+  if (user.role !== 'farmer' && user.role !== 'cooperative' && user.role !== 'adv') return null;
   if (user.digestSubscribed === false) return null;
   if (!isEligibleDemo(user.googleId)) return null;
 
@@ -383,7 +386,7 @@ export async function sendDigestForUser(
   const user = await User.findById(userId);
   if (!user) return { status: 'skipped:ineligible', reason: 'user-not-found' };
 
-  if (user.role !== 'farmer' && user.role !== 'cooperative') {
+  if (user.role !== 'farmer' && user.role !== 'cooperative' && user.role !== 'adv') {
     return { status: 'skipped:ineligible', reason: `role=${user.role}` };
   }
   if (user.digestSubscribed === false) {

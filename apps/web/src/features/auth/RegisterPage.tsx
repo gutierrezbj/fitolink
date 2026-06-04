@@ -53,6 +53,16 @@ const ROLES: RoleOption[] = [
     icon: '/insurance2.svg',
     needsVerification: true,
   },
+  {
+    // Sprint Rol ADV · 05-jun-2026 · Buyer institucional prioritario
+    // campaña 2026. Reusa icono provider-cooperative provisionalmente —
+    // V2 traerá icon set propio ADV (escudo + planta).
+    value: 'adv',
+    label: 'Agrupación de Defensa Vegetal',
+    description: 'Vigila colectivamente las parcelas de sus socios, emite avisos preventivos y prepara el reporte RAIF.',
+    icon: '/provider-cooperative.svg',
+    needsVerification: true,
+  },
 ];
 
 export default function RegisterPage() {

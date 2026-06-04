@@ -714,7 +714,10 @@ function renderPestItem(adv: DigestPestAdvisory): string {
 export interface WelcomeEmailPayload {
   to: string;
   recipientName: string;
-  role: 'farmer' | 'cooperative' | 'pilot' | 'insurer' | 'agronomist' | 'admin';
+  // ADV añadido 05-jun-2026 (Sprint Rol ADV). Mantenemos tipo inline
+  // en vez de UserRole importado porque sólo este payload usa el enum
+  // exhaustivo aquí y evita un import cross-package extra.
+  role: 'farmer' | 'cooperative' | 'pilot' | 'insurer' | 'agronomist' | 'admin' | 'adv';
   needsVerification?: boolean;
 }
 

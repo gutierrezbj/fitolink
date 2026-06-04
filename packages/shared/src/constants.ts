@@ -2,7 +2,14 @@
 // `cooperative` represents an entity that aggregates many farmers (socios).
 // It owns no parcels itself; it sees an overview of its socios' parcels via
 // the `cooperativeId` link on User.
-export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin', 'cooperative'] as const;
+//
+// `adv` (Agrupación de Defensa Vegetal) · 05-jun-2026 · entidad institucional
+// que vigila colectivamente plagas/enfermedades en una comarca y reporta al
+// RAIF. Estructuralmente parecido a `cooperative` (agrega farmers), pero el
+// foco no es comercialización sino sanidad vegetal: vigilancia comarcal +
+// avisos preventivos a socios + cumplimiento normativo RAIF. Buyer
+// institucional prioritario campaña 2026 según decisión PM 04-jun.
+export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin', 'cooperative', 'adv'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // Operation types
