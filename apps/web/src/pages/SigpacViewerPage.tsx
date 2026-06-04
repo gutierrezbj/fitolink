@@ -73,6 +73,88 @@ const USO_SIGPAC: Record<string, string> = {
   CF: 'Cítricos-frutales',
 };
 
+/**
+ * Convierte un Polygon GeoJSON a string KML 2.2 mínimo válido.
+ *
+ * Format target: KML 2.2 (OGC standard). Compatible con Google Earth,
+ * DJI GS Pro, Litchi, DroneDeploy, Pix4D, QGIS, ArcGIS Field Maps.
+ *
+ * Asume Polygon (no MultiPolygon) — todos los recintos SIGPAC son
+ * polígonos simples sin huecos, así que ignoramos rings interiores.
+ */
+function buildKmlFromGeometry(
+  geometry: GeoJSON.Polygon,
+  ref: string,
+  cropUseLabel: string,
+  areaHa: number,
+): string {
+  const outerRing = geometry.coordinates[0] ?? [];
+  const coords = outerRing.map(([lng, lat]) => `${lng},${lat},0`).join(' ');
+  // terra-500 #d45220 en formato AABBGGRR usado por KML.
+  // alpha 88 (~53%) para que el relleno deje ver el satellite debajo.
+  const fillColor = '882052d4';
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<kml xmlns="http://www.opengis.net/kml/2.2">',
+    '  <Document>',
+    `    <name>Parcela SIGPAC ${escapeXml(ref)}</name>`,
+    `    <description>Recinto catastral SIGPAC oficial. Uso: ${escapeXml(cropUseLabel)}. Superficie: ${areaHa.toFixed(2)} ha. Generado por AgroM · FitoLink (fitolink.agrom.es).</description>`,
+    '    <Style id="agrom-parcela">',
+    '      <LineStyle>',
+    '        <color>ff2052d4</color>',
+    '        <width>3</width>',
+    '      </LineStyle>',
+    '      <PolyStyle>',
+    `        <color>${fillColor}</color>`,
+    '        <fill>1</fill>',
+    '        <outline>1</outline>',
+    '      </PolyStyle>',
+    '    </Style>',
+    '    <Placemark>',
+    `      <name>SIGPAC ${escapeXml(ref)}</name>`,
+    `      <description>${escapeXml(cropUseLabel)} · ${areaHa.toFixed(2)} ha</description>`,
+    '      <styleUrl>#agrom-parcela</styleUrl>',
+    '      <Polygon>',
+    '        <outerBoundaryIs>',
+    '          <LinearRing>',
+    `            <coordinates>${coords}</coordinates>`,
+    '          </LinearRing>',
+    '        </outerBoundaryIs>',
+    '      </Polygon>',
+    '    </Placemark>',
+    '  </Document>',
+    '</kml>',
+  ].join('\n');
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Descarga un blob como archivo. Util compartido entre descargas KML
+ * y GeoJSON. createObjectURL + click sintético es la forma estándar
+ * (sin librerías) compatible con todos los navegadores actuales.
+ */
+function downloadBlob(content: string, filename: string, mime: string): void {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Cleanup tras un tick para que algunos navegadores (Safari)
+  // tengan tiempo de iniciar la descarga antes de invalidar la URL.
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
 function FitGeometry({ geometry }: { geometry: GeoJSON.Polygon }) {
   const map = useMap();
   const layer = L.geoJSON(geometry as GeoJSON.GeoJsonObject);
@@ -101,6 +183,64 @@ export default function SigpacViewerPage() {
     void navigator.clipboard.writeText(`https://fitolink.agrom.es/sigpac/${ref}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleDownloadKml() {
+    if (!found) return;
+    const cropLabel = USO_SIGPAC[found.cropUse] ?? found.cropUse;
+    const kml = buildKmlFromGeometry(found.geometry, found.sigpacRef, cropLabel, found.areaHa);
+    // Filename con guiones bajos en la ref (no slashes) para evitar
+    // problemas en Windows / DJI Pilot al cargar el archivo.
+    const safeRef = found.sigpacRef.replace(/[\/\s]/g, '_');
+    downloadBlob(kml, `parcela-sigpac-${safeRef}.kml`, 'application/vnd.google-earth.kml+xml');
+  }
+
+  function handleDownloadGeoJson() {
+    if (!found) return;
+    const cropLabel = USO_SIGPAC[found.cropUse] ?? found.cropUse;
+    // Envolvemos en Feature para que tenga properties con metadatos
+    // (QGIS los muestra automáticamente en la tabla de atributos).
+    const feature: GeoJSON.Feature = {
+      type: 'Feature',
+      properties: {
+        sigpacRef: found.sigpacRef,
+        cropUse: found.cropUse,
+        cropUseLabel: cropLabel,
+        areaHa: Number(found.areaHa.toFixed(2)),
+        source: 'AgroM · FitoLink · SIGPAC catastral oficial',
+      },
+      geometry: found.geometry,
+    };
+    const json = JSON.stringify(feature, null, 2);
+    const safeRef = found.sigpacRef.replace(/[\/\s]/g, '_');
+    downloadBlob(json, `parcela-sigpac-${safeRef}.geojson`, 'application/geo+json');
+  }
+
+  function handleShareWhatsApp() {
+    if (!found || !centroid) return;
+    const cropLabel = USO_SIGPAC[found.cropUse] ?? found.cropUse;
+    const url = `https://fitolink.agrom.es/sigpac/${found.sigpacRef}`;
+    // Texto preformateado · pensado para grupo de cooperativa o WhatsApp 1:1.
+    // Incluye contexto mínimo (qué es, dónde, link) y firma sutil de marca.
+    const text =
+      `📍 Parcela SIGPAC ${found.sigpacRef}\n` +
+      `${cropLabel} · ${found.areaHa.toFixed(2)} ha\n\n` +
+      `Mírala sobre satellite y consulta el tiempo de hoy:\n${url}\n\n` +
+      `— vía AgroM · FitoLink`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleOpenGoogleMaps() {
+    if (!centroid) return;
+    // centroid llega como [lng, lat] desde polygonCentroid;
+    // Google Maps espera lat,lng — invertimos.
+    const [lng, lat] = centroid;
+    // q=lat,lng es el path mas universal · funciona en Maps web, app
+    // iOS, app Android, y respeta navegacion turn-by-turn si el user
+    // pulsa el boton dentro de la app.
+    const gmapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    window.open(gmapsUrl, '_blank', 'noopener,noreferrer');
   }
 
   const allFilled = Object.values(fields).every((v) => v.trim() !== '');
@@ -343,6 +483,65 @@ export default function SigpacViewerPage() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Compartir y exportar · 3 nuevas acciones que multiplican el
+                valor del visor para 3 perfiles distintos:
+                  · WhatsApp share  → viralidad pasiva en grupos cooperativa
+                  · Google Maps     → piloto-dron / agricultor navega al campo
+                  · KML + GeoJSON   → asesor agrónomo importa en QGIS y
+                    piloto-dron carga geometría en DJI GS Pro / Litchi
+                Bloque 05-jun-2026 · Sprint Visor SIGPAC mejoras. */}
+            <div className="bg-white border border-earth-300/30 rounded-xl p-5">
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-gray-500 mb-4">
+                § COMPARTIR Y EXPORTAR
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#1ebe5d] active:bg-[#17a851] px-3 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                  aria-label="Compartir por WhatsApp"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                  WhatsApp
+                </button>
+                <button
+                  onClick={handleOpenGoogleMaps}
+                  className="inline-flex items-center justify-center gap-2 bg-gray-700 text-white hover:bg-gray-800 active:bg-gray-900 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                  aria-label="Abrir centroide en Google Maps"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Google Maps
+                </button>
+                <button
+                  onClick={handleDownloadKml}
+                  className="inline-flex items-center justify-center gap-2 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                  aria-label="Descargar KML"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  KML
+                </button>
+                <button
+                  onClick={handleDownloadGeoJson}
+                  className="inline-flex items-center justify-center gap-2 bg-earth-200 text-brand-900 hover:bg-earth-300 active:bg-earth-400 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                  aria-label="Descargar GeoJSON"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  GeoJSON
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-3 leading-snug">
+                KML para DJI GS Pro, Litchi, Google Earth · GeoJSON para QGIS, ArcGIS, asesor agrónomo · Google Maps abre el centroide para navegar a la finca.
+              </p>
             </div>
 
             {/* Meteo HOY · lead magnet anónimo · 1 día gratis, los 6 siguientes
