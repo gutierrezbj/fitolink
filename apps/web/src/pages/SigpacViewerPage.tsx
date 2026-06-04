@@ -267,7 +267,10 @@ export default function SigpacViewerPage() {
                 />
                 <GeoJSON
                   data={found.geometry as GeoJSON.GeoJsonObject}
-                  style={{ color: '#46632e', weight: 3, fillColor: '#46632e', fillOpacity: 0.20 }}
+                  // terra-500 — el naranja brand de AgroM. Sobre tiles
+                  // satellite Esri (verdes/marrones oscuros) destaca mucho
+                  // mas que el brand-600 verde topographic que se camufla.
+                  style={{ color: '#d45220', weight: 3, fillColor: '#d45220', fillOpacity: 0.22 }}
                 />
                 <FitGeometry geometry={found.geometry} />
               </MapContainer>
