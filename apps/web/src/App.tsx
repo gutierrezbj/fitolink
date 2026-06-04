@@ -4,6 +4,7 @@ import LandingPage from '@/pages/LandingPage.js';
 import TermsPage from '@/pages/TermsPage.js';
 import PrivacyPage from '@/pages/PrivacyPage.js';
 import PricingPage from '@/pages/PricingPage.js';
+import SigpacViewerPage from '@/pages/SigpacViewerPage.js';
 import LoginPage from '@/features/auth/LoginPage.js';
 import RegisterPage from '@/features/auth/RegisterPage.js';
 import DashboardLayout from '@/layouts/DashboardLayout.js';
@@ -37,6 +38,11 @@ export default function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      {/* Sprint Visor SIGPAC público · 04-jun-2026. URL parametrizada para
+          enlaces compartibles: /sigpac/23/74/0/0/3/1/1 carga directamente
+          la parcela. /sigpac sin params muestra formulario vacío. */}
+      <Route path="/sigpac" element={<SigpacViewerPage />} />
+      <Route path="/sigpac/:prov/:muni/:agre/:zona/:poligono/:parcela/:recinto" element={<SigpacViewerPage />} />
 
       {/* Protected Dashboard */}
       <Route
