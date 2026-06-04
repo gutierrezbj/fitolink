@@ -258,19 +258,12 @@ export default function SigpacViewerPage() {
             {/* Mapa grande */}
             <div className="bg-white border border-earth-300/30 rounded-xl overflow-hidden">
               <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between gap-3">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70 min-w-0 truncate">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-earth-50/80 min-w-0 truncate">
                   § PARCELA &middot; SIGPAC {found.sigpacRef}
                 </p>
-                <button
-                  onClick={handleReset}
-                  className="flex-shrink-0 inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-white transition-colors"
-                  aria-label="Buscar otra parcela"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Buscar otra parcela
-                </button>
+                <p className="font-mono text-[10px] text-earth-50/60 tracking-wide hidden sm:block">
+                  Cat&aacute;stro oficial
+                </p>
               </div>
               <MapContainer
                 center={[39.0, -3.5]}
@@ -296,9 +289,21 @@ export default function SigpacViewerPage() {
 
             {/* Datos del recinto */}
             <div className="bg-white border border-earth-300/30 rounded-xl p-5">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500 mb-3">
-                § DATOS DEL RECINTO
-              </p>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-gray-500">
+                  § DATOS DEL RECINTO
+                </p>
+                <button
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-1.5 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  aria-label="Buscar otra parcela"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Buscar otra parcela
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">Superficie</p>
