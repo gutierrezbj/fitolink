@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '@/lib/api.js';
+import { fetchForecast, weatherLabel, windCardinal } from '@/features/weather/openMeteo.js';
+import { polygonCentroid } from '@/features/marketplace/distance.js';
 
 /**
  * Visor SIGPAC público · alternativa decente al visor oficial MAPA.
@@ -132,6 +134,31 @@ export default function SigpacViewerPage() {
 
   const usoLabel = found ? (USO_SIGPAC[found.cropUse] ?? found.cropUse) : null;
 
+  // Centroide del polígono para meteo · solo se calcula cuando hay parcela
+  const centroid = found ? polygonCentroid(found.geometry) : null;
+
+  // Meteo HOY · gancho gratuito sobre el visor. Llama a Open-Meteo solo
+  // cuando hay parcela cargada. Solo mostramos el día 0 al anónimo —
+  // los 6 siguientes están detrás del registro. Lead magnet honesto:
+  // damos algo útil (tiempo de hoy en SU parcela) y mostramos lo que
+  // hay detrás del muro (7 días + ventana drone hora a hora + alertas).
+  const weatherQuery = useQuery({
+    queryKey: ['sigpac-viewer-weather', centroid?.[0], centroid?.[1]],
+    queryFn: () => fetchForecast(centroid![1], centroid![0]),
+    enabled: !!centroid,
+    staleTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const today = weatherQuery.data?.daily[0];
+  const todayWx = today ? weatherLabel(today.weatherCode) : null;
+
+  function handleReset() {
+    setFields(EMPTY_FIELDS);
+    setFound(null);
+    lookup.reset();
+    navigate('/sigpac', { replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-earth-50 flex flex-col">
       {/* Navbar */}
@@ -248,9 +275,17 @@ export default function SigpacViewerPage() {
 
             {/* Datos del recinto */}
             <div className="bg-white border border-earth-300/30 rounded-xl p-5">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500 mb-3">
-                § DATOS DEL RECINTO
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500">
+                  § DATOS DEL RECINTO
+                </p>
+                <button
+                  onClick={handleReset}
+                  className="font-mono text-[10px] uppercase tracking-wider text-gray-500 hover:text-brand-600 transition-colors"
+                >
+                  ← Nueva búsqueda
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">Superficie</p>
@@ -272,6 +307,80 @@ export default function SigpacViewerPage() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Meteo HOY · lead magnet anónimo · 1 día gratis, los 6 siguientes
+                detrás del registro. El gancho real del visor: traes a la
+                gente a buscar su parcela y, al ver el tiempo en SU campo
+                gratis, la conversión se vuelve obvia. */}
+            <div className="bg-white border border-earth-300/30 rounded-xl overflow-hidden">
+              <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
+                  § TIEMPO EN SU PARCELA · HOY
+                </p>
+                <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">
+                  Open-Meteo ECMWF
+                </p>
+              </div>
+              {weatherQuery.isLoading && (
+                <div className="px-5 py-6 text-center text-sm text-gray-500">
+                  Consultando meteo en {centroid && `${centroid[1].toFixed(4)}, ${centroid[0].toFixed(4)}`}…
+                </div>
+              )}
+              {today && todayWx && (
+                <>
+                  <div className="px-5 py-5 flex items-center gap-5 flex-wrap">
+                    <div className="text-5xl leading-none">{todayWx.emoji}</div>
+                    <div className="flex-1 min-w-[200px]">
+                      <p className="font-serif text-2xl text-brand-900 leading-tight capitalize">{todayWx.label}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Máx <b className="text-brand-900">{Math.round(today.tempMax)}°</b> ·
+                        Mín <b className="text-brand-900">{Math.round(today.tempMin)}°</b> ·
+                        Lluvia <b className="text-brand-900">{today.precipSum.toFixed(1)} mm</b>
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500">Viento</p>
+                        <p className="text-brand-900 font-medium tabular-nums">{today.windSpeedMax.toFixed(1)} m/s</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500">Dirección</p>
+                        <p className="text-brand-900 font-medium">{windCardinal(today.windDir)}</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500">Prob. lluvia</p>
+                        <p className="text-brand-900 font-medium tabular-nums">{today.precipProbMax}%</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Banner pre-CTA · qué hay detrás del muro */}
+                  <div className="px-5 py-4 border-t border-earth-300/30 bg-earth-50">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm">
+                        🔒
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-brand-900 leading-snug">
+                          <b>Los siguientes 6 días</b> + ventana drone hora a hora + alertas de viento, lluvia y calor extremo están a un click.
+                        </p>
+                        <Link
+                          to="/register"
+                          className="inline-block mt-2 font-mono text-[10px] uppercase tracking-wider text-brand-600 hover:text-brand-700"
+                        >
+                          Crea cuenta gratis para ver pronóstico 7 días →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+              {weatherQuery.isError && (
+                <div className="px-5 py-4 text-sm text-gray-500">
+                  No se pudo cargar la previsión meteorológica en este momento.
+                </div>
+              )}
             </div>
 
             {/* CTA */}

@@ -164,6 +164,15 @@ function Navbar() {
           <a href="#roles" className="text-gray-500 hover:text-brand-700 transition-colors">Roles</a>
           <a href="#stats" className="text-gray-500 hover:text-brand-700 transition-colors">Ventajas</a>
           <Link
+            to="/sigpac"
+            className="flex items-center gap-1.5 text-brand-700 hover:text-brand-800 transition-colors font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            Visor SIGPAC
+          </Link>
+          <Link
             to="/login"
             className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-all hover:shadow-lg hover:shadow-brand-500/25"
           >
@@ -774,6 +783,7 @@ function Footer() {
           <div className="flex items-center gap-6 text-sm flex-wrap justify-center">
             <a href="#como-funciona" className="hover:text-white transition-colors">Proceso</a>
             <a href="#roles" className="hover:text-white transition-colors">Roles</a>
+            <Link to="/sigpac" className="hover:text-white transition-colors">Visor SIGPAC</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Precio</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Términos</Link>
             <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
