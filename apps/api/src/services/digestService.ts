@@ -255,7 +255,10 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
     try {
       const fires = await fetchActiveFiresNearParcel(
         { geometry: p.geometry } as { geometry: { coordinates: number[][][] } },
-        { radiusKm: FIRE_HIGH_KM, days: 7 },
+        // 05-jun-2026: NASA bajó el límite max FIRMS days de 10 a 5.
+        // Ventana 5d es suficiente para detectar focos activos relevantes
+        // — un foco térmico de hace >5d ya no es "actual" sino histórico.
+        { radiusKm: FIRE_HIGH_KM, days: 5 },
       );
       const closeFires = fires.filter((f) => f.distanceKm <= FIRE_HIGH_KM);
       if (closeFires.length === 0) continue;

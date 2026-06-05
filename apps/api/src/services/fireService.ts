@@ -140,7 +140,9 @@ function rowToDetection(row: Record<string, string>, centerLat: number, centerLn
 export async function fetchActiveFiresNearGeometry(
   geometry: { coordinates: number[][][] },
   radiusKm = 25,
-  days = 7,
+  // NASA FIRMS API max es 5 días (cambio detectado 05-jun-2026 vs los 10
+  // que aceptaba originalmente). Default coherente con el límite real.
+  days = 5,
   opts: { includeLowConfidence?: boolean } = {},
 ): Promise<FireDetection[]> {
   if (!env.FIRMS_MAP_KEY) {
@@ -151,7 +153,13 @@ export async function fetchActiveFiresNearGeometry(
   const center = polygonCentroid(geometry);
   const bbox = bboxAround(center.lat, center.lng, radiusKm);
   const bboxStr = `${bbox.west.toFixed(4)},${bbox.south.toFixed(4)},${bbox.east.toFixed(4)},${bbox.north.toFixed(4)}`;
-  const daysClamped = Math.max(1, Math.min(10, days));
+  // 05-jun-2026: NASA bajó el límite max de days de 10 a 5 en algún
+  // momento entre el Sprint FIRMS original (04-jun) y ahora. El log
+  // nuevo lo destapó: 'Invalid day range. Expects [1..5].' Antes
+  // pedíamos 7 días por defecto en el digest, NASA rechazaba con 400,
+  // los fires nunca se mostraban. Clamp a 5 = ventana suficiente para
+  // detectar focos relevantes cerca de la parcela.
+  const daysClamped = Math.max(1, Math.min(5, days));
 
   const all: FireDetection[] = [];
   for (const source of SOURCES) {
@@ -202,7 +210,8 @@ export async function fetchActiveFiresNearParcel(
   return fetchActiveFiresNearGeometry(
     parcel.geometry,
     opts.radiusKm ?? 25,
-    opts.days ?? 7,
+    // Default 5d coherente con el max NASA FIRMS API.
+    opts.days ?? 5,
     { includeLowConfidence: opts.includeLowConfidence },
   );
 }
