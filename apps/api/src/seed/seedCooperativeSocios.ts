@@ -16,8 +16,26 @@ import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Parcel } from '../models/Parcel.js';
 import { logger } from '../utils/logger.js';
+import { fetchByReference } from '../services/sigpacService.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
+
+interface SigpacRef {
+  prov: string;
+  muni: string;
+  agre: string;
+  zona: string;
+  poligono: string;
+  parcela: string;
+  recinto: string;
+}
+
+interface ParcelSeed {
+  name: string;
+  cropType: string;
+  province: string;
+  sigpacRef: SigpacRef;
+}
 
 interface SocioSeed {
   googleId: string;
@@ -27,21 +45,37 @@ interface SocioSeed {
   parcels: ParcelSeed[];
 }
 
-interface ParcelSeed {
-  name: string;
-  cropType: string;
-  province: string;
-  areaHa: number;
-  // small ring around a centroid for a believable orchard polygon
-  centroid: [number, number]; // [lng, lat]
-  sizeDeg?: number; // ring radius in degrees, default ~0.005 ≈ 500m
-  sigpacRef?: string;
-}
-
 const COOP_GOOGLE_ID = 'demo-cooperative-001';
 
-// Estepa / Sierra Sur olive country, all within DCOOP olivar territory.
-// Centroids are real-ish points in the Sevilla/Málaga olive belt.
+// v2 · 05-jun-2026 · SIGPAC catastral REAL en Estepa/Sierra Sur (Sevilla,
+// provincia 41). Sustituye los cuadrados sintéticos ringFromCentroid de
+// v1 que JuanCho vio en demo y dijo "otro cuadrado y a patadas nos sacan".
+// Mismo patrón que Aula Jaén v2 (commit f4cc352) y Regantes v3 (691b864).
+//
+// 10 referencias SIGPAC OV (olivar) sondeadas manualmente 05-jun-2026,
+// todas en municipios DOP Estepa:
+//
+//   Casariche (muni 26) · core DOP Estepa:
+//     41/26/0/0/4/1/1   · 6.46 ha
+//     41/26/0/0/4/10/1  · 8.70 ha
+//
+//   Marinaleda (muni 61):
+//     41/61/0/0/1/1/1   · 9.10 ha
+//     41/61/0/0/6/20/1  · 8.56 ha
+//     41/61/0/0/1/10/1  · 4.72 ha
+//     41/61/0/0/3/20/1  · 4.73 ha
+//
+//   El Rubio (muni 82):
+//     41/82/0/0/1/1/1   · 11.35 ha
+//     41/82/0/0/1/5/1   · 3.02 ha
+//     41/82/0/0/4/1/1   · 12.73 ha
+//
+//   Herrera (muni 49):
+//     41/49/0/0/4/20/1  · 14.93 ha
+//
+// Total: ~84 ha (vs 198 sintético inflado). Cualquier tecnico cooperativa
+// puede pegar la ref en https://sigpac.mapa.gob.es/fega/visor/ y ver
+// EXACTAMENTE el mismo polígono. Cero invento. Auditable.
 const SOCIOS: SocioSeed[] = [
   {
     googleId: 'demo-coop-socio-1',
@@ -49,8 +83,8 @@ const SOCIOS: SocioSeed[] = [
     name: 'Manuel Reyes Aguilar',
     phone: '+34 600 100 001',
     parcels: [
-      { name: 'Olivar Las Pedreras', cropType: 'olivo', province: 'Sevilla', areaHa: 18.5, centroid: [-4.860, 37.290] },
-      { name: 'Olivar El Soto',      cropType: 'olivo', province: 'Sevilla', areaHa: 12.2, centroid: [-4.871, 37.302] },
+      { name: 'Olivar Las Pedreras', cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '26', agre: '0', zona: '0', poligono: '4', parcela: '1',  recinto: '1' } },
+      { name: 'Olivar El Soto',      cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '26', agre: '0', zona: '0', poligono: '4', parcela: '10', recinto: '1' } },
     ],
   },
   {
@@ -59,8 +93,8 @@ const SOCIOS: SocioSeed[] = [
     name: 'Hermanos Ruiz Castro',
     phone: '+34 600 100 002',
     parcels: [
-      { name: 'Olivar La Atalaya',     cropType: 'olivo', province: 'Sevilla', areaHa: 22.0, centroid: [-4.882, 37.275] },
-      { name: 'Olivar Cerro del Aguila', cropType: 'olivo', province: 'Sevilla', areaHa: 15.7, centroid: [-4.895, 37.285] },
+      { name: 'Olivar La Atalaya',       cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '61', agre: '0', zona: '0', poligono: '1', parcela: '1',  recinto: '1' } },
+      { name: 'Olivar Cerro del Aguila', cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '61', agre: '0', zona: '0', poligono: '6', parcela: '20', recinto: '1' } },
     ],
   },
   {
@@ -69,8 +103,8 @@ const SOCIOS: SocioSeed[] = [
     name: 'María José Vega Pérez',
     phone: '+34 600 100 003',
     parcels: [
-      { name: 'Olivar Los Manantiales', cropType: 'olivo', province: 'Sevilla', areaHa: 9.8,  centroid: [-4.840, 37.310] },
-      { name: 'Olivar Casa Bermeja',    cropType: 'olivo', province: 'Sevilla', areaHa: 14.3, centroid: [-4.855, 37.318] },
+      { name: 'Olivar Los Manantiales', cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '61', agre: '0', zona: '0', poligono: '1', parcela: '10', recinto: '1' } },
+      { name: 'Olivar Casa Bermeja',    cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '61', agre: '0', zona: '0', poligono: '3', parcela: '20', recinto: '1' } },
     ],
   },
   {
@@ -79,8 +113,8 @@ const SOCIOS: SocioSeed[] = [
     name: 'Juan Cabrera Lozano',
     phone: '+34 600 100 004',
     parcels: [
-      { name: 'Olivar El Puerto',  cropType: 'olivo', province: 'Sevilla', areaHa: 11.1, centroid: [-4.825, 37.270] },
-      { name: 'Olivar La Veguilla', cropType: 'olivo', province: 'Sevilla', areaHa: 7.5,  centroid: [-4.812, 37.283] },
+      { name: 'Olivar El Puerto',  cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '82', agre: '0', zona: '0', poligono: '1', parcela: '1', recinto: '1' } },
+      { name: 'Olivar La Veguilla', cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '82', agre: '0', zona: '0', poligono: '1', parcela: '5', recinto: '1' } },
     ],
   },
   {
@@ -89,24 +123,11 @@ const SOCIOS: SocioSeed[] = [
     name: 'Familia Domínguez Olivos',
     phone: '+34 600 100 005',
     parcels: [
-      { name: 'Olivar Cortijo Nuevo', cropType: 'olivo', province: 'Sevilla', areaHa: 26.4, centroid: [-4.901, 37.305] },
-      { name: 'Olivar La Loma Alta',  cropType: 'olivo', province: 'Sevilla', areaHa: 19.0, centroid: [-4.888, 37.317] },
+      { name: 'Olivar Cortijo Nuevo', cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '82', agre: '0', zona: '0', poligono: '4',  parcela: '1',  recinto: '1' } },
+      { name: 'Olivar La Loma Alta',  cropType: 'olivo', province: 'Sevilla', sigpacRef: { prov: '41', muni: '49', agre: '0', zona: '0', poligono: '4',  parcela: '20', recinto: '1' } },
     ],
   },
 ];
-
-function ringFromCentroid(lng: number, lat: number, sizeDeg = 0.005): number[][] {
-  // Rough rectangle for demo. Real KMZ imports replace this when the user
-  // brings their own polygon. We just need a valid GeoJSON ring.
-  const d = sizeDeg;
-  return [
-    [lng - d, lat - d],
-    [lng + d, lat - d],
-    [lng + d, lat + d],
-    [lng - d, lat + d],
-    [lng - d, lat - d], // close ring
-  ];
-}
 
 async function seed() {
   await mongoose.connect(MONGODB_URI);
@@ -144,6 +165,7 @@ async function seed() {
 
   let userUpserts = 0;
   let parcelUpserts = 0;
+  let sigpacFailures = 0;
   const now = new Date();
 
   for (const socio of SOCIOS) {
@@ -176,18 +198,43 @@ async function seed() {
     if (!socioUser) continue;
 
     for (const p of socio.parcels) {
-      const ring = ringFromCentroid(p.centroid[0], p.centroid[1], p.sizeDeg);
+      const ref = p.sigpacRef;
+      const sigpacRefStr = `${ref.prov}/${ref.muni}/${ref.agre}/${ref.zona}/${ref.poligono}/${ref.parcela}/${ref.recinto}`;
+
+      // Descargar geometría real catastral desde SIGPAC. Si falla
+      // (404 / API caída), saltamos y re-run del seed la recupera.
+      // Importante: ndviHistory NO se incluye en $set · si la parcela
+      // ya existía con history del pipeline V2, se preserva. Si es
+      // nueva, queda vacía y el próximo paso del pipeline la llenará.
+      let sigpacResult: Awaited<ReturnType<typeof fetchByReference>>;
+      try {
+        sigpacResult = await fetchByReference(
+          ref.prov, ref.muni, ref.agre, ref.zona, ref.poligono, ref.parcela, ref.recinto,
+        );
+      } catch (err) {
+        sigpacFailures += 1;
+        logger.warn(
+          { parcelName: p.name, sigpacRef: sigpacRefStr, err: (err as Error).message },
+          'sigpac_fetch_failed_skipping_parcel',
+        );
+        continue;
+      }
+      logger.info(
+        { parcelName: p.name, sigpacRef: sigpacRefStr, areaHa: sigpacResult.areaHa, cropUse: sigpacResult.cropUse },
+        'sigpac_fetched',
+      );
+
       const result = await Parcel.updateOne(
         { name: p.name, ownerId: socioUser._id },
         {
           $set: {
             ownerId: socioUser._id,
             name: p.name,
-            geometry: { type: 'Polygon', coordinates: [ring] },
-            areaHa: p.areaHa,
+            geometry: sigpacResult.geometry, // Polígono catastral REAL
+            areaHa: sigpacResult.areaHa, // Superficie catastral REAL
             cropType: p.cropType,
             province: p.province,
-            sigpacRef: p.sigpacRef,
+            sigpacRef: sigpacRefStr, // Trazable al visor oficial
             isActive: true,
             updatedAt: now,
           },
@@ -232,6 +279,7 @@ async function seed() {
       hectares: totalHa[0]?.total ?? 0,
       newUsers: userUpserts,
       newParcels: parcelUpserts,
+      sigpacFailures,
     },
     'Cooperative socios seed complete',
   );
