@@ -57,11 +57,33 @@
 - **Push to main:** clasificador bloquea push del agente · JuanCho lo hace manualmente
 - **SSH deploy:** requiere autorización explícita per-command
 
+### Modelo operativo · AgroM bajo paraguas Drovinci
+
+**Hasta nueva orden, AgroM NO es operador legal independiente.** Acuerdo activo: AgroM opera comercialmente bajo el paraguas de **Drovinci** (empresa real con certificaciones propias) hasta que AgroM tenga su propio operador UAS + dron censado MAPA + ROPO empresa + seguros RC propios.
+
+**Quién aporta qué en cada tratamiento dron operativo:**
+
+| Pieza legal | Aporta | Detalle |
+|---|---|---|
+| Bloque 1 · AESA (PDRA-S01[F], DRI, manual ops, seguro RC aeronáutico) | **Drovinci** | Empresa registrada, certificaciones propias |
+| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** | Su dron T10 + T40/T100 según operación |
+| Bloque 3 · Fitosanitario (autorización CCAA por tratamiento, ROPO piloto + empresa, producto autorizado aéreo, seguro RC fitosanitario, plan Anexo VI) | **Drovinci** | Tramita autorización CCAA antes de cada tratamiento |
+| Inteligencia satelital + IA + alertas + dashboard | **AgroM/FitoLink** | Lo que vendemos en SaaS |
+| Marca comercial + relación cliente + brokerage | **AgroM** | Cara visible ante cliente final |
+| Coordinación operativa + asesoría agronómica | **AgroM (Jonh)** | Jonh trabaja con/vía Drovinci |
+
+**Implicación copy comercial**: NO afirmar "AgroM aplica con dron" como operador propio · sí "AgroM coordina tratamientos con drones operados por la red Drovinci" o wording equivalente honesto. Pendiente verificar exactly qué wording aceptan ambas partes (ACCIÓN JUANCHO).
+
+**Implicación audit legal**: el audit de 3 bloques NO es con Jonh aislado · es con **Ana Gomez Ferrer (Drovinci · aparece como `demo-pilot-002` en BD, persona real)** o quien sea el contacto operativo de Drovinci. Validar vigencia de sus certificaciones + procedimiento de autorización CCAA por tratamiento.
+
+**Camino a independencia** (no prioridad campaña 2026): AgroM registrarse como operador UAS propio + censar drones propios MAPA + ROPO empresa + seguros · entonces salir del paraguas Drovinci.
+
 ## 5 · TODOs pendientes (priorizados)
 
 ### Bloqueantes para campaña comercial
 - [ ] **Pricing definido** (€ por ha/mes o por modelo institucional · acción JuanCho, no código)
-- [ ] **Audit interno con Jonh** sobre 3 bloques normativos dron antes de cualquier tratamiento comercial (Bloque 1 AESA + Bloque 2 ITEAF + Bloque 3 fitosanitario · ver `glossary.md` "Marco normativo dron")
+- [ ] **Audit con Drovinci** (Ana Gomez Ferrer u operativo) sobre vigencia 3 bloques normativos antes de aceptar primer tratamiento comercial (PDRA-S01[F] vigente + ITEAF censo MAPA + ROPO + procedimiento autorización CCAA por tratamiento). Ver §4 "Modelo operativo · AgroM bajo paraguas Drovinci". NO es audit con Jonh aislado — el operador legal es Drovinci.
+- [ ] **Verificar wording copy comercial** con Drovinci · acordar cómo se refiere AgroM a la operación con dron sin afirmar que es operador propio.
 
 ### Mejoras importantes (cuando haya tiempo)
 - [ ] **Bloque C · Detector enfermedad específica rule-based MVP** (~2-3 días) · Mosca olivo + Repilo + Polilla pistacho + Mildiu viñedo con thresholds termo-higrométricos basados en literatura agronómica
