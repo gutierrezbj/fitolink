@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from './authStore.js';
 import { api } from '@/lib/api.js';
@@ -77,9 +77,42 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Hotfix 05-jun-2026: `navigate` durante el render es antipatron React 19
+  // y deja la pagina en blanco cuando se accede a /register sin venir del
+  // flujo Google OAuth (sin credential en location.state). Movido a effect.
+  useEffect(() => {
+    if (!credential) {
+      navigate('/login', { replace: true });
+    }
+  }, [credential, navigate]);
+
   if (!credential) {
-    navigate('/login');
-    return null;
+    // Mensaje editorial AgroM mientras el effect redirige a /login.
+    // Mejor que blank: el usuario ve que algo pasa y entiende por que.
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-earth-50 p-4">
+        <div className="max-w-md w-full text-center">
+          <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-10 w-auto mx-auto mb-4" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-3">
+            FitoLink &middot; alta de cuenta
+          </p>
+          <div className="w-12 h-[2px] bg-terra-500 mx-auto mb-6" />
+          <p className="font-display text-2xl text-brand-900 leading-snug mb-3">
+            El alta requiere Google.
+          </p>
+          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+            Por seguridad, las cuentas FitoLink se crean iniciando sesi&oacute;n con Google.
+            Le llevamos al inicio de sesi&oacute;n autom&aacute;ticamente.
+          </p>
+          <Link
+            to="/login"
+            className="inline-block bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand-700 transition-colors text-sm"
+          >
+            Ir a iniciar sesi&oacute;n &rarr;
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const handleRegister = async () => {
