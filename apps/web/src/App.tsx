@@ -22,6 +22,7 @@ import B2BParcelsPage from '@/features/insurer/B2BParcelsPage.js';
 import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
 import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
 import DispatchPage from '@/features/admin/DispatchPage.js';
+import CooperativeMembersPage from '@/features/cooperative/CooperativeMembersPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -66,6 +67,8 @@ export default function App() {
         <Route path="b2b/parcels" element={<B2BParcelsPage />} />
         <Route path="b2b/alerts" element={<B2BAlertsPage />} />
         <Route path="b2b/inspections" element={<PlaceholderPage title="Inspecciones" />} />
+        {/* Sprint Onboarding Cooperativa · 05-jun-2026 · admin de socios */}
+        <Route path="cooperative/socios" element={<CooperativeMembersPage />} />
         <Route path="admin/users" element={<AdminUsersPage />} />
         <Route path="admin/parcels" element={<ParcelsPage />} />
         <Route path="admin/alerts" element={<PlaceholderPage title="Todas las Alertas" />} />

@@ -40,8 +40,10 @@ interface AdvOverview {
     _id: string;
     name: string;
     parcelCount: number;
-    totalHa: number;
-    avgNdvi: number | null;
+    // Campo real del endpoint /cooperative/overview es `areaHa`/`ndviAvg`
+    // (no `totalHa`/`avgNdvi`). Fix 05-jun-2026 — antes los KPIs renderizaban "—".
+    areaHa: number;
+    ndviAvg: number | null;
     alertCount: number;
   }>;
   parcels: Array<{
@@ -56,8 +58,8 @@ interface AdvOverview {
   }>;
   kpis: {
     memberCount: number;
-    totalHa: number;
-    avgNdvi: number | null;
+    areaHa: number;
+    ndviAvg: number | null;
     activeAlerts: number;
     criticalAlerts: number;
   };
@@ -109,7 +111,7 @@ export default function AdvDashboardHome() {
               {user?.name?.split(' ')[0] ? `Hola, ${user?.name?.split(' ')[0]}` : 'Vigilancia colectiva'}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {kpis.memberCount} socio{kpis.memberCount > 1 ? 's' : ''} · {kpis.totalHa.toFixed(0)} ha bajo vigilancia
+              {kpis.memberCount} socio{kpis.memberCount > 1 ? 's' : ''} · {kpis.areaHa.toFixed(0)} ha bajo vigilancia
             </p>
           </div>
           {kpis.criticalAlerts > 0 && (
@@ -130,7 +132,7 @@ export default function AdvDashboardHome() {
         </div>
         <div className="bg-white rounded-xl border border-earth-300/30 p-4">
           <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">Hectáreas vigiladas</p>
-          <p className="font-display text-3xl text-brand-900 leading-none">{kpis.totalHa.toFixed(0)}<span className="text-base text-gray-500"> ha</span></p>
+          <p className="font-display text-3xl text-brand-900 leading-none">{kpis.areaHa.toFixed(0)}<span className="text-base text-gray-500"> ha</span></p>
           <p className="text-[10px] text-gray-400 mt-2">cobertura comarcal total</p>
         </div>
         <div className="bg-white rounded-xl border border-earth-300/30 p-4">
@@ -144,8 +146,8 @@ export default function AdvDashboardHome() {
         </div>
         <div className="bg-white rounded-xl border border-earth-300/30 p-4">
           <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-1">NDVI medio comarca</p>
-          <p className={`font-display text-3xl leading-none ${kpis.avgNdvi === null ? 'text-gray-400' : kpis.avgNdvi < 0.3 ? 'text-red-600' : kpis.avgNdvi < 0.5 ? 'text-terra-500' : 'text-green-600'}`}>
-            {kpis.avgNdvi !== null ? kpis.avgNdvi.toFixed(2) : '—'}
+          <p className={`font-display text-3xl leading-none ${kpis.ndviAvg === null ? 'text-gray-400' : kpis.ndviAvg < 0.3 ? 'text-red-600' : kpis.ndviAvg < 0.5 ? 'text-terra-500' : 'text-green-600'}`}>
+            {kpis.ndviAvg !== null ? kpis.ndviAvg.toFixed(2) : '—'}
           </p>
           <p className="text-[10px] text-gray-400 mt-2">Sentinel-2 · revisión 5 días</p>
         </div>
@@ -204,10 +206,10 @@ export default function AdvDashboardHome() {
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                  <span>{m.parcelCount} parc · {m.totalHa.toFixed(1)} ha</span>
-                  {m.avgNdvi !== null && (
-                    <span className={`font-mono tabular-nums ${m.avgNdvi < 0.3 ? 'text-red-600' : m.avgNdvi < 0.5 ? 'text-terra-500' : 'text-green-600'}`}>
-                      NDVI {m.avgNdvi.toFixed(2)}
+                  <span>{m.parcelCount} parc · {m.areaHa.toFixed(1)} ha</span>
+                  {m.ndviAvg !== null && (
+                    <span className={`font-mono tabular-nums ${m.ndviAvg < 0.3 ? 'text-red-600' : m.ndviAvg < 0.5 ? 'text-terra-500' : 'text-green-600'}`}>
+                      NDVI {m.ndviAvg.toFixed(2)}
                     </span>
                   )}
                 </div>

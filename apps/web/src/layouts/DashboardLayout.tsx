@@ -41,12 +41,12 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
   ],
   cooperative: [
-    // The cooperative dashboard already aggregates parcels + alerts per
-    // socio. A separate "Parcelas" or "Alertas" tab would either show
-    // nothing (user owns no parcels) or duplicate info. V2 brings:
-    //  · /dashboard/cooperative/socios — full member admin
-    //  · /dashboard/cooperative/reports — exportable reports
+    // Sprint Onboarding Cooperativa básico · 05-jun-2026 · añadido "Socios"
+    // como segundo entry point. Antes solo "Inicio" + "Proveedores" daba
+    // sensación de "demasiado simple" para un prospect cooperativa.
+    // V2: añadir "Reportes" cuando llegue el primer cliente real.
     { to: '/dashboard', label: 'Inicio', icon: '/nav-cooperative.svg' },
+    { to: '/dashboard/cooperative/socios', label: 'Socios', icon: '/nav-users.svg' },
     { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
   ],
   // ADV (Agrupación de Defensa Vegetal) · vigilancia comarcal +

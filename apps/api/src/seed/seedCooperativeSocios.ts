@@ -112,19 +112,35 @@ async function seed() {
   await mongoose.connect(MONGODB_URI);
   logger.info('Connected to MongoDB for cooperative socios seed');
 
+  // Upsert de la cooperativa demo (05-jun-2026). Antes este script fallaba
+  // si demo-cooperative-001 no existía — pero seed.ts principal nunca crea
+  // este usuario, y en prod hay datos reales que skip-ean seed.ts, así que
+  // en prod la cooperativa NUNCA se creaba. Ahora upsert: si no existe lo
+  // crea, si existe lo promueve a role 'cooperative'.
+  await User.updateOne(
+    { googleId: COOP_GOOGLE_ID },
+    {
+      $set: {
+        email: 'cooperativa@dcoop-demo.coop',
+        name: 'Cooperativa Demo · Olivar DOP Estepa',
+        role: 'cooperative',
+        company: 'DCOOP Demo (sintética)',
+        isVerified: true,
+        avatar: '/provider-cooperative.svg',
+        updatedAt: new Date(),
+      },
+      $unset: { location: '' },
+      $setOnInsert: { googleId: COOP_GOOGLE_ID, createdAt: new Date() },
+    },
+    { upsert: true },
+  );
   const coop = await User.findOne({ googleId: COOP_GOOGLE_ID });
   if (!coop) {
-    logger.error('Cooperative user demo-cooperative-001 not found — run main seed or login flow first');
+    logger.error('Cooperative user demo-cooperative-001 upsert failed');
     await mongoose.disconnect();
     process.exit(1);
   }
-
-  // Promote the cooperative user to its proper role if it was still a farmer
-  if (coop.role !== 'cooperative') {
-    coop.role = 'cooperative';
-    await coop.save();
-    logger.info('Cooperative user role updated to cooperative');
-  }
+  logger.info({ coopId: coop._id }, 'Cooperative user ready');
 
   let userUpserts = 0;
   let parcelUpserts = 0;
