@@ -266,8 +266,18 @@ async function fetchForecast(lat: number, lon: number): Promise<ForecastRaw> {
     windspeed_unit: 'ms',
   });
 
-  const res = await fetch(`${OPEN_METEO_URL}?${params.toString()}`);
+  const url = `${OPEN_METEO_URL}?${params.toString()}`;
+  const res = await fetch(url);
   if (!res.ok) {
+    // Regla operativa 05-jun-2026: capturar body del error 200ch para
+    // diagnóstico (Open-Meteo devuelve mensajes claros tipo "Latitude
+    // must be in range -90 to 90", "Hourly variable not found", etc.).
+    // Ver glossary "Regla operativa logs con body del error externo".
+    const body = await res.text().catch(() => '');
+    logger.warn(
+      { source: 'open-meteo', status: res.status, body: body.slice(0, 200) },
+      'open_meteo_fetch_failed',
+    );
     throw new Error(`Open-Meteo HTTP ${res.status}`);
   }
   return (await res.json()) as ForecastRaw;

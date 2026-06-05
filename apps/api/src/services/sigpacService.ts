@@ -1,5 +1,6 @@
 import type { Polygon } from 'geojson';
 import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 
 const SIGPAC_BASE_URL = 'https://sigpac-hubcloud.es/servicioconsultassigpac/query/recinfo';
 
@@ -45,9 +46,19 @@ export async function fetchByReference(
   }
 
   if (!response.ok) {
+    // Regla operativa 05-jun-2026: capturar body del error 200ch (excepto
+    // 404 que es esperado · usuario probó ref inexistente). Para 5xx o
+    // 4xx no-404 sí queremos el body porque SIGPAC devuelve mensajes
+    // útiles tipo "Bad request" con razón concreta o "Server overload".
+    // Ver glossary "Regla operativa logs con body del error externo".
     if (response.status === 404) {
       throw AppError.notFound('Recinto SIGPAC');
     }
+    const body = await response.text().catch(() => '');
+    logger.warn(
+      { source: 'sigpac-hubcloud', status: response.status, body: body.slice(0, 200), url },
+      'sigpac_fetch_failed',
+    );
     throw AppError.internal(`SIGPAC respondió con estado ${response.status}`);
   }
 

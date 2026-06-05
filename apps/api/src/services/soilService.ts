@@ -130,6 +130,16 @@ export async function fetchSoilProfileForPoint(lat: number, lng: number): Promis
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) {
+    // Regla operativa 05-jun-2026: capturar body del error 200ch para
+    // diagnóstico (ISRIC devuelve mensajes legibles tipo "Invalid lat/lon",
+    // "Service Unavailable", etc.). Sin esto, los fallos de SoilGrids
+    // quedaban como HTTP 4xx/5xx crípticos. Ver glossary "Regla operativa
+    // logs con body del error externo".
+    const body = await res.text().catch(() => '');
+    logger.warn(
+      { source: 'soilgrids', status: res.status, body: body.slice(0, 200), url },
+      'soilgrids_fetch_failed',
+    );
     throw new Error(`SoilGrids HTTP ${res.status} ${res.statusText}`);
   }
   const raw = (await res.json()) as SoilGridsResponse;
