@@ -52,9 +52,12 @@ interface AdvOverview {
     geometry: GeoJSON.Polygon;
     areaHa: number;
     cropType: string;
-    // ndviHistory siempre presente desde el endpoint /cooperative/overview
-    // (default []). ParcelMap lo requiere obligatorio.
-    ndviHistory: { mean: number }[];
+    // Shape REAL del endpoint /cooperative/overview (cooperativeService.ts
+    // ParcelGeo interface): solo última lectura NDVI + flag de alerta.
+    // ParcelMap soporta este shape nativamente desde el fix 05-jun-2026.
+    ndvi: number | null;
+    hasActiveAlert: boolean;
+    ownerName: string;
   }>;
   kpis: {
     memberCount: number;
@@ -166,12 +169,8 @@ export default function AdvDashboardHome() {
           {parcels.length > 0 ? (
             <div className="flex-1 min-h-[320px] relative">
               <div className="absolute inset-0">
-                {/* ParcelMap solo consume geometry + name + ndviHistory[last]
-                    para el render. El endpoint /cooperative/overview devuelve
-                    un subset del modelo Parcel completo — cast defendible. */}
                 <ParcelMap
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  parcels={parcels as any}
+                  parcels={parcels}
                   height="100%"
                   showDetailLink
                   showLegend

@@ -51,7 +51,12 @@ interface RegantesOverview {
     geometry: GeoJSON.Polygon;
     areaHa: number;
     cropType: string;
-    ndviHistory?: { mean: number }[];
+    // Shape REAL del endpoint /cooperative/overview (cooperativeService.ts).
+    // Fix 05-jun-2026: ParcelMap soporta el shape agregado nativo y colorea
+    // por NDVI directo. Antes con cast `as any` salía todo gris fallback.
+    ndvi: number | null;
+    hasActiveAlert: boolean;
+    ownerName: string;
   }>;
   kpis: {
     memberCount: number;
@@ -98,7 +103,8 @@ export default function RegantesDashboardHome() {
   // Más conservador que el "critical<0.30" porque el gerente quiere
   // ver TODAS las que pueden necesitar más agua, no solo las críticas.
   const stressedParcels = parcels.filter((p) => {
-    const ndvi = p.ndviHistory?.[p.ndviHistory.length - 1]?.mean ?? 1;
+    // Endpoint agregado devuelve `ndvi: number | null` directo, no array.
+    const ndvi = p.ndvi ?? 1;
     return ndvi < 0.40;
   }).length;
   const stressPct = totalParcels > 0 ? Math.round((stressedParcels / totalParcels) * 100) : 0;
@@ -193,8 +199,7 @@ export default function RegantesDashboardHome() {
             <div className="flex-1 min-h-[320px] relative">
               <div className="absolute inset-0">
                 <ParcelMap
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  parcels={parcels as any}
+                  parcels={parcels}
                   height="100%"
                   showDetailLink
                   showLegend

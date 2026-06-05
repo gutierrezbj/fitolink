@@ -38,7 +38,10 @@ type Parcel = {
   province: string;
   area?: number;
   areaHa?: number;
-  geometry?: object;
+  // Tipo concreto en vez de `object` genérico — TypeScript ahora puede
+  // validar que el shape sea compatible con ParcelMap sin necesidad de
+  // cast `as any`. Fix 05-jun-2026 (Sprint deudas técnicas A2).
+  geometry?: GeoJSON.Polygon;
   ndviHistory?: { mean: number; date: string; anomalyDetected?: boolean }[];
   isActive: boolean;
   establishmentPhase?: boolean;
@@ -211,11 +214,27 @@ export default function B2BParcelsPage() {
                 </div>
               )}
 
-              {/* Mini map */}
+              {/* Mini map · pasamos solo los campos que ParcelMap necesita.
+                  El tipo Parcel local tiene areaHa/geometry opcionales para
+                  ser tolerante con respuestas legacy del backend; aquí en
+                  el render ya hemos verificado selected.geometry y normalizamos
+                  los campos a los obligatorios de ParcelMap. */}
               {selected.geometry && (
                 <ParcelMap
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  parcels={[selected] as any}
+                  parcels={[{
+                    _id: selected._id,
+                    name: selected.name,
+                    geometry: selected.geometry,
+                    cropType: selected.cropType,
+                    areaHa: selected.areaHa ?? selected.area ?? 0,
+                    province: selected.province,
+                    // Default explícito `anomalyDetected:false` para casos
+                    // legacy del endpoint que omiten ese campo opcional.
+                    ndviHistory: (selected.ndviHistory ?? []).map((r) => ({
+                      ...r,
+                      anomalyDetected: r.anomalyDetected ?? false,
+                    })),
+                  }]}
                   height="240px"
                   showDetailLink={false}
                 />

@@ -22,7 +22,18 @@ interface Parcel {
   cropType: string;
   areaHa: number;
   province?: string;
-  ndviHistory: NdviReading[];
+  // ParcelMap acepta 2 shapes de datos NDVI:
+  //  · ndviHistory[] · shape COMPLETO de /parcels/mine (con historial)
+  //  · ndvi + hasActiveAlert · shape AGREGADO de /cooperative/overview
+  //    (solo última lectura + flag de alerta, usado en dashboards Coop/
+  //    ADV/Regantes que muestran cartera agregada de socios)
+  // Fix 05-jun-2026 · antes los dashboards agregados usaban `as any` cast
+  // y todas las parcelas renderizaban en gris fallback porque ndviHistory
+  // estaba undefined. Ahora getParcelColor prioriza ndvi directo si existe.
+  ndviHistory?: NdviReading[];
+  ndvi?: number | null;
+  hasActiveAlert?: boolean;
+  ownerName?: string;
 }
 
 interface ParcelMapProps {
@@ -37,12 +48,28 @@ interface ParcelMapProps {
   children?: React.ReactNode;
 }
 
+// Helpers que normalizan el shape NDVI dual (ndvi directo vs ndviHistory[])
+// — ver comentario en interface Parcel arriba.
+
+function getLatestNdvi(parcel: Parcel): number | null {
+  if (parcel.ndvi !== undefined && parcel.ndvi !== null) return parcel.ndvi;
+  const last = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
+  return last?.mean ?? null;
+}
+
+function hasAlertOnParcel(parcel: Parcel): boolean {
+  if (parcel.hasActiveAlert !== undefined) return parcel.hasActiveAlert;
+  const last = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
+  if (!last) return false;
+  return last.anomalyDetected || last.mean < 0.3;
+}
+
 function getParcelColor(parcel: Parcel): string {
-  const latest = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
-  if (!latest) return '#94a3b8';
-  if (latest.anomalyDetected || latest.mean < 0.30) return '#ef4444';
-  if (latest.mean < 0.40) return '#f97316';
-  if (latest.mean < 0.55) return '#eab308';
+  const v = getLatestNdvi(parcel);
+  if (v === null) return '#94a3b8';
+  if (hasAlertOnParcel(parcel) || v < 0.30) return '#ef4444';
+  if (v < 0.40) return '#f97316';
+  if (v < 0.55) return '#eab308';
   return '#22c55e';
 }
 
@@ -176,9 +203,15 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
   onParcelClick?: (id: string) => void;
   showDetailLink?: boolean;
 }) {
-  const latest = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
+  // Usa los helpers normalizados para soportar AMBOS shapes (ndviHistory[]
+  // del endpoint completo + ndvi directo del endpoint agregado).
+  const currentNdvi = getLatestNdvi(parcel);
   const color = getParcelColor(parcel);
-  const hasAlert = latest?.anomalyDetected || (latest && latest.mean < 0.3);
+  const hasAlert = hasAlertOnParcel(parcel);
+  // latest solo se usa para popups detallados (date/min/max), no para
+  // colorear. Si viene del shape agregado, latest será undefined y el
+  // popup omite esos campos extra — coherente con datos disponibles.
+  const latest = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
 
   const popupHtml = `
     <div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
