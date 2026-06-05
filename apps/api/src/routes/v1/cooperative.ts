@@ -4,7 +4,10 @@ import { protect, authorize } from '../../middleware/auth.js';
 
 const router = Router();
 router.use(protect());
-router.use(authorize('cooperative', 'admin'));
+// 05-jun-2026 · autorizar también roles 'adv' y 'regantes' — todos
+// agregan farmers vía cooperativeId, mismo shape de respuesta.
+// La diferenciación semántica vive en el frontend.
+router.use(authorize('cooperative', 'adv', 'regantes', 'admin'));
 
 // Aggregated KPIs + members + parcel geometry for the cooperative dashboard.
 // Admins can also call it for a given cooperative (V2 — filter by `:id`).

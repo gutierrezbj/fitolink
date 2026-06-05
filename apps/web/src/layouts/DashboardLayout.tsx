@@ -59,6 +59,16 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard', label: 'Inicio', icon: '/nav-cooperative.svg' },
     { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
   ],
+  // Comunidad de Regantes · gestión hídrica colectiva + reparto agua +
+  // cumplimiento RD 950/2024. Sprint Regantes · 05-jun-2026. Mismo
+  // patrón que cooperative/adv pero con foco en riego.
+  // V2 traerá: /dashboard/regantes/reparto (sugerencia semanal m³/ha
+  // por socio) + /dashboard/regantes/cuaderno (cuaderno digital de
+  // riegos) + /dashboard/regantes/aforos (match con tabla aforos).
+  regantes: [
+    { to: '/dashboard', label: 'Inicio', icon: '/nav-cooperative.svg' },
+    { to: '/dashboard/marketplace', label: 'Proveedores', icon: '/nav-marketplace.svg' },
+  ],
 };
 
 export default function DashboardLayout() {
@@ -147,13 +157,13 @@ export default function DashboardLayout() {
         {/* Minimal topbar — only renders meaningful chrome where it adds value.
             Farmer (and future cooperative) get the alert bell because their
             primary value prop is "we tell you when something happens". */}
-        {(user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv') && (
+        {(user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes') && (
           <div className="flex-shrink-0 flex items-center justify-end px-8 pt-5 pb-1">
             <AlertBell />
           </div>
         )}
         <div className={`flex-1 min-h-0 overflow-auto ${
-          user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' ? 'px-8 pb-8 pt-2' : 'p-8'
+          user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes' ? 'px-8 pb-8 pt-2' : 'p-8'
         }`}>
           <Outlet />
         </div>

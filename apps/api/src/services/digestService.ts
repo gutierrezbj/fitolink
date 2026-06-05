@@ -212,7 +212,10 @@ export async function composeDigestForUser(userId: string | Types.ObjectId): Pro
   // ADV (Agrupación de Defensa Vegetal) recibe digest matutino · vigilancia
   // comarcal + avisos preventivos es exactamente el use case del rol.
   // Sprint Rol ADV · 05-jun-2026.
-  if (user.role !== 'farmer' && user.role !== 'cooperative' && user.role !== 'adv') return null;
+  // Comunidad de Regantes también recibe digest · reparto agua + estrés
+  // hídrico cartera es el use case central. Sprint Regantes · 05-jun-2026.
+  const eligibleRoles = ['farmer', 'cooperative', 'adv', 'regantes'];
+  if (!eligibleRoles.includes(user.role)) return null;
   if (user.digestSubscribed === false) return null;
   if (!isEligibleDemo(user.googleId)) return null;
 
@@ -386,7 +389,8 @@ export async function sendDigestForUser(
   const user = await User.findById(userId);
   if (!user) return { status: 'skipped:ineligible', reason: 'user-not-found' };
 
-  if (user.role !== 'farmer' && user.role !== 'cooperative' && user.role !== 'adv') {
+  const eligibleRoles = ['farmer', 'cooperative', 'adv', 'regantes'];
+  if (!eligibleRoles.includes(user.role)) {
     return { status: 'skipped:ineligible', reason: `role=${user.role}` };
   }
   if (user.digestSubscribed === false) {

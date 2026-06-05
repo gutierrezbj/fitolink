@@ -8,6 +8,7 @@ import InsuranceDashboardHome from '@/features/insurer/InsuranceDashboardHome.js
 import AdminDashboardHome from '@/features/admin/AdminDashboardHome.js';
 import CooperativeDashboardHome from '@/features/cooperative/CooperativeDashboardHome.js';
 import AdvDashboardHome from '@/features/adv/AdvDashboardHome.js';
+import RegantesDashboardHome from '@/features/regantes/RegantesDashboardHome.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 
@@ -147,6 +148,7 @@ export default function DashboardHome() {
   if (user?.role === 'admin') return <AdminDashboardHome />;
   if (user?.role === 'cooperative') return <CooperativeDashboardHome />;
   if (user?.role === 'adv') return <AdvDashboardHome />;
+  if (user?.role === 'regantes') return <RegantesDashboardHome />;
 
   const isFarmer = user?.role === 'farmer';
 

@@ -63,6 +63,15 @@ const ROLES: RoleOption[] = [
     icon: '/provider-cooperative.svg',
     needsVerification: true,
   },
+  {
+    // Sprint Comunidad de Regantes · 05-jun-2026 · Buyer institucional
+    // ALTAMENTE prioritario campaña 2026 por sequía + RD 950/2024.
+    value: 'regantes',
+    label: 'Comunidad de Regantes',
+    description: 'Gestiona el reparto de agua entre sus socios con datos satelitales objetivos y cumple normativa hídrica.',
+    icon: '/provider-cooperative.svg',
+    needsVerification: true,
+  },
 ];
 
 export default function RegisterPage() {

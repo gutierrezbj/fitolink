@@ -72,8 +72,12 @@ function latestNdvi(p: { ndviHistory?: { mean: number }[] }): number | null {
 export async function getOverview(cooperativeUserId: string): Promise<CooperativeOverview> {
   const coop = await User.findById(cooperativeUserId).lean();
   if (!coop) throw AppError.notFound('Cooperativa');
-  if (coop.role !== 'cooperative') {
-    throw AppError.forbidden('Este usuario no es una cooperativa');
+  // 05-jun-2026: aceptamos también roles 'adv' y 'regantes' — todos ellos
+  // son entidades agregadoras de farmers vía cooperativeId. El shape de
+  // respuesta es el mismo (members + parcels + kpis); la diferencia
+  // semántica vive en el frontend (copy + KPIs específicos por rol).
+  if (coop.role !== 'cooperative' && coop.role !== 'adv' && coop.role !== 'regantes') {
+    throw AppError.forbidden('Este usuario no es una entidad agregadora (cooperative / adv / regantes)');
   }
 
   // Members of this cooperative

@@ -13,6 +13,8 @@ const ROLE_BADGE: Record<string, string> = {
   // ADV · institucional · color terra (naranja brand AgroM) para
   // diferenciar visualmente del verde-agricultor y del amber-coop.
   adv: 'bg-terra-100 text-terra-700',
+  // Regantes · color sky (azul agua) — coherente con el dominio hídrico.
+  regantes: 'bg-sky-100 text-sky-700',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -23,6 +25,7 @@ const ROLE_LABELS: Record<string, string> = {
   agronomist: 'Agrónomo',
   cooperative: 'Cooperativa',
   adv: 'ADV',
+  regantes: 'C. Regantes',
 };
 
 const ROLE_ICON: Record<string, string> = {
@@ -33,6 +36,7 @@ const ROLE_ICON: Record<string, string> = {
   agronomist: '/user.svg',
   cooperative: '/provider-cooperative.svg',
   adv: '/provider-cooperative.svg',
+  regantes: '/provider-cooperative.svg',
 };
 
 
@@ -95,7 +99,7 @@ export default function AdminUsersPage() {
         >
           Todos ({users.length})
         </button>
-        {(['farmer', 'pilot', 'insurer', 'cooperative', 'adv', 'admin'] as const).map((role) => {
+        {(['farmer', 'pilot', 'insurer', 'cooperative', 'adv', 'regantes', 'admin'] as const).map((role) => {
           const count = users.filter((u: User) => u.role === role).length;
           if (count === 0) return null;
           const isActive = activeRole === role;

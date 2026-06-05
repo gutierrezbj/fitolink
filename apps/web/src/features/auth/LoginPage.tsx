@@ -17,6 +17,12 @@ const DEMO_ACCOUNTS = [
   { label: 'Agricultor',  googleId: 'demo-farmer-001',      icon: '/farmer.svg',                 color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
   { label: 'Aseguradora', googleId: 'demo-insurer-001',     icon: '/insurance2.svg',             color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
   { label: 'Cooperativa', googleId: 'demo-cooperative-001', icon: '/provider-cooperative.svg',   color: 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' },
+  // Comunidad de Regantes · Sprint Regantes 05-jun-2026.
+  // Demo sintética: cooperativa demo reusada como entidad agregadora con
+  // role=regantes. Seed: seedRegantesSocios.ts (4 socios + 8 parcelas
+  // zona Levante regable). Botón color azul-agua para diferenciar
+  // visualmente de cooperativa (amarillo) y agricultor (verde).
+  { label: 'Comunidad Regantes', googleId: 'demo-regantes-001', icon: '/provider-cooperative.svg', color: 'bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100' },
   // Cliente Pistacho — accede al login del cliente real de Jonh para
   // que vea sus 6 parcelas (348 ha en establecimiento) con los insights
   // Ola 1.5 corriendo en sus propios datos satelitales.

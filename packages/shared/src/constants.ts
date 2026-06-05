@@ -9,7 +9,15 @@
 // foco no es comercialización sino sanidad vegetal: vigilancia comarcal +
 // avisos preventivos a socios + cumplimiento normativo RAIF. Buyer
 // institucional prioritario campaña 2026 según decisión PM 04-jun.
-export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin', 'cooperative', 'adv'] as const;
+// `regantes` (Comunidad de Regantes) · 05-jun-2026 · entidad institucional
+// que gestiona el riego colectivo + reparto de agua entre socios agrarios.
+// Estructuralmente similar a cooperative + adv (agrega farmers vía
+// cooperativeId), foco diferente: justificar reparto hídrico con datos
+// objetivos para cumplir RD 950/2024 (reducción obligatoria consumo agua
+// agraria) en contexto sequía 2024-2026. Stack alineado: NDVI + LST +
+// ERA5 drought + Open-Meteo + SoilGrids. ~700 comunidades en España,
+// foco campaña 2026 Andalucía + Levante.
+export const USER_ROLES = ['farmer', 'pilot', 'agronomist', 'insurer', 'admin', 'cooperative', 'adv', 'regantes'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // Operation types
