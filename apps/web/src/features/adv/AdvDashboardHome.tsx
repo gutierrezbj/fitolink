@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
+import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.js';
 
 /**
  * AdvDashboardHome — vista inicial del rol ADV (Agrupación de Defensa Vegetal).
@@ -121,12 +122,15 @@ export default function AdvDashboardHome() {
               {kpis.memberCount} socio{kpis.memberCount > 1 ? 's' : ''} · {kpis.areaHa.toFixed(0)} ha bajo vigilancia
             </p>
           </div>
-          {kpis.criticalAlerts > 0 && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-2 rounded-xl animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              {kpis.criticalAlerts} aviso{kpis.criticalAlerts > 1 ? 's' : ''} crítico{kpis.criticalAlerts > 1 ? 's' : ''} comarca
-            </div>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {kpis.criticalAlerts > 0 && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-2 rounded-xl animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                {kpis.criticalAlerts} aviso{kpis.criticalAlerts > 1 ? 's' : ''} crítico{kpis.criticalAlerts > 1 ? 's' : ''} comarca
+              </div>
+            )}
+            <DownloadReportButtons />
+          </div>
         </div>
       </div>
 

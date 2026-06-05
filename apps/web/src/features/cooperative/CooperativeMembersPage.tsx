@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
+import DownloadReportButtons from './DownloadReportButtons.js';
 
 /**
  * CooperativeMembersPage — segunda pestaña del rol `cooperative`.
@@ -121,16 +122,19 @@ export default function CooperativeMembersPage() {
   return (
     <div className="space-y-5">
       {/* Header editorial */}
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-1">
-          § CARTERA · SOCIOS DE LA COOPERATIVA
-        </p>
-        <h1 className="font-display text-2xl text-brand-900">
-          Sus socios, vistos en detalle.
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {kpis?.memberCount ?? 0} socios · {(kpis?.areaHa ?? 0).toFixed(0)} ha bajo seguimiento · NDVI medio cartera {kpis?.ndviAvg !== null && kpis?.ndviAvg !== undefined ? kpis.ndviAvg.toFixed(2) : '—'}
-        </p>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gray-500 mb-1">
+            § CARTERA · SOCIOS DE LA COOPERATIVA
+          </p>
+          <h1 className="font-display text-2xl text-brand-900">
+            Sus socios, vistos en detalle.
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {kpis?.memberCount ?? 0} socios · {(kpis?.areaHa ?? 0).toFixed(0)} ha bajo seguimiento · NDVI medio cartera {kpis?.ndviAvg !== null && kpis?.ndviAvg !== undefined ? kpis.ndviAvg.toFixed(2) : '—'}
+          </p>
+        </div>
+        <DownloadReportButtons />
       </div>
 
       {/* Filtros + Sort */}

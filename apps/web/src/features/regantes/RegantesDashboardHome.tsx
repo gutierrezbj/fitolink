@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
+import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.js';
 
 /**
  * RegantesDashboardHome — vista inicial del rol `regantes`.
@@ -133,12 +134,15 @@ export default function RegantesDashboardHome() {
               {kpis.memberCount} socios &middot; {kpis.areaHa.toFixed(0)} ha regables &middot; {totalParcels} parcelas vigiladas
             </p>
           </div>
-          {stressPct > 30 && (
-            <div className="flex items-center gap-2 bg-terra-500/10 border border-terra-500/30 text-terra-500 text-sm font-medium px-4 py-2 rounded-xl">
-              <span className="w-2 h-2 rounded-full bg-terra-500 animate-pulse" />
-              {stressPct}% cartera en estrés hídrico
-            </div>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {stressPct > 30 && (
+              <div className="flex items-center gap-2 bg-terra-500/10 border border-terra-500/30 text-terra-500 text-sm font-medium px-4 py-2 rounded-xl">
+                <span className="w-2 h-2 rounded-full bg-terra-500 animate-pulse" />
+                {stressPct}% cartera en estrés hídrico
+              </div>
+            )}
+            <DownloadReportButtons />
+          </div>
         </div>
       </div>
 

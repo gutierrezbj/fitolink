@@ -13,4 +13,8 @@ router.use(authorize('cooperative', 'adv', 'regantes', 'admin'));
 // Admins can also call it for a given cooperative (V2 — filter by `:id`).
 router.get('/overview', cooperativeController.overview);
 
+// Bloque B · 05-jun-2026 · descarga reporte cartera PDF/CSV.
+// Query: ?format=pdf | ?format=csv
+router.get('/report', cooperativeController.downloadReport);
+
 export default router;
