@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
@@ -57,6 +58,9 @@ interface RegantesOverview {
     ndvi: number | null;
     hasActiveAlert: boolean;
     ownerName: string;
+    // 05-jun-2026: añadido para mapear socio→parcela y poder hacer focus
+    // mapa al clickear card de socio en la lista lateral.
+    ownerId: string;
   }>;
   kpis: {
     memberCount: number;
@@ -71,6 +75,10 @@ interface RegantesOverview {
 export default function RegantesDashboardHome() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  // 05-jun-2026: state para hacer focus en mapa al clickear socio.
+  // Click en card de socio → busca primera parcela de ese socio → mapa
+  // hace flyToBounds. Click otra vez en el mismo socio = des-selecciona.
+  const [focusedParcelId, setFocusedParcelId] = useState<string | undefined>();
 
   const { data, isLoading } = useQuery<RegantesOverview>({
     queryKey: ['regantes', 'overview'],
@@ -203,6 +211,7 @@ export default function RegantesDashboardHome() {
                   height="100%"
                   showDetailLink
                   showLegend
+                  focusParcelId={focusedParcelId}
                   onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
                 />
               </div>
@@ -233,11 +242,28 @@ export default function RegantesDashboardHome() {
                 const isTopPriority = idx < 3;
                 const ndviColor =
                   m.ndviAvg === null ? 'text-gray-400' : m.ndviAvg < 0.40 ? 'text-terra-500' : m.ndviAvg < 0.55 ? 'text-yellow-600' : 'text-green-600';
+                // Para hacer focus en el mapa al clickear la card, busco
+                // la primera parcela del socio. Si tiene varias, el mapa
+                // hace zoom a esa una (la primera). V2: cycle por las N
+                // parcelas del socio en clicks sucesivos.
+                const socioParcels = parcels.filter((p) => p.ownerId === m._id);
+                const focusTarget = socioParcels[0]?._id;
+                const isFocused = focusTarget !== undefined && focusedParcelId === focusTarget;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={m._id}
-                    className={`border rounded-lg p-3 hover:border-brand-200 transition-colors ${
-                      isTopPriority ? 'border-terra-500/40 bg-terra-500/5' : 'border-earth-300/30'
+                    onClick={() => {
+                      if (!focusTarget) return;
+                      // Toggle: si ya está focused → des-seleccionar (vuelve al fitBounds general)
+                      setFocusedParcelId(isFocused ? undefined : focusTarget);
+                    }}
+                    className={`w-full text-left border rounded-lg p-3 transition-all ${
+                      isFocused
+                        ? 'border-brand-600 bg-brand-50 shadow-sm'
+                        : isTopPriority
+                        ? 'border-terra-500/40 bg-terra-500/5 hover:border-terra-500'
+                        : 'border-earth-300/30 hover:border-brand-200'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-1.5 gap-2">
@@ -261,7 +287,12 @@ export default function RegantesDashboardHome() {
                         </span>
                       )}
                     </div>
-                  </div>
+                    {isFocused && (
+                      <p className="text-[10px] text-brand-600 mt-1.5 font-mono uppercase tracking-wider">
+                        → Enfocado en mapa · click para volver
+                      </p>
+                    )}
+                  </button>
                 );
               })}
           </div>

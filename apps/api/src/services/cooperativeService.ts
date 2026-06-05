@@ -41,6 +41,9 @@ interface ParcelGeo {
   ndvi: number | null;
   hasActiveAlert: boolean;
   ownerName: string;
+  // 05-jun-2026: añadido para que el frontend pueda mapear socio↔parcelas
+  // cuando se hace click en la lista lateral (focus mapa a parcela del socio).
+  ownerId: string;
 }
 
 interface CooperativeOverview {
@@ -186,6 +189,7 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
       ndvi: latestNdvi(p),
       hasActiveAlert: (alertsByParcel.get(p._id.toString()) ?? []).length > 0,
       ownerName: owner?.name ?? '—',
+      ownerId: p.ownerId.toString(),
     };
   });
 

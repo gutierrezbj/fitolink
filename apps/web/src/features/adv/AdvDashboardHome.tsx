@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
@@ -58,6 +59,7 @@ interface AdvOverview {
     ndvi: number | null;
     hasActiveAlert: boolean;
     ownerName: string;
+    ownerId: string;
   }>;
   kpis: {
     memberCount: number;
@@ -71,6 +73,8 @@ interface AdvOverview {
 export default function AdvDashboardHome() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  // 05-jun-2026: click card de socio → focus mapa a su primera parcela.
+  const [focusedParcelId, setFocusedParcelId] = useState<string | undefined>();
 
   const { data, isLoading } = useQuery<AdvOverview>({
     queryKey: ['adv', 'overview'],
@@ -174,6 +178,7 @@ export default function AdvDashboardHome() {
                   height="100%"
                   showDetailLink
                   showLegend
+                  focusParcelId={focusedParcelId}
                   onParcelClick={(id) => navigate(`/dashboard/parcels/${id}`)}
                 />
               </div>
@@ -191,10 +196,23 @@ export default function AdvDashboardHome() {
             § SOCIOS VIGILADOS
           </p>
           <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-            {members.map((m) => (
-              <div
+            {members.map((m) => {
+              const socioParcels = parcels.filter((p) => p.ownerId === m._id);
+              const focusTarget = socioParcels[0]?._id;
+              const isFocused = focusTarget !== undefined && focusedParcelId === focusTarget;
+              return (
+              <button
+                type="button"
                 key={m._id}
-                className="border border-earth-300/30 rounded-lg p-3 hover:border-brand-200 transition-colors"
+                onClick={() => {
+                  if (!focusTarget) return;
+                  setFocusedParcelId(isFocused ? undefined : focusTarget);
+                }}
+                className={`w-full text-left border rounded-lg p-3 transition-all ${
+                  isFocused
+                    ? 'border-brand-600 bg-brand-50 shadow-sm'
+                    : 'border-earth-300/30 hover:border-brand-200'
+                }`}
               >
                 <div className="flex items-start justify-between mb-1.5">
                   <p className="text-sm font-semibold text-brand-900 truncate flex-1">{m.name}</p>
@@ -212,8 +230,14 @@ export default function AdvDashboardHome() {
                     </span>
                   )}
                 </div>
-              </div>
-            ))}
+                {isFocused && (
+                  <p className="text-[10px] text-brand-600 mt-1.5 font-mono uppercase tracking-wider">
+                    → Enfocado en mapa · click para volver
+                  </p>
+                )}
+              </button>
+              );
+            })}
           </div>
         </div>
       </div>
