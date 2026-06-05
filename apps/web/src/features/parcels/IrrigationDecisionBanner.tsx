@@ -31,6 +31,7 @@ interface IrrigationDecision {
   awcMm: number;
   etCropMmDay: number;
   alternative: string | null;
+  analysisNarrative: string;
   computedAt: string;
 }
 
@@ -121,8 +122,20 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
         )}
       </div>
 
-      {/* Justificación agronómica */}
-      <p className="text-sm text-brand-900 leading-relaxed mb-4">{data.reason}</p>
+      {/* Justificación agronómica corta · titular */}
+      <p className="text-sm text-brand-900 leading-relaxed mb-3">{data.reason}</p>
+
+      {/* Análisis integrado · narrativa server-side cruzando 6-8 variables.
+          NO usa LLM · plantillas con datos reales (NDVI + tendencia + cultivo
+          + suelo + lluvia + fenología + establecimiento). Cero alucinación. */}
+      {data.analysisNarrative && (
+        <div className="bg-white/40 border-l-2 border-brand-600 px-3 py-2.5 rounded-r mb-4">
+          <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-brand-600 mb-1.5">
+            § ANÁLISIS INTEGRADO
+          </p>
+          <p className="text-sm text-brand-900 leading-relaxed">{data.analysisNarrative}</p>
+        </div>
+      )}
 
       {/* Grid de variables clave · 4 columnas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -172,33 +185,46 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
         </div>
       </div>
 
-      {/* Cupo m³ · LO QUE EL GERENTE NECESITA */}
-      <div className="bg-brand-900 text-white rounded-lg p-4 mb-3">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-earth-50/70 mb-1.5">
-              → CUPO ESTIMADO PARA ESTA PARCELA
-            </p>
-            <p className="font-display text-3xl leading-none">
-              {data.estimatedCupoM3.toLocaleString('es-ES')}
-              <span className="text-base text-earth-50/70 ml-1.5">m³</span>
-            </p>
-            <p className="text-[10px] text-earth-50/60 mt-1.5">
-              {data.estimatedDeficitMm} mm × superficie real catastral × 10
-            </p>
-          </div>
-          <div className="border-l border-white/20 pl-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-earth-50/70 mb-1.5">
-              CON RD 950/2024 · −20%
-            </p>
-            <p className="font-display text-3xl leading-none text-terra-300">
-              {data.cupoWithRd9502024M3.toLocaleString('es-ES')}
-              <span className="text-base text-earth-50/70 ml-1.5">m³</span>
-            </p>
-            <p className="text-[10px] text-earth-50/60 mt-1.5">cupo efectivo aplicable</p>
+      {/* Cupo m³ · LO QUE EL GERENTE NECESITA · solo si hay déficit real.
+          Cuando cupo=0 (sufficient), reemplazamos por mensaje editorial
+          corto sin el bloque pesado — no tiene sentido destacar "0 m³". */}
+      {data.estimatedCupoM3 > 0 ? (
+        <div className="bg-earth-100 border-2 border-brand-600/30 rounded-lg p-4 mb-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-brand-600 mb-1.5">
+                → CUPO ESTIMADO PARA ESTA PARCELA
+              </p>
+              <p className="font-display text-3xl leading-none text-brand-900">
+                {data.estimatedCupoM3.toLocaleString('es-ES')}
+                <span className="text-base text-gray-500 ml-1.5">m³</span>
+              </p>
+              <p className="text-[10px] text-gray-500 mt-1.5">
+                {data.estimatedDeficitMm} mm × superficie real catastral × 10
+              </p>
+            </div>
+            <div className="border-l border-brand-600/20 pl-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-terra-500 mb-1.5">
+                CON RD 950/2024 · −20%
+              </p>
+              <p className="font-display text-3xl leading-none text-terra-500">
+                {data.cupoWithRd9502024M3.toLocaleString('es-ES')}
+                <span className="text-base text-gray-500 ml-1.5">m³</span>
+              </p>
+              <p className="text-[10px] text-gray-500 mt-1.5">cupo efectivo aplicable</p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white/50 border border-brand-600/20 rounded-lg p-3 mb-3 text-center">
+          <p className="text-sm text-brand-900 leading-relaxed">
+            Sin déficit hídrico significativo · <span className="font-semibold">no se requiere riego esta semana</span>
+          </p>
+          <p className="text-[10px] text-gray-500 mt-1">
+            Suelo + lluvia reciente cubren la demanda del cultivo
+          </p>
+        </div>
+      )}
 
       {/* Alternativa · si aplica */}
       {data.alternative && (

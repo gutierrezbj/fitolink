@@ -24,6 +24,7 @@
  */
 
 import type { IParcel } from '../models/Parcel.js';
+import { cropLabel } from '@fitolink/shared';
 
 export type IrrigationUrgency = 'urgent' | 'soon' | 'monitor' | 'sufficient';
 
@@ -40,6 +41,14 @@ export interface IrrigationDecision {
   awcMm: number; // agua disponible útil del suelo
   etCropMmDay: number; // demanda diaria del cultivo
   alternative: string | null;
+  /**
+   * Narrativa editorial generada server-side cruzando 6-8 variables
+   * (NDVI + tendencia + cultivo + suelo + lluvia + fenología + estab.).
+   * NO usa LLM · plantillas determinísticas, cero alucinación, coherente
+   * con regla CRITICAL_no_inventar. Aporta contexto al gerente sin
+   * que tenga que cruzar mentalmente todas las cards técnicas.
+   */
+  analysisNarrative: string;
   computedAt: Date;
 }
 
@@ -117,6 +126,139 @@ function et0FromTemp(tempMeanC: number | undefined): number {
 }
 
 /**
+ * Días aproximados que retiene agua un suelo según su textura dominante.
+ * Basado en literatura agronómica para riego deficitario (no ingeniería
+ * exacta · valor operativo para narrativa, no para cálculo de cupo).
+ */
+function retentionDaysByTexture(texture: string): number {
+  const t = texture.toLowerCase();
+  if (t.includes('arcilla') && !t.includes('arenosa') && !t.includes('limosa')) return 7;
+  if (t.includes('franco arcilloso')) return 5;
+  if (t.includes('arenoso')) return 2;
+  if (t.includes('limoso')) return 5;
+  if (t.includes('franco')) return 4;
+  return 4; // default conservador
+}
+
+/**
+ * Nota de fenología por cultivo y mes actual. Simple por diseño · solo
+ * cubre los cultivos principales del catálogo FitoLink en sus fases
+ * más críticas. Devuelve null si la fase no aplica (cultivo poco
+ * crítico ese mes, mejor no decir nada que inventar).
+ */
+function phenologyNoteFor(cropType: string, now: Date): string | null {
+  const month = now.getMonth(); // 0=enero
+  if (cropType === 'citrico') {
+    if (month >= 3 && month <= 5) return 'Los cítricos están en floración y cuajado, fase de máxima demanda hídrica.';
+    if (month >= 6 && month <= 8) return 'En verano los cítricos están en crecimiento del fruto, etapa crítica para tamaño y calidad.';
+  }
+  if (cropType === 'frutal') {
+    if (month >= 3 && month <= 5) return 'Fase de cuajado y crecimiento del fruto, alta sensibilidad al estrés hídrico.';
+    if (month >= 6 && month <= 7) return 'Fase de crecimiento y maduración del fruto.';
+  }
+  if (cropType === 'olivo') {
+    if (month >= 4 && month <= 5) return 'Floración y cuajado del olivar, etapa decisiva para la cosecha.';
+    if (month >= 6 && month <= 8) return 'Endurecimiento del hueso y crecimiento del fruto.';
+  }
+  if (cropType === 'pistacho') {
+    if (month >= 3 && month <= 5) return 'Brotación primaveral y cuajado del fruto en pistacho.';
+  }
+  if (cropType === 'almendro') {
+    if (month >= 2 && month <= 4) return 'Cuajado y crecimiento del fruto en almendro.';
+  }
+  if (cropType === 'vinedo') {
+    if (month >= 4 && month <= 5) return 'Floración y cuajado del viñedo, etapa decisiva.';
+    if (month >= 6 && month <= 7) return 'Envero · cambio de color de la baya, crítico para calidad.';
+  }
+  return null;
+}
+
+/**
+ * Genera la narrativa editorial server-side. Concatena 3-5 frases de
+ * plantillas determinísticas alimentadas con datos reales del backend.
+ * No es LLM. No alucina. No usa información que no esté en parcel o
+ * decision. Coherente con CRITICAL_no_inventar.
+ */
+function composeNarrativeInsight(
+  parcel: IParcel,
+  ndviCurrent: number | null,
+  ndviTrend7d: number | null,
+  precipRecentMm: number,
+  urgency: IrrigationUrgency,
+): string {
+  const parts: string[] = [];
+  const cropName = cropLabel(parcel.cropType);
+
+  // 1. Estado actual del cultivo (frase de entrada · siempre presente si hay NDVI)
+  if (ndviCurrent !== null) {
+    if (ndviCurrent >= 0.55) {
+      parts.push(`El ${cropName} se encuentra en buen estado vegetativo (NDVI ${ndviCurrent.toFixed(2)}).`);
+    } else if (ndviCurrent >= 0.45) {
+      parts.push(`El ${cropName} mantiene un estado adecuado para la época (NDVI ${ndviCurrent.toFixed(2)}).`);
+    } else if (ndviCurrent >= 0.3) {
+      parts.push(`El ${cropName} muestra signos de estrés temprano (NDVI ${ndviCurrent.toFixed(2)}).`);
+    } else {
+      parts.push(`El ${cropName} está en estrés agudo (NDVI ${ndviCurrent.toFixed(2)}, zona crítica).`);
+    }
+  } else {
+    parts.push(`Sin lecturas NDVI recientes para el ${cropName}. Esperando próxima pasada Sentinel-2.`);
+  }
+
+  // 2. Tendencia (solo si es relevante · no decimos "estable" salvo que el resto pida contexto)
+  if (ndviTrend7d !== null) {
+    if (ndviTrend7d < -0.05) {
+      parts.push(`Caída notable respecto a la lectura anterior (${ndviTrend7d.toFixed(2)}), tendencia descendente clara.`);
+    } else if (ndviTrend7d < -0.02) {
+      parts.push(`Ligera caída en la última semana, vigilar evolución.`);
+    } else if (ndviTrend7d > 0.03) {
+      parts.push(`Tendencia ascendente respecto a lecturas previas, evolución positiva.`);
+    }
+  }
+
+  // 3. Suelo · solo si tenemos textura
+  if (parcel.soil?.dominantTexture) {
+    const texture = parcel.soil.dominantTexture.toLowerCase();
+    const retentionDays = retentionDaysByTexture(parcel.soil.dominantTexture);
+    parts.push(`El suelo ${texture} retiene agua aproximadamente ${retentionDays} días tras lluvia significativa.`);
+  }
+
+  // 4. Lluvia reciente (siempre · es el dato base de la decisión)
+  if (precipRecentMm < 5) {
+    parts.push(`Apenas ha llovido en las últimas 2 semanas (${precipRecentMm} mm acumulados).`);
+  } else if (precipRecentMm < 20) {
+    parts.push(`Lluvia reciente escasa (${precipRecentMm} mm en 14 días), insuficiente para cubrir demanda.`);
+  } else if (precipRecentMm < 40) {
+    parts.push(`Lluvia reciente moderada (${precipRecentMm} mm en 14 días) cubre parte de la demanda.`);
+  } else {
+    parts.push(`Lluvia reciente abundante (${precipRecentMm} mm en 14 días) cubre la mayor parte de la demanda.`);
+  }
+
+  // 5. Fenología por cultivo + mes (solo si aplica)
+  const phenology = phenologyNoteFor(parcel.cropType, new Date());
+  if (phenology) {
+    parts.push(phenology);
+  }
+
+  // 6. Establecimiento (cultivos jóvenes con calibración)
+  if (parcel.establishmentPhase) {
+    parts.push(`La parcela está en fase de establecimiento (primeros años post-plantación), demanda hídrica creciente.`);
+  }
+
+  // 7. Cierre operativo según urgencia
+  if (urgency === 'urgent') {
+    parts.push(`Acción inmediata recomendada para evitar pérdida de cosecha.`);
+  } else if (urgency === 'soon') {
+    parts.push(`Conviene programar intervención antes de la próxima pasada satélite (≈ 5 días).`);
+  } else if (urgency === 'monitor') {
+    parts.push(`Próxima evaluación tras nueva pasada Sentinel-2 en ~5 días.`);
+  } else {
+    parts.push(`No se requiere acción inmediata. Próxima evaluación tras nueva pasada Sentinel-2.`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
  * Calcula la decisión de riego completa para una parcela.
  */
 export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
@@ -184,6 +326,14 @@ export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
     reason = `NDVI ${ndviCurrent !== null ? ndviCurrent.toFixed(2) : 'sin datos'} adecuado y déficit moderado (~${Math.round(deficitMm)} mm). Suelo + lluvia reciente cubren la demanda del cultivo.`;
   }
 
+  const analysisNarrative = composeNarrativeInsight(
+    parcel,
+    ndviCurrent,
+    ndviTrend7d,
+    Math.round(precipRecent),
+    urgency,
+  );
+
   return {
     urgency,
     recommendedAction,
@@ -197,6 +347,7 @@ export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
     awcMm,
     etCropMmDay: Math.round(etCrop * 10) / 10,
     alternative,
+    analysisNarrative,
     computedAt: new Date(),
   };
 }
