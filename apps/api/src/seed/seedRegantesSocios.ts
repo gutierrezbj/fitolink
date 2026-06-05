@@ -1,39 +1,64 @@
 /**
  * Seed: Comunidad de Regantes demo (demo-regantes-001) + 4 farmer "socios"
- * + 8 parcelas regables en Levante (Comunidad Valenciana / Murcia).
+ * + 8 parcelas con **GEOMETRÍAS SIGPAC CATASTRALES REALES** en Vega Baja
+ * del Segura (Alicante · provincia 03).
  *
- * Patrón idéntico a seedCooperativeSocios.ts pero con foco en zona
- * regable real (Levante: citricultura + frutal + hortícola), no en
- * olivar Estepa. Esto es lo coherente con el buyer Comunidad de Regantes
- * cuya pelea 2026 es la sequía + RD 950/2024 reducción consumo agua.
+ * v3 · 05-jun-2026 · Aula Jaén v2 pattern aplicado a regantes.
  *
- * UPSERTS · idempotente:
- *   1. Crea/promociona usuario `demo-regantes-001` con role='regantes'
- *   2. Upsert 4 socios farmer con `cooperativeId` apuntando a la comunidad
- *   3. Upsert 8 parcelas (2 por socio) con geometrías en zona regable
+ * ANTES (v1): polígonos sintéticos `ringFromCentroid` cuadrados de 888×888m
+ * sobre suelo árido. Un gerente real de Comunidad de Regantes veía eso y
+ * "nos saca a patadas" (cita JuanCho 05-jun). Sin credibilidad cero.
+ *
+ * AHORA (v3): descargamos geometrías catastrales reales desde SIGPAC vía
+ * `fetchByReference` del sigpacService. Cualquier técnico de regantes
+ * puede pegar la ref en el visor SIGPAC oficial y ver EXACTAMENTE el
+ * mismo polígono. Cero invento. Auditable. Patrón AgroM: ciencia, no
+ * marketing.
+ *
+ * **8 referencias SIGPAC verificadas** (sondeo manual 05-jun-2026,
+ * todas con coef_regadio=100 = 100% en regadío, requisito Comunidad
+ * de Regantes):
+ *
+ *   Orihuela (muni 99):
+ *     03/99/0/0/3/10/1 · CI · 4.23 ha · cítrico
+ *     03/99/0/0/4/1/1  · CI · 3.96 ha · cítrico
+ *     03/99/0/0/4/5/1  · CI · 4.72 ha · cítrico
+ *     03/99/0/0/3/7/1  · CI · 4.44 ha · cítrico
+ *     03/99/0/0/3/30/1 · FY · 1.99 ha · frutal
+ *
+ *   Almoradí (muni 70):
+ *     03/70/0/0/3/1/1  · CI · 2.06 ha · cítrico
+ *
+ *   Callosa de Segura (muni 49):
+ *     03/49/0/0/4/1/1  · TA · 2.30 ha · hortícola
+ *     03/49/0/0/4/10/1 · FY · 1.20 ha · frutal
+ *
+ * Total: ~25 ha · 5 cítricos + 2 frutales + 1 hortícola (mix realista
+ * Vega Baja: dominante cítrico, regadío del Segura).
  *
  * Run via:
  *   docker compose exec -T api node apps/api/dist/seed/seedRegantesSocios.js
- *
- * Sprint Comunidad de Regantes · 05-jun-2026.
  */
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Parcel } from '../models/Parcel.js';
 import { logger } from '../utils/logger.js';
+import { fetchByReference } from '../services/sigpacService.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
 
-interface SocioSeed {
-  googleId: string;
-  email: string;
-  name: string;
-  phone?: string;
-  parcels: ParcelSeed[];
+interface SigpacRef {
+  prov: string;
+  muni: string;
+  agre: string;
+  zona: string;
+  poligono: string;
+  parcela: string;
+  recinto: string;
 }
 
 interface NdviSeed {
-  date: string; // ISO yyyy-mm-dd
+  date: string;
   mean: number;
   min: number;
   max: number;
@@ -44,31 +69,25 @@ interface ParcelSeed {
   name: string;
   cropType: string;
   province: string;
-  areaHa: number;
-  centroid: [number, number]; // [lng, lat]
-  sizeDeg?: number;
-  sigpacRef?: string;
-  // NDVI history sintético plausible para que la demo se vea con KPIs
-  // reales sin esperar 5 días al pipeline Sentinel-2. Patrón identico
-  // a seedProfessorDemo (Aula Jaén). 05-jun-2026.
-  ndviHistory?: NdviSeed[];
+  sigpacRef: SigpacRef;
+  ndviHistory: NdviSeed[];
+}
+
+interface SocioSeed {
+  googleId: string;
+  email: string;
+  name: string;
+  phone?: string;
+  parcels: ParcelSeed[];
 }
 
 const REGANTES_GOOGLE_ID = 'demo-regantes-001';
 
-// Vega Baja del Segura · zona regable concreta y coherente (Alicante +
-// Murcia adyacentes). 05-jun-2026: re-concentradas las coords (antes
-// dispersas en Valencia+Murcia+Alicante, el mapa no las mostraba todas
-// juntas). Una Comunidad de Regantes real opera UNA cuenca, no 3.
-// Centroides en municipios reales: Orihuela, Almoradí, Callosa Segura,
-// Catral, Cox, Granja de Rocamora, Bigastro, Daya Nueva.
-//
-// Estados NDVI variados para que los KPIs del dashboard se llenen:
-//  · Socio 1 · 2 cítricos sanos (0.55-0.65)
-//  · Socio 2 · 1 cítrico sano + 1 cítrico estresado (NDVI bajando)
-//  · Socio 3 · 1 hortícola medio + 1 cítrico crítico (NDVI<0.30)
-//  · Socio 4 · 2 frutales sanos
-// → KPIs esperados: 2 parcelas en estrés (25%), 1 crítica, NDVI medio ~0.50
+// Estados NDVI plausibles para que los KPIs del dashboard se llenen:
+//  · 6 parcelas sanas (NDVI 0.55-0.65)
+//  · 1 frutal Hermanos Martínez · ESTRÉS descendente (NDVI 0.55 → 0.38)
+//  · 1 frutal Carmen López · CRÍTICO (NDVI 0.42 → 0.27, anomaly)
+// → KPIs esperados: 25% estrés, 1 crítica, NDVI medio ~0.52
 const SOCIOS: SocioSeed[] = [
   {
     googleId: 'demo-reg-socio-1',
@@ -77,9 +96,9 @@ const SOCIOS: SocioSeed[] = [
     phone: '+34 600 200 001',
     parcels: [
       {
-        name: 'Cítricos Vega Baja',
-        cropType: 'citrico', province: 'Alicante', areaHa: 8.4,
-        centroid: [-0.940, 38.085], // Orihuela
+        name: 'Cítricos Vega Baja · Orihuela',
+        cropType: 'citrico', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '99', agre: '0', zona: '0', poligono: '3', parcela: '10', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.58, min: 0.42, max: 0.71, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.61, min: 0.46, max: 0.74, anomalyDetected: false },
@@ -89,15 +108,15 @@ const SOCIOS: SocioSeed[] = [
         ],
       },
       {
-        name: 'Hortícola El Soto',
-        cropType: 'hortaliza', province: 'Alicante', areaHa: 3.2,
-        centroid: [-0.945, 38.092], // Orihuela norte
+        name: 'Cítricos Vega Baja · Orihuela II',
+        cropType: 'citrico', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '99', agre: '0', zona: '0', poligono: '4', parcela: '5', recinto: '1' },
         ndviHistory: [
-          { date: '2026-04-15', mean: 0.52, min: 0.38, max: 0.66, anomalyDetected: false },
-          { date: '2026-04-25', mean: 0.55, min: 0.40, max: 0.68, anomalyDetected: false },
-          { date: '2026-05-05', mean: 0.58, min: 0.43, max: 0.70, anomalyDetected: false },
-          { date: '2026-05-15', mean: 0.56, min: 0.41, max: 0.69, anomalyDetected: false },
-          { date: '2026-05-25', mean: 0.59, min: 0.44, max: 0.71, anomalyDetected: false },
+          { date: '2026-04-15', mean: 0.60, min: 0.45, max: 0.73, anomalyDetected: false },
+          { date: '2026-04-25', mean: 0.62, min: 0.47, max: 0.75, anomalyDetected: false },
+          { date: '2026-05-05', mean: 0.64, min: 0.49, max: 0.76, anomalyDetected: false },
+          { date: '2026-05-15', mean: 0.65, min: 0.50, max: 0.77, anomalyDetected: false },
+          { date: '2026-05-25', mean: 0.66, min: 0.51, max: 0.78, anomalyDetected: false },
         ],
       },
     ],
@@ -109,22 +128,22 @@ const SOCIOS: SocioSeed[] = [
     phone: '+34 600 200 002',
     parcels: [
       {
-        name: 'Cítricos La Alquería',
-        cropType: 'citrico', province: 'Alicante', areaHa: 12.7,
-        centroid: [-0.875, 38.123], // Callosa de Segura
+        name: 'Hortícola · Callosa de Segura',
+        cropType: 'hortaliza', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '49', agre: '0', zona: '0', poligono: '4', parcela: '1', recinto: '1' },
         ndviHistory: [
-          { date: '2026-04-15', mean: 0.60, min: 0.45, max: 0.73, anomalyDetected: false },
-          { date: '2026-04-25', mean: 0.62, min: 0.47, max: 0.75, anomalyDetected: false },
-          { date: '2026-05-05', mean: 0.61, min: 0.46, max: 0.74, anomalyDetected: false },
-          { date: '2026-05-15', mean: 0.63, min: 0.48, max: 0.76, anomalyDetected: false },
-          { date: '2026-05-25', mean: 0.62, min: 0.47, max: 0.75, anomalyDetected: false },
+          { date: '2026-04-15', mean: 0.52, min: 0.38, max: 0.66, anomalyDetected: false },
+          { date: '2026-04-25', mean: 0.55, min: 0.40, max: 0.68, anomalyDetected: false },
+          { date: '2026-05-05', mean: 0.58, min: 0.43, max: 0.70, anomalyDetected: false },
+          { date: '2026-05-15', mean: 0.56, min: 0.41, max: 0.69, anomalyDetected: false },
+          { date: '2026-05-25', mean: 0.59, min: 0.44, max: 0.71, anomalyDetected: false },
         ],
       },
       {
-        // SOCIO 2 · PARCELA EN ESTRÉS · NDVI descendente, cruza umbral 0.40
-        name: 'Frutal de Hueso Sur',
-        cropType: 'frutal', province: 'Alicante', areaHa: 6.5,
-        centroid: [-0.860, 38.108], // Cox
+        // SOCIO 2 · PARCELA EN ESTRÉS · frutal con NDVI descendente
+        name: 'Frutal · Callosa de Segura',
+        cropType: 'frutal', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '49', agre: '0', zona: '0', poligono: '4', parcela: '10', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.55, min: 0.40, max: 0.68, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.50, min: 0.36, max: 0.64, anomalyDetected: false },
@@ -142,9 +161,9 @@ const SOCIOS: SocioSeed[] = [
     phone: '+34 600 200 003',
     parcels: [
       {
-        name: 'Hortícola Las Norias',
-        cropType: 'hortaliza', province: 'Alicante', areaHa: 4.1,
-        centroid: [-0.792, 38.158], // Catral
+        name: 'Cítricos · Almoradí',
+        cropType: 'citrico', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '70', agre: '0', zona: '0', poligono: '3', parcela: '1', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.48, min: 0.34, max: 0.62, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.51, min: 0.36, max: 0.65, anomalyDetected: false },
@@ -154,10 +173,10 @@ const SOCIOS: SocioSeed[] = [
         ],
       },
       {
-        // SOCIO 3 · PARCELA CRÍTICA · NDVI<0.30 — necesita riego YA
-        name: 'Cítricos El Palmeral',
-        cropType: 'citrico', province: 'Murcia', areaHa: 5.8,
-        centroid: [-0.793, 38.103], // Almoradí (sur Vega Baja)
+        // SOCIO 3 · PARCELA CRÍTICA · NDVI<0.30 → necesita riego YA
+        name: 'Frutal · Orihuela',
+        cropType: 'frutal', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '99', agre: '0', zona: '0', poligono: '3', parcela: '30', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.42, min: 0.28, max: 0.56, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.37, min: 0.23, max: 0.51, anomalyDetected: true },
@@ -175,9 +194,9 @@ const SOCIOS: SocioSeed[] = [
     phone: '+34 600 200 004',
     parcels: [
       {
-        name: 'Frutal La Cañada',
-        cropType: 'frutal', province: 'Alicante', areaHa: 9.2,
-        centroid: [-0.832, 38.118], // Granja de Rocamora
+        name: 'Cítricos Vega Baja · Orihuela III',
+        cropType: 'citrico', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '99', agre: '0', zona: '0', poligono: '4', parcela: '1', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.57, min: 0.42, max: 0.70, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.60, min: 0.45, max: 0.72, anomalyDetected: false },
@@ -187,9 +206,9 @@ const SOCIOS: SocioSeed[] = [
         ],
       },
       {
-        name: 'Cítricos El Calar',
-        cropType: 'citrico', province: 'Alicante', areaHa: 7.6,
-        centroid: [-0.820, 38.135], // Bigastro
+        name: 'Cítricos Vega Baja · Orihuela IV',
+        cropType: 'citrico', province: 'Alicante',
+        sigpacRef: { prov: '03', muni: '99', agre: '0', zona: '0', poligono: '3', parcela: '7', recinto: '1' },
         ndviHistory: [
           { date: '2026-04-15', mean: 0.59, min: 0.44, max: 0.72, anomalyDetected: false },
           { date: '2026-04-25', mean: 0.61, min: 0.46, max: 0.74, anomalyDetected: false },
@@ -202,31 +221,19 @@ const SOCIOS: SocioSeed[] = [
   },
 ];
 
-function ringFromCentroid(lng: number, lat: number, sizeDeg = 0.004): number[][] {
-  const d = sizeDeg;
-  return [
-    [lng - d, lat - d],
-    [lng + d, lat - d],
-    [lng + d, lat + d],
-    [lng - d, lat + d],
-    [lng - d, lat - d], // close ring
-  ];
-}
-
 async function seed() {
   await mongoose.connect(MONGODB_URI);
-  logger.info('Connected to MongoDB for regantes socios seed');
+  logger.info('Connected to MongoDB for regantes socios seed (v3 SIGPAC real)');
 
-  // 1) Upsert de la Comunidad de Regantes demo. Igual que seedCooperativeSocios
-  // refactor del 05-jun-2026 — el script NO depende de seed.ts principal.
+  // 1) UPSERT de la Comunidad de Regantes demo.
   await User.updateOne(
     { googleId: REGANTES_GOOGLE_ID },
     {
       $set: {
         email: 'comunidad@regantes-demo.es',
-        name: 'Comunidad de Regantes Demo · Vega Baja',
+        name: 'Comunidad de Regantes Demo · Vega Baja del Segura',
         role: 'regantes',
-        company: 'Comunidad de Regantes Demo (sintética)',
+        company: 'Comunidad de Regantes Demo (sintética, geometrías SIGPAC reales)',
         isVerified: true,
         avatar: '/provider-cooperative.svg',
         updatedAt: new Date(),
@@ -246,6 +253,7 @@ async function seed() {
 
   let userUpserts = 0;
   let parcelUpserts = 0;
+  let sigpacFailures = 0;
   const now = new Date();
 
   for (const socio of SOCIOS) {
@@ -275,12 +283,30 @@ async function seed() {
     if (!socioUser) continue;
 
     for (const p of socio.parcels) {
-      const ring = ringFromCentroid(p.centroid[0], p.centroid[1], p.sizeDeg);
-      // 05-jun-2026: incluimos ndviHistory en el $set para que la demo se
-      // vea con KPIs reales sin esperar 5d al pipeline Sentinel-2. Marcadas
-      // como isSyntheticDemo=true para que el pipeline V2 NO las pise con
-      // datos reales (mismo flag que Aula Jaén).
-      const ndviHistory = (p.ndviHistory ?? []).map((r) => ({
+      const ref = p.sigpacRef;
+      const sigpacRefStr = `${ref.prov}/${ref.muni}/${ref.agre}/${ref.zona}/${ref.poligono}/${ref.parcela}/${ref.recinto}`;
+
+      // Descargar geometría real catastral desde SIGPAC. Si falla
+      // (404 / API caída), saltamos y re-run del seed la recupera.
+      let sigpacResult: Awaited<ReturnType<typeof fetchByReference>>;
+      try {
+        sigpacResult = await fetchByReference(
+          ref.prov, ref.muni, ref.agre, ref.zona, ref.poligono, ref.parcela, ref.recinto,
+        );
+      } catch (err) {
+        sigpacFailures += 1;
+        logger.warn(
+          { parcelName: p.name, sigpacRef: sigpacRefStr, err: (err as Error).message },
+          'sigpac_fetch_failed_skipping_parcel',
+        );
+        continue;
+      }
+      logger.info(
+        { parcelName: p.name, sigpacRef: sigpacRefStr, areaHa: sigpacResult.areaHa, cropUse: sigpacResult.cropUse },
+        'sigpac_fetched',
+      );
+
+      const ndviHistory = p.ndviHistory.map((r) => ({
         date: new Date(r.date),
         mean: r.mean,
         min: r.min,
@@ -288,19 +314,20 @@ async function seed() {
         anomalyDetected: r.anomalyDetected,
         source: 'sentinel2' as const,
       }));
+
       const result = await Parcel.updateOne(
         { name: p.name, ownerId: socioUser._id },
         {
           $set: {
             ownerId: socioUser._id,
             name: p.name,
-            geometry: { type: 'Polygon', coordinates: [ring] },
-            areaHa: p.areaHa,
+            geometry: sigpacResult.geometry, // Polígono catastral REAL
+            areaHa: sigpacResult.areaHa, // Superficie catastral REAL
             cropType: p.cropType,
             province: p.province,
-            sigpacRef: p.sigpacRef,
+            sigpacRef: sigpacRefStr, // Trazable al visor oficial
             isActive: true,
-            isSyntheticDemo: true,
+            isSyntheticDemo: true, // pipeline V2 lo ignora
             ndviHistory,
             updatedAt: now,
           },
@@ -312,8 +339,29 @@ async function seed() {
     }
   }
 
-  const totalSocios = await User.countDocuments({ cooperativeId: comunidad._id });
+  // Limpieza · borrar parcelas viejas v1 (polígonos sintéticos cuadrados)
+  // que ya no están en SOCIOS pero existen en BD con nombres v1
+  // ("Cítricos Vega Baja", "Hortícola El Soto", etc sin sufijo municipio).
+  const v1Names = [
+    'Cítricos Vega Baja',
+    'Hortícola El Soto',
+    'Cítricos La Alquería',
+    'Frutal de Hueso Sur',
+    'Hortícola Las Norias',
+    'Cítricos El Palmeral',
+    'Frutal La Cañada',
+    'Cítricos El Calar',
+  ];
   const socioIds = await User.find({ cooperativeId: comunidad._id }, { _id: 1 }).lean();
+  const v1Removed = await Parcel.deleteMany({
+    ownerId: { $in: socioIds.map((s) => s._id) },
+    name: { $in: v1Names },
+  });
+  if (v1Removed.deletedCount > 0) {
+    logger.info({ removed: v1Removed.deletedCount }, 'Removed v1 synthetic parcels');
+  }
+
+  const totalSocios = await User.countDocuments({ cooperativeId: comunidad._id });
   const totalParcels = await Parcel.countDocuments({
     ownerId: { $in: socioIds.map((s) => s._id) },
     isActive: true,
@@ -330,8 +378,9 @@ async function seed() {
       hectares: totalHa[0]?.total ?? 0,
       newUsers: userUpserts,
       newParcels: parcelUpserts,
+      sigpacFailures,
     },
-    'Regantes socios seed complete',
+    'Regantes socios seed v3 complete',
   );
 
   await mongoose.disconnect();
