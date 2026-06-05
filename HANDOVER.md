@@ -86,7 +86,7 @@
 - [ ] **Verificar wording copy comercial** con Drovinci · acordar cómo se refiere AgroM a la operación con dron sin afirmar que es operador propio.
 
 ### Mejoras importantes (cuando haya tiempo)
-- [ ] **Bloque C · Detector enfermedad específica rule-based MVP** (~2-3 días) · Mosca olivo + Repilo + Polilla pistacho + Mildiu viñedo con thresholds termo-higrométricos basados en literatura agronómica
+- [ ] **Bloque C REORIENTADO · Ingesta boletines oficiales fitosanitarios** (~5-6 días). **NO** hacemos diagnóstico propio (eso sería inventar). Tomamos información de fuentes oficiales y la mostramos contextualizada por parcela. **Infraestructura YA EXISTE**: `PestAdvisory` model + `pestAdvisoryService` + `PestAdvisoriesCard` + endpoint + seed con 2 advisories RAIF de muestra (Polilla + Mosca olivo). Falta: (1) ingesta automatizada RAIF Andalucía (scraping/RSS), (2) IVIA Comunidad Valenciana (cítricos), (3) GIPA Castilla-La Mancha (pistacho/viñedo), (4) DARP Cataluña + IMIDA Murcia cuando lleguen clientes, (5) tratamiento "estilo FIRMS" en UI (banner ROJO destacado + sección "§ 00 · AVISO COMARCA" + prefijo subject email digest). Cero responsabilidad legal nuestra · fuentes oficiales auditables. Coherente CRITICAL_no_inventar.
 - [ ] **Logs-con-body en pipeline Python** (~30 min) · workers/geo-pipeline/src/* con loguru · mismo patrón que TS
 - [ ] **Healthcheck registrado** en `/opt/scripts/healthcheck.sh` del Servidor 2
 - [ ] **Backup MongoDB** automatizado (snapshot diario)
