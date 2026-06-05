@@ -159,7 +159,16 @@ export async function fetchActiveFiresNearGeometry(
     try {
       const res = await fetch(url, { headers: { Accept: 'text/csv' } });
       if (!res.ok) {
-        logger.warn({ source, status: res.status }, 'firms_source_failed');
+        // 05-jun-2026: capturamos también el body del 400 — antes solo el
+        // status sin context. NASA devuelve mensajes legibles tipo
+        // "Invalid MAP_KEY." que ayudan al diagnóstico (key expirada,
+        // typo, rate limit). Primeros 200 chars para no inflar logs si
+        // NASA devuelve HTML de error.
+        const body = await res.text().catch(() => '');
+        logger.warn(
+          { source, status: res.status, body: body.slice(0, 200) },
+          'firms_source_failed',
+        );
         continue;
       }
       const csv = await res.text();
