@@ -6,6 +6,7 @@ import { getNdviForecastForParcel } from '../services/predictiveInsightService.j
 import { getWeatherEventsForParcel } from '../services/weatherEventsService.js';
 import { fetchSoilProfileForParcel } from '../services/soilService.js';
 import { fetchActiveFiresNearParcel } from '../services/fireService.js';
+import { computeIrrigationDecision } from '../services/irrigationDecisionService.js';
 import { Parcel } from '../models/Parcel.js';
 import { AppError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
@@ -198,6 +199,28 @@ export async function getWeatherEvents(req: AuthRequest, res: Response, next: Ne
     );
     const data = await getWeatherEventsForParcel(req.params.id as string);
     res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Sprint BUMM Regantes · 05-jun-2026 · DECISIÓN DE RIEGO operativa para
+ * gerentes de Comunidad de Regantes / ADV / Cooperativa. Cruza NDVI +
+ * suelo + clima + cultivo en una recomendación clara: regar HOY,
+ * en 3-5 días, vigilar o no requiere. Calcula cupo m³ aproximado y
+ * cupo reducido por RD 950/2024 (-20%). Mismo auth pattern (cualquier
+ * usuario que pueda ver la parcela puede ver su decisión).
+ */
+export async function getIrrigationDecision(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parcel = await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
+    const decision = computeIrrigationDecision(parcel);
+    res.json({ success: true, data: decision });
   } catch (error) {
     next(error);
   }

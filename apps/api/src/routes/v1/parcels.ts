@@ -29,6 +29,8 @@ router.get('/:id/insights/pest-advisories', getPestAdvisoriesForParcel);
 router.post('/:id/soil/refresh', parcelController.refreshSoilProfile);
 // Sprint FIRMS — focos térmicos activos cerca de la parcela (NASA VIIRS)
 router.get('/:id/fires', parcelController.getNearbyFires);
+// Sprint BUMM Regantes · DECISIÓN DE RIEGO operativa (NDVI + suelo + clima → m³)
+router.get('/:id/insights/irrigation-decision', parcelController.getIrrigationDecision);
 
 // Admin routes
 router.get('/', authorize('admin'), parcelController.getAll);

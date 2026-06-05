@@ -19,6 +19,8 @@ import PestAdvisoriesCard from './PestAdvisoriesCard.js';
 import WeatherWidget from '@/features/weather/WeatherWidget.js';
 import { polygonCentroid } from '@/features/marketplace/distance.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
+import IrrigationDecisionBanner from './IrrigationDecisionBanner.js';
+import { useAuthStore } from '@/features/auth/authStore.js';
 
 // ── Seasonal baselines per crop group ───────────────────────────────────────
 const SEASONAL_RANGE: Record<string, [number, number][]> = {
@@ -585,6 +587,8 @@ export default function ParcelDetailPage() {
         const causeNote = (isCritical || isAlert) ? buildCauseNote(ndvi, cropType, month, ndviRange) : '';
 
         return (
+          <>
+            <IrrigationDecisionForRole parcelId={parcel._id} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Card 1: Health gauge + stats */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-5">
@@ -652,6 +656,7 @@ export default function ParcelDetailPage() {
               )}
             </div>
           </div>
+          </>
         );
       })()}
 
@@ -987,6 +992,28 @@ export default function ParcelDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * BUMM Regantes · 05-jun-2026 · banner condicional al rol.
+ *
+ * Solo se muestra cuando el usuario es regantes / cooperative / adv
+ * (los roles agregadores que necesitan tomar DECISIONES sobre las
+ * parcelas de sus socios). Para un farmer normal el banner no aporta
+ * — su detalle ya está enfocado a su propio cultivo.
+ *
+ * Patrón: lógica de "cuándo mostrar" aquí en el padre; el componente
+ * IrrigationDecisionBanner no comprueba rol — es agnóstico, A/B-able.
+ */
+function IrrigationDecisionForRole({ parcelId }: { parcelId: string }) {
+  const { user } = useAuthStore();
+  const eligibleRoles = ['regantes', 'cooperative', 'adv'];
+  if (!user || !eligibleRoles.includes(user.role)) return null;
+  return (
+    <div className="mb-4">
+      <IrrigationDecisionBanner parcelId={parcelId} />
     </div>
   );
 }

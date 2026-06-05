@@ -158,7 +158,23 @@ export async function getParcelById(
     parcel.isInsured === true &&
     parcel.insurerId?.toString() === userId;
 
-  if (!isOwner && !isAdminRead && !isInsurerCartera) {
+  // 05-jun-2026: cooperative / adv / regantes pueden ver parcelas de sus
+  // socios (farmers con cooperativeId apuntando al agregador). Antes
+  // forbidden → frontend mostraba "Parcela no encontrada" al clickear
+  // una parcela desde el dashboard agregado. Bug destapado en demo regantes.
+  let isAggregatorOfOwner = false;
+  if (
+    options.userRole === 'cooperative' ||
+    options.userRole === 'adv' ||
+    options.userRole === 'regantes'
+  ) {
+    const owner = await User.findById(parcel.ownerId).select('cooperativeId').lean();
+    if (owner?.cooperativeId?.toString() === userId) {
+      isAggregatorOfOwner = true;
+    }
+  }
+
+  if (!isOwner && !isAdminRead && !isInsurerCartera && !isAggregatorOfOwner) {
     throw AppError.forbidden('No tienes acceso a esta parcela');
   }
   return parcel;
