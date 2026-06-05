@@ -23,10 +23,15 @@ const DEMO_ACCOUNTS = [
   // zona Levante regable). Botón color azul-agua para diferenciar
   // visualmente de cooperativa (amarillo) y agricultor (verde).
   { label: 'Comunidad Regantes', googleId: 'demo-regantes-001', icon: '/provider-cooperative.svg', color: 'bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100' },
-  // Cliente Pistacho — accede al login del cliente real de Jonh para
-  // que vea sus 6 parcelas (348 ha en establecimiento) con los insights
-  // Ola 1.5 corriendo en sus propios datos satelitales.
-  { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
+  // OCULTO 05-jun-2026 · El "Pistachar (Cliente)" abría la cuenta REAL
+  // de Jonh con sus 6 parcelas reales (348 ha pistacho Toledo). Mientras
+  // estuvo público cualquier visitante podía verle sus datos. Se mueve
+  // a acceso por email (campo de abajo) para que solo entre quien tenga
+  // el googleId. La cuenta sigue activa en MongoDB y funcionando — solo
+  // se ha quitado del chip-row visible. Si en futuro AgroM quiere
+  // demostrarla en una llamada comercial, descomentar esta línea
+  // temporalmente y volver a ocultar tras el deploy.
+  // { label: 'Pistachar (Cliente)', googleId: 'john-pistacho-real', icon: '/vegetables.svg',        color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
   // Aula Jaén Jesús — cuenta pedagógica del profesor Jesús Vivar
   // (UPM Agricultura Precisión). 6 parcelas sintéticas Jaén que ilustran
   // escenarios canónicos: olivar sano, intensivo seto, pistachar calibrando,
