@@ -36,11 +36,12 @@ const __dirname = dirname(__filename);
 // Orden importa: dependencias primero. cooperative/regantes asumen que
 // los proveedores ya están en directorio (Sprint Providers).
 const SEEDS = [
-  { name: 'seedProviders',         file: 'seedProviders.js' },
-  { name: 'seedPestAdvisories',    file: 'seedPestAdvisories.js' },
-  { name: 'seedCooperativeSocios', file: 'seedCooperativeSocios.js' },
-  { name: 'seedRegantesSocios',    file: 'seedRegantesSocios.js' },
-  { name: 'seedProfessorDemo',     file: 'seedProfessorDemo.js' },
+  { name: 'seedProviders',           file: 'seedProviders.js' },
+  { name: 'seedPestAdvisories',      file: 'seedPestAdvisories.js' },       // RAIF Andalucía
+  { name: 'seedPestAdvisoriesDARP',  file: 'seedPestAdvisoriesDARP.js' },   // DARP Catalunya · Bloque C 8-jun-2026
+  { name: 'seedCooperativeSocios',   file: 'seedCooperativeSocios.js' },
+  { name: 'seedRegantesSocios',      file: 'seedRegantesSocios.js' },
+  { name: 'seedProfessorDemo',       file: 'seedProfessorDemo.js' },
 ];
 
 interface SeedResult {

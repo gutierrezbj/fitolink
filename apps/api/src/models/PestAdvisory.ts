@@ -20,8 +20,14 @@ import { CROP_TYPES, PROVINCES, type CropType } from '@fitolink/shared';
 export const PEST_SEVERITIES = ['low', 'medium', 'high'] as const;
 export type PestSeverity = (typeof PEST_SEVERITIES)[number];
 
-export const PEST_SOURCES = ['RAIF', 'MAPA', 'SAIF', 'SIAM', 'CSCV', 'otros'] as const;
+export const PEST_SOURCES = ['RAIF', 'DARP', 'MAPA', 'SAIF', 'SIAM', 'CSCV', 'otros'] as const;
 export type PestSource = (typeof PEST_SOURCES)[number];
+// RAIF · Red Alerta e Información Fitosanitaria de Andalucía
+// DARP · Departament d'Agricultura, Ramaderia, Pesca i Alimentació · Generalitat de Catalunya (portal Ruralcat)
+// MAPA · Ministerio de Agricultura, Pesca y Alimentación
+// SAIF · Servicio Información Fitosanitaria Comunitat Valenciana (IVIA)
+// SIAM · Sistema Información Agraria de Murcia (IMIDA)
+// CSCV · Servicio Sanidad Vegetal Castilla-León
 
 export interface IAffectedArea {
   /** Province from the canonical list (see PROVINCES) */
