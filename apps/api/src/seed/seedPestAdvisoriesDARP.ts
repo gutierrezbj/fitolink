@@ -73,33 +73,34 @@ async function seed() {
       isActive: true,
     },
     {
-      // Mildiu de la viña · enfermedad clave viñedo Catalunya · presente
-      // en boletines DARP estación Vilafranca del Penedès (centroid
-      // Tarragona porque Penedès está en la provincia administrativa
-      // Barcelona pero PROVINCES no incluye Barcelona · usamos Tarragona
-      // como provincia más cercana de la lista canónica con radio 60km
-      // que cubre el Penedès vitícola).
+      // Mildiu de la viña · enfermedad clave del viñedo en Conca de Barberà
+      // y Priorat. Verificado contra la tabla oficial del Servei de Sanitat
+      // Vegetal (foto 08-jun-2026): EA Tarragona cubre `vinya` en comarcas
+      // `Tarragonès, Alt Camp, Baix Camp, Conca de Barberà i Priorat` ·
+      // todas en provincia administrativa Tarragona (province field
+      // 100% honesto). Centroid en Falset (Priorat) ~[0.83, 41.14] ·
+      // radio 50km cubre las 5 comarcas vitícolas Tarragona.
       pestName: 'Plasmopara viticola · mildiu de la viña',
       scientificName: 'Plasmopara viticola',
       cropTypes: ['vinedo'],
       affectedAreas: [
         {
           province: 'Tarragona',
-          comarca: 'Penedès / Conca de Barberà',
-          centroid: { type: 'Point' as const, coordinates: [1.70, 41.35] },
-          radiusKm: 60,
+          comarca: 'Priorat / Conca de Barberà / Tarragonès',
+          centroid: { type: 'Point' as const, coordinates: [0.83, 41.14] },
+          radiusKm: 50,
         },
       ],
       severity: 'medium',
       detectedAt: monthStart,
       source: 'DARP',
-      sourceRef: `Butlletí DARP estació Vilafranca del Penedès · ${monthIso}`,
+      sourceRef: `Butlletí DARP EA Tarragona · ${monthIso}`,
       recommendation:
         'Consulte el boletín DARP completo de su estación en sourceUrl. Riesgo mildiu vinculado a lluvias primaverales y temperatura · revisar pronóstico antes de tratamiento.',
       sourceUrl: RURALCAT_PORTAL,
-      notes: 'Enfermedad clave del viñedo · contagio por agua libre en hoja >2h con T>10°C.',
+      notes: 'Enfermedad clave del viñedo · contagio por agua libre en hoja >2h con T>10°C · DARP recomienda integrarse en ADV para asesoramiento individualizado.',
       createdBy: admin._id,
-      fingerprint: `mildiu-DARP-Penedes-${monthIso}`,
+      fingerprint: `mildiu-DARP-Tarragona-${monthIso}`,
       isActive: true,
     },
   ];
