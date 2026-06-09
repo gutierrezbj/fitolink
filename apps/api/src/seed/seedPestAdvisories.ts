@@ -88,6 +88,35 @@ async function seed() {
       fingerprint: `mosca-olivo-RAIF-18-2026-${monthStart.toISOString().slice(0, 7)}`,
       isActive: true,
     },
+    {
+      // Repilo del olivo · enfermedad fúngica clásica del olivar
+      // mediterráneo (anamorfo del ascomicete Venturia oleaginea).
+      // Causa defoliación temprana y reducción de producción · plaga real
+      // bien documentada en boletines RAIF zona olivarera Jaén. Centroid
+      // Loma de Úbeda (zona olivarera principal de Jaén) con radio 60km
+      // para cubrir Sierra Sur de Sevilla también (Aula Jaén + Coop Estepa).
+      pestName: 'Spilocaea oleagina · repilo del olivo',
+      scientificName: 'Spilocaea oleagina (Venturia oleaginea)',
+      cropTypes: ['olivo'],
+      affectedAreas: [
+        {
+          province: 'Jaen',
+          comarca: 'Loma de Úbeda',
+          centroid: { type: 'Point' as const, coordinates: [-3.50, 37.95] },
+          radiusKm: 60,
+        },
+      ],
+      severity: 'medium',
+      detectedAt: monthStart,
+      source: 'RAIF',
+      sourceRef: 'Boletín 20/2026',
+      recommendation: 'Vigilar manchas circulares oscuras en haz de hojas y defoliación basal. Condiciones favorables al hongo · humedad alta + T 10-25°C. Tratamientos cúpricos preventivos en ventanas secas.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturaypesca/raif/',
+      notes: 'Enfermedad endémica del olivar · más activa en primavera/otoño · primavera tardía sigue siendo ventana de monitoreo.',
+      createdBy: admin._id,
+      fingerprint: `repilo-olivo-RAIF-20-2026-${monthStart.toISOString().slice(0, 7)}`,
+      isActive: true,
+    },
   ];
 
   let inserted = 0;
