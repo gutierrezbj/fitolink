@@ -19,7 +19,7 @@
 - **Estado actual:** LIVE en producción · campaña 2026 abierta a Tipo A/B + Cooperativa + ADV + Regantes
 - **Última versión:** commit `ee3072e` en `main` (fix Coop · iconos tipo alerta + adiós OTRAS · 9-jun-2026)
 - **Documentación viva interna:** este `HANDOVER.md` + `CLAUDE.md` (contexto estable + sprint table) + `glossary.md` (vocabulario)
-- **Documentación canónica externa (Notion):** [Bitácora 5-jun monumental](https://app.notion.com/p/3767981f08ef812291c4d858a7b5d516) · [Bitácora 22-may→4-jun](https://app.notion.com/p/3757981f08ef81f3a7a0cda2890f1e19)
+- **Documentación canónica externa (Notion):** [Bitácora 9-jun triple monumental](https://app.notion.com/p/37a7981f08ef81c6bcdbe0743ed35858) · [Bitácora 5-jun monumental](https://app.notion.com/p/3767981f08ef812291c4d858a7b5d516) · [Bitácora 22-may→4-jun](https://app.notion.com/p/3757981f08ef81f3a7a0cda2890f1e19)
 - **Material comercial:** `docs/comercial/microsoft-pitch-viernes/storyline.md` + `demo-guion.md` (universal · audience-agnostic) · `docs/comercial/visor-plagas-mock.html` (mock v2 standalone del 2º lead magnet)
 
 ## 2 · Stack y arquitectura
