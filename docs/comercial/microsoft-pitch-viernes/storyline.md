@@ -1,27 +1,25 @@
-# Storyline · Discovery Microsoft + Jorge
-**Snapshot:** 2026-06-09 · 12:00 Madrid · v0.1 borrador inicial
+# Storyline · Presentación universal AgroM/FitoLink
+**Snapshot:** 2026-06-09 · 14:30 Madrid · v0.2 audience-agnostic
 
-Reunión Zoom · viernes 12-jun-2026 · **JuanCho + Jorge (socio del fondo) + persona Microsoft**.
-Naturaleza: **descubrimiento exploratorio**, NO pitch formal de cierre.
-Objetivo único: **conseguir una segunda reunión**, no cerrar nada hoy.
+**Decisión PM JuanCho 9-jun 14:30**: este storyline es **universal**. Sirve para Microsoft viernes 12-jun, para una cooperativa el lunes siguiente, para una aseguradora dentro de un mes. La demo va sobre **lo nuestro** · cero dependencia de KMZ externos · cero asunciones sobre la audiencia.
+
+Caso uso inmediato: **discovery Zoom 12-jun-2026 · JuanCho + Jorge (socio del fondo) + invitado de Microsoft**. Pero el material se usa después en cualquier reunión equivalente.
+
+Naturaleza típica: **descubrimiento exploratorio** · NO pitch formal de cierre.
+Objetivo único de la primera reunión: **conseguir una segunda reunión** · NO cerrar nada el primer día.
 
 ---
 
-## § ASUNCIONES MARCADAS (corregir antes del jueves si difieren)
+## § AJUSTE ÚNICO DEPENDIENDO DE AUDIENCIA · solo intro 30s
 
-| Asunción | Valor asumido | Si difiere | Impacto |
-|---|---|---|---|
-| Duración | 30-45 min · 7 min pitch + 5 min demo + 15-30 min Q&A | Si es 60+ → expandir tracción + ampliar demo. Si es <30 → comprimir todo a 5 min | Alto |
-| Conocimiento previo de AgroM | Microsoft llega **en frío** · Jorge ha podido haber mencionado pero no detallado | Si saben todo → saltar QUIÉN SOMOS, ir a tracción directa | Medio |
-| Perfil persona Microsoft | M12 / Azure Climate / verticales agro (no técnico Azure puro) | Si es técnico Azure puro → enfatizar stack + Planetary Computer + escalado. Si es M12 puro → enfatizar mercado + ARR + unit economics | Alto |
-| Ask | **No hay ask explícito hoy** · es discovery. Hablar de "estamos en campaña 2026 con 4 buyers institucionales y queremos entender posibles vías de colaboración" | Si Jorge ya negoció algo → pivotar a sí mismo | Alto |
-| Jorge perfil | Inversor financiero del fondo · NO agricultor (puede tener finca familiar) | Si es agricultor real → hacer demo CON sus parcelas brutal (KMZ) | Medio |
+| Tipo audiencia | Hook intro (sustituir frase apertura) |
+|---|---|
+| Inversor financiero / VC | *"Lo que voy a enseñar es FitoLink · producto LIVE · 26 parcelas SIGPAC catastral real · 8 fuentes externas integradas · 4 buyers institucionales en campaña comercial 2026."* |
+| Tech partner (Microsoft Azure / Google / similar) | *"Lo que voy a enseñar es FitoLink · ya consumimos Microsoft Planetary Computer en producción · 8 fuentes externas integradas · stack 100% gratuito que escala con cualquier proveedor cloud."* |
+| Cliente institucional (cooperativa / regantes / ADV) | *"Voy a enseñarle cómo tres compañeros gestionan ya su cartera de socios con FitoLink · vista agregada · decisión de riego · reportes formales descargables · cero papeleo añadido."* |
+| Cliente individual (agricultor) | *"Voy a enseñarle cómo informamos a un agricultor cada mañana sobre el estado real de sus parcelas · 6 índices satelitales · meteo a 7 días · avisos de plagas de su comarca · todo en un correo."* |
 
-**Acciones JuanCho · antes del jueves**:
-1. Confirmar duración exacta con Jorge
-2. Confirmar perfil persona Microsoft (LinkedIn lookup)
-3. Confirmar si Jorge mandó KMZ
-4. Decidir si hay ask financiero específico o solo discovery
+**Lo demás del storyline (problema · solución · demo · tracción) es IDÉNTICO**.
 
 ---
 

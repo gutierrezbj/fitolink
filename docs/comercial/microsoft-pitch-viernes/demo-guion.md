@@ -1,8 +1,11 @@
-# Demo guion · Discovery Microsoft viernes
-**Snapshot:** 2026-06-09 · 12:00 Madrid · v0.1 borrador inicial
+# Demo guion · Producto AgroM/FitoLink universal
+**Snapshot:** 2026-06-09 · 14:30 Madrid · v0.2 audience-agnostic
 
-3 minutos de demo en vivo · WOW factor + sustancia editorial.
+3 minutos de demo en vivo · **lo nuestro · 100% independiente de la audiencia**.
+Sirve para Microsoft viernes · para una cooperativa el lunes · para Rita la cantaora cuando le toque.
 **Acompaña al storyline · este documento contiene los clicks y la voz en off.**
+
+**Decisión PM JuanCho 9-jun 14:30**: eliminada la variante "demo con KMZ del invitado" (paja mental · depende de un externo · no demuestra lo nuestro). Esta versión arranca SIEMPRE con visor SIGPAC público + cuenta demo Regantes Vega Baja como flujo principal.
 
 ---
 
@@ -28,61 +31,7 @@ Hablar **antes de hacer click**. NO mostrar lo siguiente sin haber dicho qué va
 
 ---
 
-## § VARIANTE A · CON KMZ de Jorge (preferida si llega)
-
-**Pre-requisito** · trabajo del miércoles/jueves:
-- Jorge manda KMZ
-- Crear cuenta `jorge-demo-001` en producción
-- Importar parcelas a su cuenta
-- Esperar 1-2 pasadas pipeline Sentinel-2 (si las parcelas son nuevas zona) · si no llega tiempo, plan B sembrar `ndviHistory` plausible con disclaimer honesto
-
-### Click-by-click
-
-**[0:00 – 0:30] Hook personal**
-
-> *"Jorge me mandó las coordenadas de sus parcelas. Las hemos importado a una cuenta dedicada en producción. Lo que verán es FitoLink procesando datos reales sobre las parcelas reales de Jorge."*
-
-- Click pestaña Login
-- Email field · escribir `jorge-demo-001` · botón Entrar
-- Aterriza en DashboardHome
-
-**[0:30 – 1:30] Mapa cartera + KPIs**
-
-> *"Aquí ve sus parcelas todas localizadas sobre SIGPAC oficial · referencias catastrales reales · cuando le decimos a Jorge que está viendo su parcela, está viendo SU parcela, no un cuadrado simulado."*
-
-- Pausar en el mapa 5 segundos
-- Mover el cursor sobre KPI strip · destacar `NDVI medio cartera` y `% parcelas en alerta`
-
-> *"Encima del mapa los KPIs de la cartera completa. NDVI medio cartera 0.XX. X% de las parcelas en alerta. Es la primera respuesta al gerente: ¿cómo está hoy lo mío?"*
-
-**[1:30 – 2:30] Click parcela específica · BUMM Decisión de Riego**
-
-> *"Voy a entrar en una parcela específica · esto es donde la conversación con un cliente cambia."*
-
-- Click una parcela del mapa (preferir una con NDVI < 0.40 si la hay)
-- Aterriza en ParcelDetailPage
-- Scroll lento hasta el bloque "§ DECISIÓN DE RIEGO"
-
-> *"Lo que verán aquí es una decisión, no datos. **BUMM Decisión de Riego**. Le dice al gerente: 'urgencia X · razón Y · cupo de agua sugerido Z metros cúbicos · con RD 950/2024 aplicado el cupo baja a W'. Y debajo, una sección de análisis integrado que cruza 6-8 variables: estado satelital + suelo + clima reciente + fenología del cultivo. Sin LLM. Plantillas server-side. Cero alucinación."*
-
-- Subrayar visualmente con el cursor:
-  - el bloque cupo m³ con border AgroM
-  - la sección "§ ANÁLISIS INTEGRADO"
-
-**[2:30 – 3:00] Cierre demo · vuelta a vista cartera**
-
-- Botón back · vuelve al dashboard
-- Wave general sobre el mapa
-
-> *"Esto es lo que un gerente de Comunidad de Regantes o cooperativa ve cada mañana cuando entra a FitoLink. La promesa: convertir 8 fuentes externas en UNA decisión."*
-
-**Cierre demo · vuelve al storyline § 5:30 Tracción**
-
----
-
-## § VARIANTE B · SIN KMZ (plan B robusto)
-
-**Activar si**: Jorge no manda KMZ a tiempo / parcelas zona nueva no procesadas / cualquier issue.
+## § FLUJO PRINCIPAL · 3 minutos · lo nuestro
 
 ### Hook 1 · Visor SIGPAC público en vivo (60s)
 
@@ -93,10 +42,11 @@ Hablar **antes de hacer click**. NO mostrar lo siguiente sin haber dicho qué va
 
 > *"Es el Visor SIGPAC público de AgroM. Cualquier agricultor de España entra y consulta su parcela catastral en segundos. Hoy hay que conocer la web del Ministerio · saber tu provincia, municipio, polígono, parcela, recinto · ir a 4 sitios distintos. Aquí: una sola caja."*
 
-- Pedir a Jorge que dicte:
-  > *"Jorge, dime una provincia y un municipio donde tengas o conozcas alguna parcela. Cualquiera."*
-- Mientras Jorge responde · escribir provincia + muni en los selectores
-- Si Jorge no responde rápido → usar ejemplo de fallback: Sevilla / Estepa
+- Pedir a la audiencia (si conviene generar engagement):
+  > *"¿De dónde eres? ¿Conoces algún municipio con tierras? Dime uno cualquiera."*
+- Si responden rápido → escribir provincia + muni en los selectores
+- Si no responden o no aplica → **usar ejemplo predefinido seguro**: Sevilla / Estepa / Casariche (zona donde está el demo Coop Estepa · referencia ya verificada)
+- **NUNCA improvisar con una provincia que no hemos probado en demo previa** · usar SOLO zonas conocidas
 
 > *"Cuando la encontremos, aparece sobre el satélite. Pueden descargar KML para Google Earth, GeoJSON para QGIS, compartir por WhatsApp con un solo click."*
 
