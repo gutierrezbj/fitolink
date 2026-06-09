@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroM · Visor de Plagas · MOCK</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Fraunces (display) + IBM Plex Sans (body) + IBM Plex Mono (microcopy) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Leaflet CSS + JS para el mapa España -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            deep:  '#1B4332', // brand primario
+            terra: '#E07A3C', // acento
+            ink:   '#0F2A22', // texto principal
+            paper: '#F4F0E8', // fondo cálido
+            parch: '#E8DDC9', // fondo bloque diferenciado
+            rule:  '#C9A876', // hairlines
+            muted: '#6B6B5C', // texto secundario
+          },
+          fontFamily: {
+            display: ['"Fraunces"', 'Georgia', 'serif'],
+            sans: ['"IBM Plex Sans"', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', '"Courier New"', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background: #F4F0E8; }
+    .hairline { height: 1px; background: #C9A876; }
+
+    /* Leaflet styling más editorial */
+    .leaflet-container { background: #E8DDC9; font-family: 'IBM Plex Sans', sans-serif; }
+    .leaflet-popup-content-wrapper { border-radius: 4px; }
+    .pulse-high {
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+  </style>
+</head>
+
+<body class="text-ink font-sans antialiased">
+
+  <!-- DEV BANNER · solo visible en mock -->
+  <div class="bg-terra text-white text-center py-2 text-xs font-mono uppercase tracking-widest">
+    VISTA PREVIA · MOCK PARA DESARROLLO · 9-JUN-2026 · DATOS DEMO · NO PRODUCCIÓN
+  </div>
+
+  <!-- HEADER -->
+  <header class="max-w-7xl mx-auto px-8 pt-10 pb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Wordmark AgroM · si lo abres en file://, sustituir por SVG inline si falla la ruta -->
+        <span class="font-display text-3xl font-medium text-deep">
+          Agro<span class="text-terra">M</span>
+        </span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.22em] text-muted">
+          · FitoLink
+        </span>
+      </div>
+      <nav class="flex items-center gap-6 text-sm text-muted">
+        <a href="#" class="hover:text-deep">SIGPAC público</a>
+        <a href="#" class="text-deep font-medium">Avisos</a>
+        <a href="#" class="hover:text-deep">Productos</a>
+        <a href="#" class="hover:text-deep">Entrar</a>
+        <a href="#" class="bg-deep text-paper px-4 py-2 rounded-full text-xs uppercase tracking-wider font-mono hover:bg-ink">
+          Crear cuenta
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="max-w-7xl mx-auto px-8 pt-4 pb-10">
+    <p class="font-mono text-[11px] uppercase tracking-[0.28em] text-muted mb-3">
+      § ALERTAS FITOSANITARIAS · ESPAÑA
+    </p>
+    <div class="hairline w-20 mb-6"></div>
+
+    <h1 class="font-display text-5xl text-deep leading-tight mb-4 max-w-3xl">
+      Información oficial de los 17 servicios autonómicos<br/>
+      <span class="text-terra italic font-normal">en un solo sitio.</span>
+    </h1>
+
+    <p class="text-muted text-lg max-w-2xl leading-relaxed mb-6">
+      Cada semana actualizamos los avisos de plagas y enfermedades publicados por
+      RAIF, DARP, IVIA, IMIDA y los demás servicios fitosanitarios. Consulte el
+      estado de su comarca · gratis · sin registrarse.
+    </p>
+
+    <div class="flex items-center gap-4 text-xs font-mono uppercase tracking-wider text-muted">
+      <span class="text-deep">17 servicios autonómicos</span>
+      <span class="text-rule">·</span>
+      <span>1.400+ puntos seguimiento DARP</span>
+      <span class="text-rule">·</span>
+      <span>Datos verificables ↗</span>
+    </div>
+  </section>
+
+  <div class="hairline max-w-7xl mx-auto"></div>
+
+  <!-- FILTROS -->
+  <section class="max-w-7xl mx-auto px-8 py-6">
+    <div class="flex flex-wrap items-center gap-3">
+      <span class="font-mono text-[10px] uppercase tracking-widest text-muted mr-2">
+        FILTRAR ·
+      </span>
+
+      <select class="bg-white border border-rule/40 rounded-full px-4 py-1.5 text-sm text-ink focus:outline-none focus:border-deep">
+        <option>Todos los cultivos</option>
+        <option>Olivo</option>
+        <option>Cítrico</option>
+        <option>Viñedo</option>
+        <option>Frutal</option>
+        <option>Pistacho</option>
+        <option>Almendro</option>
+        <option>Hortícola</option>
+      </select>
+
+      <select class="bg-white border border-rule/40 rounded-full px-4 py-1.5 text-sm text-ink focus:outline-none focus:border-deep">
+        <option>Toda España</option>
+        <option>Andalucía (RAIF)</option>
+        <option>Cataluña (DARP)</option>
+        <option>Comunitat Valenciana (IVIA)</option>
+        <option>Murcia (IMIDA)</option>
+        <option>Castilla-La Mancha (IRIAF)</option>
+        <option>Castilla y León</option>
+        <option>Extremadura</option>
+        <option>Madrid (IMIDRA)</option>
+        <option>Aragón</option>
+      </select>
+
+      <select class="bg-white border border-rule/40 rounded-full px-4 py-1.5 text-sm text-ink focus:outline-none focus:border-deep">
+        <option>Todas las severidades</option>
+        <option>⬤ Urgente</option>
+        <option>⬤ Reciente</option>
+        <option>⬤ Más de 48h</option>
+      </select>
+
+      <input
+        type="text"
+        placeholder="Buscar plaga o comarca..."
+        class="bg-white border border-rule/40 rounded-full px-4 py-1.5 text-sm text-ink focus:outline-none focus:border-deep w-64"
+      />
+
+      <span class="ml-auto text-sm font-mono uppercase tracking-wider text-muted">
+        <span class="text-deep font-medium">11</span> AVISOS ACTIVOS
+      </span>
+    </div>
+  </section>
+
+  <!-- MAPA + LISTA -->
+  <section class="max-w-7xl mx-auto px-8 pb-12 grid grid-cols-12 gap-6">
+
+    <!-- MAPA España -->
+    <div class="col-span-7">
+      <p class="font-mono text-[10px] uppercase tracking-widest text-muted mb-3">
+        § MAPA DE ALERTAS
+      </p>
+      <div id="map" class="w-full h-[600px] rounded-lg border border-rule/40"></div>
+      <p class="mt-2 font-mono text-[9px] uppercase tracking-wider text-muted">
+        FUENTES: RAIF · DARP · IVIA · IMIDA · CSCV · INTAEX · IRIAF · ITAGRA · IMIDRA · NEIKER · IPLA
+      </p>
+    </div>
+
+    <!-- LISTA -->
+    <div class="col-span-5">
+      <p class="font-mono text-[10px] uppercase tracking-widest text-muted mb-3">
+        § AVISOS RECIENTES
+      </p>
+      <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2" id="advisory-list">
+        <!-- Cards generadas por JS abajo -->
+      </div>
+    </div>
+  </section>
+
+  <div class="hairline max-w-7xl mx-auto"></div>
+
+  <!-- CTA · personalización -->
+  <section class="max-w-7xl mx-auto px-8 py-16 bg-parch -mx-8 sm:mx-auto sm:rounded-lg my-12">
+    <div class="max-w-4xl mx-auto text-center">
+      <p class="font-mono text-[11px] uppercase tracking-[0.28em] text-muted mb-3">
+        § PERSONALICE SU TABLERO
+      </p>
+      <div class="hairline w-16 mx-auto mb-6"></div>
+
+      <h2 class="font-display text-4xl text-deep leading-tight mb-4">
+        Cree una cuenta y vea <span class="italic text-terra">solo lo que afecta a sus parcelas</span>.
+      </h2>
+
+      <p class="text-muted text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+        En vez de leer 17 boletines autonómicos cada semana, recibe en su correo
+        cada mañana a las 7am los avisos de su comarca + el estado satelital de
+        sus parcelas + la meteo operativa para riego y tratamientos.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href="#" class="bg-deep text-paper px-6 py-3 rounded-full text-sm uppercase tracking-wider font-mono hover:bg-ink">
+          Crear cuenta · gratis
+        </a>
+        <a href="#" class="border border-rule/60 text-deep px-6 py-3 rounded-full text-sm uppercase tracking-wider font-mono hover:bg-rule/10">
+          Ver Visor SIGPAC
+        </a>
+      </div>
+
+      <p class="mt-6 font-mono text-[10px] uppercase tracking-wider text-muted">
+        SIN TARJETA · SIN PERMANENCIA · 14 DÍAS DE PRUEBA COMPLETA
+      </p>
+    </div>
+  </section>
+
+  <!-- BOTANICAL CARTOGRAPHY MANIFIESTO -->
+  <section class="max-w-4xl mx-auto px-8 py-16 text-center">
+    <p class="font-mono text-[10px] uppercase tracking-[0.28em] text-muted mb-3">
+      § POR QUÉ HACEMOS ESTO
+    </p>
+    <div class="hairline w-12 mx-auto mb-6"></div>
+    <p class="font-display text-2xl text-deep italic leading-relaxed">
+      "AgroM va a ganar el campo español<br/>porque cree que ayudar es el camino."
+    </p>
+    <p class="mt-4 font-mono text-[10px] uppercase tracking-widest text-muted">
+      — JuanCho Gutiérrez · fundador · 9-jun-2026
+    </p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-deep text-paper py-12">
+    <div class="max-w-7xl mx-auto px-8 grid grid-cols-12 gap-6 text-sm">
+      <div class="col-span-4">
+        <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-rule mb-2">§ AGROM · FITOLINK</p>
+        <p class="text-paper/80 text-xs leading-relaxed">
+          Inteligencia agraria de precisión. Satélite, IA y drone certificado para
+          cooperativas, comunidades de regantes, ADV y agricultores familiares.
+        </p>
+      </div>
+
+      <div class="col-span-3">
+        <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-rule mb-2">§ FUENTES OFICIALES</p>
+        <ul class="text-paper/80 text-xs space-y-1">
+          <li>RAIF · Junta de Andalucía</li>
+          <li>DARP · Generalitat Catalunya</li>
+          <li>IVIA · Generalitat Valenciana</li>
+          <li>IMIDA · Región de Murcia</li>
+          <li>+13 servicios autonómicos</li>
+        </ul>
+      </div>
+
+      <div class="col-span-3">
+        <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-rule mb-2">§ PRODUCTO</p>
+        <ul class="text-paper/80 text-xs space-y-1">
+          <li><a href="#" class="hover:text-terra">Visor SIGPAC</a></li>
+          <li><a href="#" class="hover:text-terra">Visor de Plagas</a></li>
+          <li><a href="#" class="hover:text-terra">FitoLink dashboard</a></li>
+          <li><a href="#" class="hover:text-terra">DroneHub</a></li>
+        </ul>
+      </div>
+
+      <div class="col-span-2">
+        <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-rule mb-2">§ CONTACTO</p>
+        <p class="text-paper/80 text-xs">
+          fitolink.agrom.es<br/>
+          agrom.es
+        </p>
+      </div>
+    </div>
+
+    <div class="hairline opacity-30 max-w-7xl mx-auto my-8"></div>
+
+    <p class="max-w-7xl mx-auto px-8 font-mono text-[9px] uppercase tracking-widest text-paper/40">
+      AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN · 2026 · MOCK VISUAL · NO PRODUCCIÓN
+    </p>
+  </footer>
+
+  <!-- DATOS MOCK + RENDER -->
+  <script>
+    // Cardinal SEVERITY → color terra-progressive
+    const SEV_COLOR = {
+      high:   '#C0392B',  // urgente · rojo apagado
+      medium: '#E07A3C',  // reciente · terra brand
+      low:    '#A89263',  // más de 48h · ocre
+    };
+    const SEV_LABEL = {
+      high:   'URGENTE',
+      medium: 'RECIENTE',
+      low:    '+48H',
+    };
+
+    // 11 advisories · 7 reales (en BD prod) + 4 plausibles complementarios
+    // para llenar la página y mostrar la promesa "17 CCAA agregadas"
+    const advisories = [
+      {
+        pest: 'Delottococcus aberiae · cotonet africano',
+        comarca: 'Vega Baja del Segura',
+        province: 'Alicante',
+        crop: 'Cítrico',
+        severity: 'high',
+        source: 'SAIF · IVIA',
+        sourceRef: 'Boletín IVIA Sanitat Vegetal · 2026-06',
+        date: '08 jun 2026',
+        coords: [38.10, -0.78],
+        snippet: 'Plaga emergente · vigilancia activa con trampas feromona. Tratamientos coordinados con la cooperativa o ADV citrícola.',
+      },
+      {
+        pest: 'Prays oleae · polilla del olivo',
+        comarca: 'Estepa / Sierra Sur',
+        province: 'Sevilla',
+        crop: 'Olivo',
+        severity: 'low',
+        source: 'RAIF · Junta de Andalucía',
+        sourceRef: 'Estado Prays oleae · informe RAIF oct 2025',
+        date: '01 oct 2025',
+        coords: [37.291, -4.873],
+        snippet: 'Sevilla 35% aceitunas con Prays vivo (carpófaga) · 5,7 adultos/trampa/día · umbral ≥20%.',
+        real: true,
+      },
+      {
+        pest: 'Bactrocera oleae · mosca del olivo',
+        comarca: 'La Loma',
+        province: 'Jaén',
+        crop: 'Olivo',
+        severity: 'low',
+        source: 'RAIF · Junta de Andalucía',
+        sourceRef: 'Boletín RAIF 18/2026',
+        date: '02 jun 2026',
+        coords: [37.77, -3.79],
+        snippet: 'Capturas todavía bajas en La Loma + Subbética Córdoba. Mantener monitoreo, no actuar todavía.',
+      },
+      {
+        pest: 'Spilocaea oleagina · repilo del olivo',
+        comarca: 'Loma de Úbeda',
+        province: 'Jaén',
+        crop: 'Olivo',
+        severity: 'medium',
+        source: 'RAIF · Junta de Andalucía',
+        sourceRef: 'Boletín RAIF 20/2026',
+        date: '06 jun 2026',
+        coords: [37.95, -3.50],
+        snippet: 'Vigilar manchas circulares oscuras en haz de hojas y defoliación basal. Tratamientos cúpricos en ventanas secas.',
+      },
+      {
+        pest: 'Cydia pomonella · carpocapsa del peral y manzano',
+        comarca: 'Plana de Lleida / Segrià',
+        province: 'Lleida',
+        crop: 'Frutal',
+        severity: 'medium',
+        source: 'DARP · Ruralcat',
+        sourceRef: 'Butlletí DARP estació Lleida · 2026-06',
+        date: '04 jun 2026',
+        coords: [41.62, 0.62],
+        snippet: 'Decisión de tratamiento depende de capturas en feromona y de la ventana fenológica de cada parcela.',
+      },
+      {
+        pest: 'Plasmopara viticola · mildiu de la viña',
+        comarca: 'Priorat / Conca de Barberà',
+        province: 'Tarragona',
+        crop: 'Viñedo',
+        severity: 'medium',
+        source: 'DARP · Ruralcat',
+        sourceRef: 'Butlletí DARP EA Tarragona · 2026-06',
+        date: '03 jun 2026',
+        coords: [41.14, 0.83],
+        snippet: 'Riesgo mildiu vinculado a lluvias primaverales y temperatura. Revisar pronóstico antes de tratamiento.',
+      },
+      {
+        pest: 'Phyllocnistis citrella · minador de las hojas',
+        comarca: 'Huerta de Murcia / Vega del Segura',
+        province: 'Murcia',
+        crop: 'Cítrico',
+        severity: 'medium',
+        source: 'SIAM · IMIDA',
+        sourceRef: 'Boletín SIAM / IMIDA Sanidad Vegetal · 2026-06',
+        date: '05 jun 2026',
+        coords: [37.99, -1.13],
+        snippet: 'Vigilar brotes nuevos · daño visible como galerías serpenteantes. Solo justificado en plantaciones jóvenes.',
+      },
+      {
+        pest: 'Tuta absoluta · polilla del tomate',
+        comarca: 'Huerta de Valencia',
+        province: 'Valencia',
+        crop: 'Hortícola',
+        severity: 'high',
+        source: 'SAIF · IVIA',
+        sourceRef: 'Boletín IVIA Sanitat Vegetal · 2026-06',
+        date: '07 jun 2026',
+        coords: [39.47, -0.38],
+        snippet: 'Plaga clave del tomate · feromona masiva + control biológico Nesidiocoris tenuis si la temperatura supera 22°C.',
+      },
+      {
+        pest: 'Phytophthora infestans · mildiu de la patata',
+        comarca: 'Tierra de Campos',
+        province: 'Valladolid',
+        crop: 'Patata',
+        severity: 'medium',
+        source: 'ITAGRA · Castilla y León',
+        sourceRef: 'Boletín fitosanitario patata CyL · 2026-06',
+        date: '06 jun 2026',
+        coords: [41.78, -4.86],
+        snippet: 'Condiciones favorables al hongo: humedad relativa >85% + 12 horas consecutivas mojado foliar.',
+      },
+      {
+        pest: 'Lobesia botrana · polilla del racimo',
+        comarca: 'Ribera del Duero',
+        province: 'Burgos',
+        crop: 'Viñedo',
+        severity: 'medium',
+        source: 'ITAGRA · Castilla y León',
+        sourceRef: 'Boletín fitosanitario viñedo CyL · 2026-06',
+        date: '04 jun 2026',
+        coords: [41.62, -3.71],
+        snippet: 'Confusión sexual con feromona en envero. Capturas crecientes 2ª generación.',
+      },
+      {
+        pest: 'Aphis spiraecola · pulgón verde',
+        comarca: 'Comarca del Almanzora',
+        province: 'Almería',
+        crop: 'Cítrico',
+        severity: 'low',
+        source: 'RAIF · Junta de Andalucía',
+        sourceRef: 'Boletín RAIF cítrico · 2026-06',
+        date: '02 jun 2026',
+        coords: [37.30, -2.10],
+        snippet: 'Vigilar colonias en brotes tiernos. Fauna auxiliar (coccinélidos) activa.',
+      },
+    ];
+
+    // INICIALIZAR MAPA
+    const map = L.map('map', {
+      center: [40.0, -3.5],   // Centro España
+      zoom: 6,
+      scrollWheelZoom: false,
+    });
+
+    // Tile layer editorial · CartoDB Positron monocromático casa con paper background
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Marker por advisory
+    advisories.forEach((adv) => {
+      const color = SEV_COLOR[adv.severity];
+      const marker = L.circleMarker(adv.coords, {
+        radius: adv.severity === 'high' ? 14 : (adv.severity === 'medium' ? 11 : 8),
+        fillColor: color,
+        color: '#1B4332',
+        weight: 1,
+        opacity: 0.9,
+        fillOpacity: adv.severity === 'high' ? 0.85 : 0.65,
+        className: adv.severity === 'high' ? 'pulse-high' : '',
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="font-family: 'IBM Plex Sans', sans-serif; min-width: 220px;">
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #6B6B5C; margin: 0 0 4px;">
+            § ${SEV_LABEL[adv.severity]} · ${adv.source}
+          </p>
+          <p style="font-weight: 600; color: #0F2A22; margin: 0 0 4px; font-size: 13px;">
+            ${adv.pest}
+          </p>
+          <p style="color: #6B6B5C; font-size: 11px; margin: 0 0 6px;">
+            ${adv.comarca} · ${adv.province}
+          </p>
+          <p style="color: #0F2A22; font-size: 11px; line-height: 1.4; margin: 0;">
+            ${adv.snippet}
+          </p>
+          <p style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #C9A876; margin: 6px 0 0; text-transform: uppercase; letter-spacing: 1px;">
+            ${adv.sourceRef}
+          </p>
+        </div>
+      `);
+    });
+
+    // RENDER CARDS LISTA
+    const listEl = document.getElementById('advisory-list');
+    advisories.forEach((adv) => {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-lg border border-rule/30 p-4 hover:border-deep transition-all cursor-pointer';
+      card.style.borderLeftWidth = '4px';
+      card.style.borderLeftColor = SEV_COLOR[adv.severity];
+      card.innerHTML = `
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[9px] font-mono uppercase tracking-widest font-medium" style="color:${SEV_COLOR[adv.severity]};">
+              ⬤ ${SEV_LABEL[adv.severity]}
+            </span>
+            <span class="text-[9px] font-mono uppercase tracking-wider text-muted">
+              ${adv.source}
+            </span>
+            ${adv.real ? `<span class="text-[8px] font-mono uppercase tracking-wider bg-deep text-paper px-1.5 py-0.5 rounded">⭐ DATO REAL</span>` : ''}
+          </div>
+          <span class="text-[10px] text-muted font-mono">${adv.date}</span>
+        </div>
+        <p class="font-display text-sm font-medium text-deep leading-snug mb-1">
+          ${adv.pest}
+        </p>
+        <p class="text-xs text-muted mb-2">
+          ${adv.comarca} · <span class="text-ink">${adv.province}</span> · ${adv.crop}
+        </p>
+        <p class="text-xs text-ink leading-relaxed">
+          ${adv.snippet}
+        </p>
+        <div class="mt-3 pt-2 border-t border-rule/20 flex items-center justify-between">
+          <span class="text-[9px] font-mono uppercase tracking-wider text-muted">
+            ${adv.sourceRef} ↗
+          </span>
+          <a href="#" class="text-[10px] font-mono uppercase tracking-wider text-deep hover:text-terra">
+            Compartir ▸
+          </a>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  </script>
+</body>
+</html>
