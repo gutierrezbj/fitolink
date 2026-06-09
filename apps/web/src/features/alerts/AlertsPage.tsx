@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import { getAlertTypeMetadata, type AlertType } from './alertTypeMetadata.js';
 
 const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
@@ -33,6 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 type Alert = {
   _id: string;
+  type?: AlertType;
   severity: keyof typeof SEVERITY_COLORS;
   status: string;
   ndviValue: number;
@@ -40,6 +42,8 @@ type Alert = {
   aiConfidence: number;
   detectedAt: string;
   parcelId: { _id: string; name: string; cropType: string; province: string };
+  /** Solo presente cuando type === 'fire_proximity' */
+  fireProximityKm?: number;
 };
 
 export default function AlertsPage() {
@@ -61,7 +65,9 @@ export default function AlertsPage() {
     return <div className="text-center py-10 text-gray-500">Cargando alertas...</div>;
   }
 
-  const AlertCard = ({ alert, dimmed }: { alert: Alert; dimmed?: boolean }) => (
+  const AlertCard = ({ alert, dimmed }: { alert: Alert; dimmed?: boolean }) => {
+    const typeMeta = getAlertTypeMetadata(alert.type);
+    return (
     <button
       onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
       className={`text-left bg-white rounded-xl border border-gray-200 p-4 flex flex-col hover:border-brand-300 hover:shadow-sm transition-all ${dimmed ? 'opacity-60' : ''}`}
@@ -71,6 +77,13 @@ export default function AlertsPage() {
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${SEVERITY_COLORS[alert.severity]}`}>
             {SEVERITY_LABELS[alert.severity]}
+          </span>
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-medium border border-gray-200 bg-gray-50 text-gray-700 flex items-center gap-1"
+            title={typeMeta.label}
+          >
+            <span aria-hidden className="text-gray-500">{typeMeta.icon}</span>
+            <span className="uppercase tracking-wide">{typeMeta.label}</span>
           </span>
           {dimmed && (
             <span className="text-xs text-gray-400">{STATUS_LABELS[alert.status]}</span>
@@ -108,7 +121,8 @@ export default function AlertsPage() {
         <span className="text-xs text-brand-600 font-medium">Analizar parcela →</span>
       </div>
     </button>
-  );
+    );
+  };
 
   return (
     <div>

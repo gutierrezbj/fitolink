@@ -11,6 +11,7 @@ import AdvDashboardHome from '@/features/adv/AdvDashboardHome.js';
 import RegantesDashboardHome from '@/features/regantes/RegantesDashboardHome.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 
 const SEVERITY_COLORS = {
   critical: 'border-l-red-500 bg-red-50',
@@ -30,6 +31,7 @@ const SEVERITY_TEXT = {
 type Severity = keyof typeof SEVERITY_COLORS;
 type Alert = {
   _id: string;
+  type?: AlertType;
   severity: Severity;
   status: string;
   ndviValue: number;
@@ -41,15 +43,23 @@ type Alert = {
 
 function AlertCard({ alert }: { alert: Alert }) {
   const navigate = useNavigate();
+  const typeMeta = getAlertTypeMetadata(alert.type);
   return (
     <button
       onClick={() => navigate(`/dashboard/parcels/${alert.parcelId?._id}`)}
       className={`border-t-2 ${SEVERITY_COLORS[alert.severity].replace('border-l-', 'border-t-')} bg-white rounded-xl p-2.5 border border-gray-100 flex flex-col gap-1.5 text-left hover:border-brand-200 hover:shadow-sm transition-all w-full`}
+      title={typeMeta.label}
     >
       <div className="flex items-center justify-between">
-        <span className={`text-[9px] font-bold uppercase tracking-wider ${SEVERITY_TEXT[alert.severity]}`}>
-          {SEVERITY_LABELS[alert.severity]}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${SEVERITY_TEXT[alert.severity]}`}>
+            {SEVERITY_LABELS[alert.severity]}
+          </span>
+          <span className="flex items-center gap-0.5 text-[9px] font-medium uppercase tracking-wider text-gray-500" aria-label={typeMeta.label}>
+            <span className="text-gray-400">{typeMeta.icon}</span>
+            <span>{typeMeta.shortLabel}</span>
+          </span>
+        </div>
         <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
           {alert.ndviValue.toFixed(2)}
         </span>
