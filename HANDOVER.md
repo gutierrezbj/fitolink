@@ -1,8 +1,12 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-06-05 · 22:55 CEST · v1.5 (post-BUMM + Bloque B + HITO SIGPAC)
+**Snapshot:** 2026-06-09 · 23:00 CEST · v1.7 (post-Bloque C cerrado + PRIMER ADVISORY REAL + F1 día 1 + UX iconos alerta + TAGLINE OFICIAL)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
+
+> **TAGLINE OFICIAL AgroM** (capturado 9-jun-2026 cierre del día):
+> *"AgroM va a ganar el campo español porque cree que ayudar es el camino."*
+> Esta frase es la cláusula de misión fundacional · va al header de `/about` · al cierre del deck inversor · a la firma de email · a la bio LinkedIn. **NO parafrasear · frase verbatim canónica**.
 
 ---
 
@@ -13,9 +17,10 @@
 - **Live:** https://fitolink.agrom.es
 - **Owner:** JuanCho · empresa AgroM (SystemRapid SL)
 - **Estado actual:** LIVE en producción · campaña 2026 abierta a Tipo A/B + Cooperativa + ADV + Regantes
-- **Última versión:** commit `4ac8663` en `main` (docs reasignar normativo a AgroOps · 5-jun-2026)
+- **Última versión:** commit `ee3072e` en `main` (fix Coop · iconos tipo alerta + adiós OTRAS · 9-jun-2026)
 - **Documentación viva interna:** este `HANDOVER.md` + `CLAUDE.md` (contexto estable + sprint table) + `glossary.md` (vocabulario)
 - **Documentación canónica externa (Notion):** [Bitácora 5-jun monumental](https://app.notion.com/p/3767981f08ef812291c4d858a7b5d516) · [Bitácora 22-may→4-jun](https://app.notion.com/p/3757981f08ef81f3a7a0cda2890f1e19)
+- **Material comercial:** `docs/comercial/microsoft-pitch-viernes/storyline.md` + `demo-guion.md` (universal · audience-agnostic) · `docs/comercial/visor-plagas-mock.html` (mock v2 standalone del 2º lead magnet)
 
 ## 2 · Stack y arquitectura
 
@@ -86,11 +91,53 @@
 - [ ] **Verificar wording copy comercial** con Drovinci · acordar cómo se refiere AgroM a la operación con dron sin afirmar que es operador propio.
 
 ### Mejoras importantes (cuando haya tiempo)
-- [ ] **Bloque C REORIENTADO · Ingesta boletines oficiales fitosanitarios** (~5-6 días). **NO** hacemos diagnóstico propio (eso sería inventar). Tomamos información de fuentes oficiales y la mostramos contextualizada por parcela. **Infraestructura YA EXISTE**: `PestAdvisory` model + `pestAdvisoryService` + `PestAdvisoriesCard` + endpoint + seed con 2 advisories RAIF de muestra (Polilla + Mosca olivo). Falta: (1) ingesta automatizada RAIF Andalucía (scraping/RSS), (2) IVIA Comunidad Valenciana (cítricos), (3) GIPA Castilla-La Mancha (pistacho/viñedo), (4) DARP Cataluña + IMIDA Murcia cuando lleguen clientes, (5) tratamiento "estilo FIRMS" en UI (banner ROJO destacado + sección "§ 00 · AVISO COMARCA" + prefijo subject email digest). Cero responsabilidad legal nuestra · fuentes oficiales auditables. Coherente CRITICAL_no_inventar.
-- [ ] **Visor de Plagas público `/avisos`** (idea PM JuanCho 6-jun) · 2º lead magnet AgroM (extiende patrón Visor SIGPAC público validado) · **Tablón Nacional de Alertas Fitosanitarias** agregando los 17 servicios autonómicos (RAIF + IVIA + IMIDA + GIPA + DARP + ITAGRA + INTAEX + IMIDRA + Neiker + IPLA + servicios sanidad vegetal de La Rioja/Navarra/Aragón/Asturias/Cantabria/Baleares/Canarias). Vista anónima con hero + filtros + mapa heatmap España + lista cards con sourceRef + URL única SEO-friendly por advisory + CTA registro. Vista logged filtrada por comarcas+cultivos del usuario + sección "⚠️ N avisos afectan a sus M parcelas". Esfuerzo: combinar con Sprint C (ingesta) + ~3-4 días extra UI pública. **Cero responsabilidad legal**, SEO masivo (~1500-5000 URLs/año), brand AgroM como agente neutral, lead generation doble. **NO construir antes del viaje**.
+
+#### Bloque C · estado 9-jun-2026
+
+✅ **FOUNDATION CERRADA** (9 commits LIVE en prod entre 8-jun y 9-jun):
+- `PEST_SOURCES` enum extendido: RAIF · DARP · MAPA · SAIF · SIAM · CSCV · otros
+- Seeds activos en BD prod (idempotentes vía `seedAll.ts`):
+  - `seedPestAdvisories.ts` · 7 advisories RAIF (Prays oleae × 5 provincias REALES portal RAIF + Bactrocera + Spilocaea Repilo)
+  - `seedPestAdvisoriesDARP.ts` · 2 advisories Cataluña (Cydia Lleida + Plasmopara Tarragona)
+  - `seedPestAdvisoriesLevante.ts` · 2 advisories Levante (Cotonet SAIF Vega Baja + Minador SIAM Murcia)
+- **Total 11 advisories** geolocalizándose dinámicamente vs cada parcela según crop + radius
+- **PRIMER ADVISORY REAL** (commit `e4416ae`): Prays oleae cifras LITERALES del portal oficial RAIF (informe oct 2025 · Sevilla 35% · Málaga 45,1% · Córdoba 35,1% · Cádiz 4,1 capturas/trampa/día · Granada 1% supervivencia larvas) · cero invento · todo verificable clickeando `sourceUrl`
+- Verificación E2E via Claude in Chrome 9-jun: Aula Jaén Mancha Real ve Repilo MEDIA + Mosca BAJA · Coop Estepa Sevilla ve 3 Prays provincia (Sevilla LOW + Málaga MEDIUM + Córdoba MEDIUM) · Regantes Vega Baja Almoradí ve Cotonet ALTA + Minador MEDIA
+- Esqueleto `apps/api/src/services/raifIngestService.ts` con interfaz lista para sustituir hardcoded por scraper HTML real (TODO comentado)
+
+❌ **PENDIENTE F1 RAIF** (~6-8 días):
+- [ ] **F1 día 2-3:** convertir `fetchPraysOleaeReport()` a scraper HTML real (fetch + regex sobre portal RAIF · misma interfaz · cero refactor downstream)
+- [ ] **F1 día 4-6:** ampliar a otros endpoints RAIF (Bactrocera oleae · Spilocaea oleagina Repilo · Saissetia oleae · otros con páginas dedicadas del portal)
+
+❌ **PENDIENTE F1 DARP + SAIF + IRIAF** (~6-8 días):
+- [ ] **F1 día 7-8:** ingestor DARP Cataluña (`darpIngestService.ts`) · 9 estaciones · scraper portal Ruralcat
+- [ ] **F1 día 9-10:** ingestor SAIF / IVIA Valencia (`saifIngestService.ts`) · cítrico + hortícola
+- [ ] **F1 día 11-12:** ingestor IRIAF Castilla-La Mancha (`iriafIngestService.ts`) · viñedo + pistacho + cereal
+- [ ] **F1 día 13:** cron weekly + endpoint admin trigger manual + UI dashboard agricultor para forzar refresh
+
+❌ **PENDIENTE F2 (Q3 2026 · ~1-2 meses):** SIAM/IMIDA Murcia + ITAGRA Castilla y León + INTAEX Extremadura + IMIDRA Madrid (~85% PIB agrícola)
+❌ **PENDIENTE F3 (Q4 2026 / Q1 2027):** los 9 servicios autonómicos restantes (Norte + Islas) (100% cobertura)
+
+#### Visor de Plagas público `/avisos` · 2º lead magnet
+
+- [x] **Mock v2 standalone HTML** entregado 9-jun · `docs/comercial/visor-plagas-mock.html` (+copy en `apps/web/public/`) · abrir con `open` directo en browser · iteración v2 con feedback PM "de tablón a tool que engancha" (HERO input grande "¿Qué pasa en tu comarca?" + Toggle MI ZONA/TODA ESPAÑA + Mapa Leaflet grande + Timeline lateral "últimas publicaciones oficiales" con tiempo relativo + Cards agrupadas por región + KPI "2.847 agricultores esta semana" social proof). Tagline manifiesto al final.
+- [ ] **Construcción real en React** como ruta `/avisos` en `apps/web` consumiendo endpoint público `GET /api/v1/public/advisories` (sin auth · cache 1h Redis · SEO con meta tags + URLs únicas por advisory tipo `/avisos/raif-andalucia-mosca-olivo-2026-23`). Visión: agregar los 17 servicios autonómicos · vista anónima + vista logged filtrada por comarcas/cultivos del usuario. Esfuerzo: combina con F1 (ingestores reales) + ~3-4 días extra UI pública.
+
+#### UX badges tipo alerta (sprint 9-jun)
+
+✅ **Helper centralizado** `apps/web/src/features/alerts/alertTypeMetadata.tsx` con 4 SVG editorial line-icons (gota=stress hídrico · llama=fuego · hoja=NDVI · destello=NDRE) + `getAlertTypeMetadata(type)` → `{icon, label, shortLabel}`
+✅ **Aplicado en**: `AlertsPage.tsx` (vista completa) · `DashboardHome.tsx` farmer (sidebar 2x2) · `CooperativeDashboardHome.tsx` (lista socios · backend extendido con `alertTypes: AlertTypeBreakdown`)
+❌ **Pendiente extender a**:
+- [ ] **CooperativeMembersPage** (vista detallada socios · ~10 min)
+- [ ] **AdvDashboardHome** (rol ADV · ~10 min)
+- [ ] **RegantesDashboardHome** (rol Regantes · ~10 min)
+- [ ] **AlertBell topbar farmer** (dropdown 5 recientes · ~10 min)
+
+#### Otras mejoras
 - [ ] **Logs-con-body en pipeline Python** (~30 min) · workers/geo-pipeline/src/* con loguru · mismo patrón que TS
 - [ ] **Healthcheck registrado** en `/opt/scripts/healthcheck.sh` del Servidor 2
 - [ ] **Backup MongoDB** automatizado (snapshot diario)
+- [ ] **Pre-cálculo SoilGrids** en parcelas Aula Jaén (hueco visible "Perfil edáfico no calculado todavía") · script seed batch o endpoint admin con autenticación adecuada · evita el CTA editorial que aparece sin perfil
 
 ### Limpieza / V2
 - [ ] **Reportes RAIF cuatrimestral** específico ADV (V2 cuando primer cliente real)
@@ -172,13 +219,15 @@ git checkout <SHA_anterior> && docker compose up -d --force-recreate --build web
 
 ## 8 · Reglas no negociables del proyecto
 
-- **CRITICAL_no_inventar** (12-may-2026 · memoria SRS) — verificar copy contra realidad operativa. Reforzada 5-jun con HITO 26 parcelas SIGPAC catastral real.
+- **CRITICAL_no_inventar** (12-may-2026 · memoria SRS) — verificar copy contra realidad operativa. Reforzada 5-jun con HITO 26 parcelas SIGPAC catastral real. Reforzada 9-jun con primer advisory REAL Prays oleae portal RAIF (sustituyendo demo-data inventada).
 - **Identity Ecosystem · FitoLink como base** (13-may-2026) — paleta brand-600 + terra-500 + earth, tipografía Instrument Serif + DM Sans + IBM Plex Mono.
 - **Jerarquía marca · AgroM empresa + FitoLink producto** (14-may-2026).
 - **`fitolink.agrom.es` URL canónica única** (18-may-2026) — `fitolink.systemrapid.io` retirado.
 - **"El launch va con lo nuestro"** (4-jun-2026) — no bloquear MVP por dependencias externas privadas no validadas.
 - **Separación productos** (5-jun-2026) — FitoLink informa, AgroOps opera. No mezclar.
 - **Logs-con-body** (5-jun-2026) — todo servicio externo captura body del error 200ch antes del throw. Aplicado a TS, pendiente Python.
+- **TAGLINE OFICIAL AgroM** (9-jun-2026 cierre del día) — *"AgroM va a ganar el campo español porque cree que ayudar es el camino"* · frase verbatim canónica · NO parafrasear · cláusula de misión fundacional. Va al header de `/about` · cierre del deck inversor · firma email · bio LinkedIn.
+- **Vendemos el CANAL, no la perfección del dato** (9-jun-2026) — durante construcción NO necesitamos cargar datos comprometedores · demostramos que el CANAL funciona (correo a las 7am cada día con inteligencia accionable). Los datos se afinan con ingestores reales · el sistema ya entrega la promesa. Slot brutal del deck: enseñar el email matutino · WOW de continuidad operativa que el agricultor nota desde día 1.
 - **Push a main bloqueado para agente** · JuanCho push manual.
 - **SSH deploy requiere OK per-command**.
 - **NUNCA API keys en línea de comando** · clasificador bloquea credential leak.
