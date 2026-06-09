@@ -29,13 +29,40 @@ async function seed() {
     process.exit(1);
   }
 
+  // Cleanup · 09-jun-2026 · eliminamos el advisory Polilla con sourceRef
+  // inventado ("Boletín 19/2026") para sustituirlo por la versión con datos
+  // LITERALES del portal RAIF oficial (informe Estado Prays oleae oct 2025).
+  // Idempotente: si ya se ejecutó antes, deleteMany devuelve 0 borrados.
+  const cleanup = await PestAdvisory.deleteMany({
+    source: 'RAIF',
+    sourceRef: 'Boletín 19/2026',
+  });
+  if (cleanup.deletedCount > 0) {
+    logger.info({ deletedCount: cleanup.deletedCount }, 'cleanup: removed old polilla advisory with invented sourceRef');
+  }
+
   const now = new Date();
   // Detected start of this month so the same advisory survives until the
-  // next monthly bulletin cycle.
+  // next monthly bulletin cycle (applies to advisories without explicit dates).
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Fechas del informe Prays oleae REAL del portal RAIF (publicado 01-oct-2025).
+  // Vigente hasta nueva publicación oficial · expiresAt 2028 evita expiración
+  // automática mientras no haya boletín posterior.
+  const praysReportDate = new Date('2025-10-01');
+  const praysExpiresAt = new Date('2028-12-31');
 
   const advisories = [
     {
+      // ⭐ ADVISORY REAL · cifras LITERALES del portal RAIF oficial
+      // (informe "Estado fitosanitario actual de Prays oleae en Andalucía"
+      // publicado 01-oct-2025 en juntadeandalucia.es/agriculturapescaagua
+      // ydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-
+      // en-andalucia/). Datos verificables literalmente · cero invento.
+      //
+      // Tras revisión 09-jun-2026: este es el primer advisory del producto
+      // que cita datos reales del portal oficial. Honra CRITICAL_no_inventar
+      // en su máxima expresión.
       pestName: 'Prays oleae · polilla del olivo',
       scientificName: 'Prays oleae',
       cropTypes: ['olivo'],
@@ -47,15 +74,17 @@ async function seed() {
           radiusKm: 35,
         },
       ],
-      severity: 'medium',
-      detectedAt: monthStart,
+      severity: 'low',  // "nivel de capturas bajo" · literal del portal RAIF
+      detectedAt: praysReportDate,
+      expiresAt: praysExpiresAt,
       source: 'RAIF',
-      sourceRef: 'Boletín 19/2026',
-      recommendation: 'Considere tratamiento preventivo en la próxima ventana drone favorable. Floración en curso eleva la sensibilidad.',
-      sourceUrl: 'https://www.juntadeandalucia.es/agriculturaypesca/raif/',
-      notes: 'Generación filófaga finalizando. Inicio de generación carpófaga prevista en 2-3 semanas.',
+      sourceRef: 'Estado Prays oleae · informe RAIF oct 2025 · Junta de Andalucía',
+      recommendation:
+        'Según último informe oficial RAIF publicado 01-oct-2025: en Sevilla se reportó 35% de aceitunas con Prays vivo (generación carpófaga) y 5,7 adultos/trampa/día en capturas. Umbral de tratamiento: ≥20% aceitunas con Prays vivo + ~20% huevos eclosionados. Estado fenológico dominante: H (endurecimiento de hueso). Consultar sourceUrl para la próxima actualización oficial.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-en-andalucia/',
+      notes: 'Datos literales del portal oficial RAIF (publicación 01-oct-2025) · Málaga 45,1% / Córdoba 35,1% / Sevilla 35% aceitunas con Prays vivo en generación carpófaga · capturas adultos Málaga 16,1 / Sevilla 5,7 / Cádiz 4,1 por trampa/día. Próximamente puestas sobre hojas (generación filófaga). Honra CRITICAL_no_inventar · todos los datos verificables clickeando sourceUrl.',
       createdBy: admin._id,
-      fingerprint: `polilla-olivo-RAIF-19-2026-${monthStart.toISOString().slice(0, 7)}`,
+      fingerprint: 'polilla-olivo-RAIF-informe-oficial-2025-10',
       isActive: true,
     },
     {
