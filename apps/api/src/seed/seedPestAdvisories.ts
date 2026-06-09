@@ -87,6 +87,122 @@ async function seed() {
       fingerprint: 'polilla-olivo-RAIF-informe-oficial-2025-10',
       isActive: true,
     },
+    // ─────────────────────────────────────────────────────────────────────
+    // F1 · 9-jun-2026 · expansión Prays oleae a 5 advisories provincia con
+    // cifras LITERALES del mismo informe RAIF oct 2025. Cada advisory cubre
+    // el olivar de su provincia (radio 60-80km · centroid centro provincia)
+    // con sus datos exactos del portal · cero invento.
+    // ─────────────────────────────────────────────────────────────────────
+    {
+      // Málaga · cifras más altas del informe (45,1% aceitunas con Prays vivo +
+      // 16,1 capturas/trampa/día). Sobre umbral de tratamiento (≥20%).
+      pestName: 'Prays oleae · polilla del olivo',
+      scientificName: 'Prays oleae',
+      cropTypes: ['olivo'],
+      affectedAreas: [
+        {
+          province: 'Malaga',
+          comarca: 'Andalucía oriental · olivar provincia Málaga',
+          centroid: { type: 'Point' as const, coordinates: [-4.42, 36.72] },
+          radiusKm: 70,
+        },
+      ],
+      severity: 'medium',  // sobre umbral 20% según portal
+      detectedAt: praysReportDate,
+      expiresAt: praysExpiresAt,
+      source: 'RAIF',
+      sourceRef: 'Estado Prays oleae · informe RAIF oct 2025 · Junta de Andalucía',
+      recommendation:
+        'Según último informe oficial RAIF publicado 01-oct-2025: en Málaga se reportó 45,1% de aceitunas con Prays vivo (generación carpófaga · cifra más alta de Andalucía) y 16,1 adultos/trampa/día en capturas. Por encima del umbral de tratamiento (≥20%). Coordinar con cooperativa o ADV olivar local · consultar sourceUrl para la próxima actualización oficial.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-en-andalucia/',
+      notes: 'Dato literal portal RAIF (publicación 01-oct-2025) · Málaga = provincia con mayor incidencia generación carpófaga. Capturas 16,1 adultos/trampa/día es 2,8× lo de Sevilla y 3,9× lo de Cádiz.',
+      createdBy: admin._id,
+      fingerprint: 'polilla-olivo-RAIF-Malaga-2025-10',
+      isActive: true,
+    },
+    {
+      // Córdoba · 35,1% aceitunas con Prays vivo (sin datos de capturas en el
+      // portal · solo cifra de infestación). Sobre umbral.
+      pestName: 'Prays oleae · polilla del olivo',
+      scientificName: 'Prays oleae',
+      cropTypes: ['olivo'],
+      affectedAreas: [
+        {
+          province: 'Cordoba',
+          comarca: 'Subbética · campiña olivar',
+          centroid: { type: 'Point' as const, coordinates: [-4.78, 37.88] },
+          radiusKm: 75,
+        },
+      ],
+      severity: 'medium',  // 35,1% sobre umbral 20%
+      detectedAt: praysReportDate,
+      expiresAt: praysExpiresAt,
+      source: 'RAIF',
+      sourceRef: 'Estado Prays oleae · informe RAIF oct 2025 · Junta de Andalucía',
+      recommendation:
+        'Según último informe oficial RAIF publicado 01-oct-2025: en Córdoba se reportó 35,1% de aceitunas con Prays vivo en generación carpófaga. Por encima del umbral de tratamiento (≥20%). El portal no reportó capturas específicas Córdoba en esta publicación. Vigilar evolución y consultar sourceUrl para próxima actualización.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-en-andalucia/',
+      notes: 'Dato literal portal RAIF (publicación 01-oct-2025) · % aceitunas en Córdoba similar al de Sevilla (35,1% vs 35%). Indica incidencia comparable en olivar campiña central.',
+      createdBy: admin._id,
+      fingerprint: 'polilla-olivo-RAIF-Cordoba-2025-10',
+      isActive: true,
+    },
+    {
+      // Cádiz · 4,1 capturas/trampa/día (sin % infestación reportado en el
+      // portal). Severity low por nivel de capturas.
+      pestName: 'Prays oleae · polilla del olivo',
+      scientificName: 'Prays oleae',
+      cropTypes: ['olivo'],
+      affectedAreas: [
+        {
+          province: 'Cadiz',
+          comarca: 'Sierra de Cádiz · olivar provincia',
+          centroid: { type: 'Point' as const, coordinates: [-5.74, 36.65] },
+          radiusKm: 60,
+        },
+      ],
+      severity: 'low',
+      detectedAt: praysReportDate,
+      expiresAt: praysExpiresAt,
+      source: 'RAIF',
+      sourceRef: 'Estado Prays oleae · informe RAIF oct 2025 · Junta de Andalucía',
+      recommendation:
+        'Según último informe oficial RAIF publicado 01-oct-2025: en Cádiz se reportaron 4,1 adultos/trampa/día en capturas (cifra baja comparada con Málaga 16,1 y Sevilla 5,7). El portal no reportó % de aceitunas infestadas para Cádiz en esta publicación. Mantener monitoreo · consultar sourceUrl para próxima actualización.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-en-andalucia/',
+      notes: 'Dato literal portal RAIF (publicación 01-oct-2025) · Cádiz con menor presión Prays según capturas. No es necesario tratamiento mientras se mantenga bajo umbral.',
+      createdBy: admin._id,
+      fingerprint: 'polilla-olivo-RAIF-Cadiz-2025-10',
+      isActive: true,
+    },
+    {
+      // Granada · dato distinto del informe: 1% supervivencia larvas
+      // (no es % aceitunas vivos · es supervivencia de larvas observada en
+      // muestreo). Severity low por nivel bajo. Sevilla y Málaga también
+      // reportaron 1,3% supervivencia · Granada 1%.
+      pestName: 'Prays oleae · polilla del olivo',
+      scientificName: 'Prays oleae',
+      cropTypes: ['olivo'],
+      affectedAreas: [
+        {
+          province: 'Granada',
+          comarca: 'Vega de Granada · olivar provincia',
+          centroid: { type: 'Point' as const, coordinates: [-3.60, 37.18] },
+          radiusKm: 65,
+        },
+      ],
+      severity: 'low',
+      detectedAt: praysReportDate,
+      expiresAt: praysExpiresAt,
+      source: 'RAIF',
+      sourceRef: 'Estado Prays oleae · informe RAIF oct 2025 · Junta de Andalucía',
+      recommendation:
+        'Según último informe oficial RAIF publicado 01-oct-2025: en Granada se reportó 1% de supervivencia de larvas en muestreo (cifra baja · Sevilla y Málaga reportaron 1,3%). El portal no reportó % de aceitunas infestadas para Granada en esta publicación. Mantener monitoreo · consultar sourceUrl para próxima actualización.',
+      sourceUrl: 'https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/estado-fitosanitario-actual-de-prays-oleae-en-andalucia/',
+      notes: 'Dato literal portal RAIF (publicación 01-oct-2025) · supervivencia larvas Granada 1% indica baja eficacia reproductiva de Prays en últimas semanas del muestreo.',
+      createdBy: admin._id,
+      fingerprint: 'polilla-olivo-RAIF-Granada-2025-10',
+      isActive: true,
+    },
     {
       pestName: 'Bactrocera oleae · mosca del olivo',
       scientificName: 'Bactrocera oleae',
