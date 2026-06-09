@@ -15,6 +15,13 @@ import { AppError } from '../utils/AppError.js';
  * geometry). Cheap to render, single round-trip from the UI.
  */
 
+interface AlertTypeBreakdown {
+  ndvi_drop: number;
+  ndre_anomaly: number;
+  stress_pattern: number;
+  fire_proximity: number;
+}
+
 interface MemberSummary {
   _id: string;
   name: string;
@@ -25,6 +32,14 @@ interface MemberSummary {
   ndviAvg: number | null;
   alertCount: number;
   criticalAlertCount: number;
+  /**
+   * Desglose de alertas activas por tipo (Sprint UX badge 9-jun-2026).
+   * Permite a la UI mostrar iconos por tipo en la lista de socios sin
+   * tener que hacer una llamada adicional al backend. Suma con
+   * alertCount cuando los advisories tienen `type` definido; los más
+   * antiguos sin `type` se mapean a `ndvi_drop` por backward-compat.
+   */
+  alertTypes: AlertTypeBreakdown;
   worstParcel: {
     _id: string;
     name: string;
@@ -103,7 +118,7 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
     parcelId: { $in: parcelIds },
     status: { $in: ['new', 'notified'] },
   })
-    .select('_id parcelId severity ndviValue')
+    .select('_id parcelId severity ndviValue type')
     .lean();
 
   // Index alerts by parcelId for O(1) lookup
@@ -128,6 +143,7 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
       ndviAvg: null,
       alertCount: 0,
       criticalAlertCount: 0,
+      alertTypes: { ndvi_drop: 0, ndre_anomaly: 0, stress_pattern: 0, fire_proximity: 0 },
       worstParcel: null,
     });
   }
@@ -158,6 +174,16 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
     const parcelAlerts = alertsByParcel.get(p._id.toString()) ?? [];
     summary.alertCount += parcelAlerts.length;
     summary.criticalAlertCount += parcelAlerts.filter((a) => a.severity === 'critical').length;
+    // Desglose por tipo (Sprint UX badge 9-jun-2026). Alertas viejas sin
+    // campo `type` se cuentan como 'ndvi_drop' por backward-compat (el tipo
+    // mayoritario históricamente · que es la caída de NDVI satelital).
+    for (const a of parcelAlerts) {
+      const t = (a as { type?: string }).type ?? 'ndvi_drop';
+      if (t === 'fire_proximity') summary.alertTypes.fire_proximity += 1;
+      else if (t === 'stress_pattern') summary.alertTypes.stress_pattern += 1;
+      else if (t === 'ndre_anomaly') summary.alertTypes.ndre_anomaly += 1;
+      else summary.alertTypes.ndvi_drop += 1;
+    }
   }
 
   for (const [k, acc] of ndviAcc) {

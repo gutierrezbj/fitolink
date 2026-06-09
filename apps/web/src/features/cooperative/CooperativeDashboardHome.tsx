@@ -13,7 +13,15 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 import 'leaflet/dist/leaflet.css';
+
+interface AlertTypeBreakdown {
+  ndvi_drop: number;
+  ndre_anomaly: number;
+  stress_pattern: number;
+  fire_proximity: number;
+}
 
 interface MemberSummary {
   _id: string;
@@ -25,6 +33,7 @@ interface MemberSummary {
   ndviAvg: number | null;
   alertCount: number;
   criticalAlertCount: number;
+  alertTypes?: AlertTypeBreakdown;
   worstParcel: { _id: string; name: string; ndvi: number } | null;
 }
 
@@ -222,15 +231,44 @@ export default function CooperativeDashboardHome() {
                   </div>
                   {m.alertCount > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
+                      {/* Crítica destacada · si la hay */}
                       {m.criticalAlertCount > 0 && (
-                        <span className="text-[9px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full uppercase">
+                        <span className="text-[9px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
                           {m.criticalAlertCount} crítica{m.criticalAlertCount !== 1 ? 's' : ''}
                         </span>
                       )}
-                      {m.alertCount - m.criticalAlertCount > 0 && (
-                        <span className="text-[9px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full uppercase">
-                          {m.alertCount - m.criticalAlertCount} otras
-                        </span>
+
+                      {/* Desglose por tipo · 1 pill por cada tipo con count > 0 ·
+                         backward-compat: si el backend aún no devuelve alertTypes
+                         (despliegue parcial · BD vieja sin field type), pintamos
+                         un único pill genérico con el count total. */}
+                      {m.alertTypes ? (
+                        (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                          const count = m.alertTypes![t];
+                          if (count === 0) return null;
+                          const meta = getAlertTypeMetadata(t);
+                          return (
+                            <span
+                              key={t}
+                              className="text-[9px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1"
+                              title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
+                            >
+                              <span className="text-orange-600">{meta.icon}</span>
+                              {count} {meta.shortLabel}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        m.alertCount - m.criticalAlertCount > 0 && (
+                          <span className="text-[9px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full uppercase">
+                            {m.alertCount - m.criticalAlertCount} aviso{m.alertCount - m.criticalAlertCount !== 1 ? 's' : ''}
+                          </span>
+                        )
                       )}
                     </div>
                   )}
