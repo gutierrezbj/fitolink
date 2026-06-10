@@ -196,78 +196,94 @@ export default function CooperativeMembersPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        /**
+         * Grid de small cards (refactor PM 10-jun-2026 · feedback JuanCho:
+         * "Que opinas de poner Small cards en vez de así largas?"). Mejor
+         * escalabilidad para cooperativas con 20-50 socios + densidad visual
+         * + comparación lado a lado + estética Botanical Cartography con
+         * § eyebrow + numerales + hairlines. Responsive: 3 cols desktop,
+         * 2 cols tablet, 1 col mobile.
+         */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {sorted.map((m, idx) => {
             const ndviC = ndviColor(m.ndviAvg);
             const ndviL = ndviLabel(m.ndviAvg);
             const hasAlerts = m.alertCount > 0;
+            const initials = m.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
             return (
-              <div
+              <button
                 key={m._id}
-                className={`bg-white border rounded-xl px-5 py-4 flex items-center gap-4 hover:shadow-sm transition-all ${
+                onClick={() => navigate('/dashboard')}
+                className={`bg-white border rounded-xl p-4 flex flex-col gap-3 text-left hover:shadow-md hover:border-brand-300 transition-all ${
                   hasAlerts ? 'border-terra-500/40' : 'border-earth-300/30'
                 }`}
+                title="Volver al mapa agregado (V2: vista parcelas del socio)"
               >
-                {/* Rank index — apoya el sentido de orden por urgencia */}
-                <div className="font-mono text-[10px] tracking-wider text-gray-400 w-6 flex-shrink-0">
-                  {String(idx + 1).padStart(2, '0')}
+                {/* Top row · § eyebrow rank + NDVI grande */}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-gray-500">
+                    § SOCIO · {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <div className="text-right">
+                    <p className={`font-display text-2xl tabular-nums leading-none ${ndviC}`}>
+                      {m.ndviAvg !== null ? m.ndviAvg.toFixed(2) : '—'}
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-wider">
+                      NDVI · {ndviL}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Avatar inicial */}
-                <div className="w-10 h-10 rounded-full bg-earth-100 flex items-center justify-center font-bold text-brand-900 text-sm flex-shrink-0">
-                  {m.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                {/* Hairline editorial AgroM */}
+                <div className="h-px bg-earth-300/40" />
+
+                {/* Avatar + nombre + meta */}
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-earth-100 flex items-center justify-center font-bold text-brand-900 text-sm flex-shrink-0">
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-brand-900 text-sm truncate">
+                      {m.name}
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {m.parcelCount} parcela{m.parcelCount > 1 ? 's' : ''} · {m.areaHa.toFixed(1)} ha
+                    </p>
+                  </div>
                 </div>
 
-                {/* Datos socio */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-brand-900 text-sm truncate">{m.name}</p>
-                    {hasAlerts && (
-                      m.alertTypes ? (
-                        (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
-                          const count = m.alertTypes![t];
-                          if (count === 0) return null;
-                          const meta = getAlertTypeMetadata(t);
-                          return (
-                            <span
-                              key={t}
-                              className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"
-                              title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
-                            >
-                              <span>{meta.icon}</span>
-                              {count} {meta.shortLabel}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                          {m.alertCount} aviso{m.alertCount > 1 ? 's' : ''}
-                        </span>
-                      )
+                {/* Pills tipo alerta (con fallback backward-compat) */}
+                {hasAlerts && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {m.alertTypes ? (
+                      (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                        const count = m.alertTypes![t];
+                        if (count === 0) return null;
+                        const meta = getAlertTypeMetadata(t);
+                        return (
+                          <span
+                            key={t}
+                            className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"
+                            title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
+                          >
+                            <span>{meta.icon}</span>
+                            {count} {meta.shortLabel}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        {m.alertCount} aviso{m.alertCount > 1 ? 's' : ''}
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    {m.parcelCount} parcela{m.parcelCount > 1 ? 's' : ''} · {m.areaHa.toFixed(1)} ha
-                  </p>
-                </div>
+                )}
 
-                {/* NDVI */}
-                <div className="text-right flex-shrink-0">
-                  <p className={`font-display text-2xl tabular-nums leading-none ${ndviC}`}>
-                    {m.ndviAvg !== null ? m.ndviAvg.toFixed(2) : '—'}
-                  </p>
-                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">{ndviL}</p>
-                </div>
-
-                {/* CTA "Ver parcelas" — V2 navegará a vista parcelas-del-socio */}
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-medium flex-shrink-0 ml-2"
-                  title="Volver al mapa agregado (V2: vista parcelas del socio)"
-                >
-                  Ver →
-                </button>
-              </div>
+                {/* CTA pie editorial */}
+                <p className="text-[11px] text-brand-600 font-medium mt-auto pt-1">
+                  Ver detalle →
+                </p>
+              </button>
             );
           })}
         </div>
