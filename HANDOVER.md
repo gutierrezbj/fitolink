@@ -1,6 +1,6 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-06-10 · 15:50 CEST · v1.8 (Encineño 407 ha cliente real cargada + pipeline manual ejecutado + datos Sentinel-2/Landsat reales para demo MS 12-jun)
+**Snapshot:** 2026-06-10 · 15:50 CEST · v1.8 (Sprint UX badges 100% cerrado mañana + Small Cards Cooperativa + tarde · Encineño 407 ha cliente real fondo de inversión cargada + pipeline manual ejecutado + datos Sentinel-2/Landsat reales para demo MS 12-jun)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
 
@@ -17,9 +17,9 @@
 - **Live:** https://fitolink.agrom.es
 - **Owner:** JuanCho · empresa AgroM (SystemRapid SL)
 - **Estado actual:** LIVE en producción · campaña 2026 abierta a Tipo A/B + Cooperativa + ADV + Regantes
-- **Última versión:** commit `ee3072e` en `main` (fix Coop · iconos tipo alerta + adiós OTRAS · 9-jun-2026)
+- **Última versión:** commit `f21481f` en `main` (refactor Coop · CooperativeMembersPage filas → small cards grid · 10-jun-2026)
 - **Documentación viva interna:** este `HANDOVER.md` + `CLAUDE.md` (contexto estable + sprint table) + `glossary.md` (vocabulario)
-- **Documentación canónica externa (Notion):** [Bitácora 9-jun triple monumental](https://app.notion.com/p/37a7981f08ef81c6bcdbe0743ed35858) · [Bitácora 5-jun monumental](https://app.notion.com/p/3767981f08ef812291c4d858a7b5d516) · [Bitácora 22-may→4-jun](https://app.notion.com/p/3757981f08ef81f3a7a0cda2890f1e19)
+- **Documentación canónica externa (Notion):** [Bitácora 10-jun Sprint UX cierre + Small Cards](https://app.notion.com/p/37b7981f08ef81f88f25db79fe9531b2) · [Bitácora 9-jun triple monumental](https://app.notion.com/p/37a7981f08ef81c6bcdbe0743ed35858) · [Bitácora 5-jun monumental](https://app.notion.com/p/3767981f08ef812291c4d858a7b5d516) · [Bitácora 22-may→4-jun](https://app.notion.com/p/3757981f08ef81f3a7a0cda2890f1e19)
 - **Material comercial:** `docs/comercial/microsoft-pitch-viernes/storyline.md` + `demo-guion.md` (universal · audience-agnostic) · `docs/comercial/visor-plagas-mock.html` (mock v2 standalone del 2º lead magnet)
 
 ## 2 · Stack y arquitectura
@@ -123,15 +123,23 @@
 - [x] **Mock v2 standalone HTML** entregado 9-jun · `docs/comercial/visor-plagas-mock.html` (+copy en `apps/web/public/`) · abrir con `open` directo en browser · iteración v2 con feedback PM "de tablón a tool que engancha" (HERO input grande "¿Qué pasa en tu comarca?" + Toggle MI ZONA/TODA ESPAÑA + Mapa Leaflet grande + Timeline lateral "últimas publicaciones oficiales" con tiempo relativo + Cards agrupadas por región + KPI "2.847 agricultores esta semana" social proof). Tagline manifiesto al final.
 - [ ] **Construcción real en React** como ruta `/avisos` en `apps/web` consumiendo endpoint público `GET /api/v1/public/advisories` (sin auth · cache 1h Redis · SEO con meta tags + URLs únicas por advisory tipo `/avisos/raif-andalucia-mosca-olivo-2026-23`). Visión: agregar los 17 servicios autonómicos · vista anónima + vista logged filtrada por comarcas/cultivos del usuario. Esfuerzo: combina con F1 (ingestores reales) + ~3-4 días extra UI pública.
 
-#### UX badges tipo alerta (sprint 9-jun)
+#### UX badges tipo alerta (Sprint 9-jun + cierre 10-jun)
 
-✅ **Helper centralizado** `apps/web/src/features/alerts/alertTypeMetadata.tsx` con 4 SVG editorial line-icons (gota=stress hídrico · llama=fuego · hoja=NDVI · destello=NDRE) + `getAlertTypeMetadata(type)` → `{icon, label, shortLabel}`
-✅ **Aplicado en**: `AlertsPage.tsx` (vista completa) · `DashboardHome.tsx` farmer (sidebar 2x2) · `CooperativeDashboardHome.tsx` (lista socios · backend extendido con `alertTypes: AlertTypeBreakdown`)
-❌ **Pendiente extender a**:
-- [ ] **CooperativeMembersPage** (vista detallada socios · ~10 min)
-- [ ] **AdvDashboardHome** (rol ADV · ~10 min)
-- [ ] **RegantesDashboardHome** (rol Regantes · ~10 min)
-- [ ] **AlertBell topbar farmer** (dropdown 5 recientes · ~10 min)
+✅ **Sprint 100% CERRADO** · Helper centralizado `apps/web/src/features/alerts/alertTypeMetadata.tsx` con 4 SVG editorial line-icons (gota=stress hídrico · llama=fuego · hoja=NDVI · destello=NDRE) + `getAlertTypeMetadata(type)` → `{icon, label, shortLabel}`. Backend `cooperativeService.getOverview()` devuelve `alertTypes: AlertTypeBreakdown` per socio (reusado por Coop + ADV + Regantes via aggregator-rule).
+
+Aplicado en **7 componentes** del producto:
+- `AlertsPage.tsx` (vista completa)
+- `DashboardHome.tsx` farmer (sidebar 2x2)
+- `CooperativeDashboardHome.tsx` (lista socios home Coop)
+- `CooperativeMembersPage.tsx` (vista detallada Socios · cierre 10-jun)
+- `AdvDashboardHome.tsx` (rol ADV · cierre 10-jun)
+- `RegantesDashboardHome.tsx` (rol Regantes · cierre 10-jun)
+- `AlertBell.tsx` topbar farmer (dropdown 5 recientes · cierre 10-jun)
+
+#### Refactor Small Cards Cooperativa (sprint 10-jun)
+
+✅ **CooperativeMembersPage** · de filas largas a grid responsive 3 cols desktop / 2 tablet / 1 mobile. Mejor escalabilidad para cooperativas con 20-50 socios + comparación visual instantánea + estética más Botanical Cartography (§ eyebrows + hairlines + numerales). Card entera clickable. Commit `f21481f`.
+❌ **Pendiente evaluar extensión a otros 3 dashboards** (Coop home / ADV / Regantes) que tienen sidebars laterales 1/3 width · si JuanCho lo valida visualmente.
 
 
 #### Cliente real ENCINEÑO 407 ha (10-jun-2026 · pre-demo MS)
