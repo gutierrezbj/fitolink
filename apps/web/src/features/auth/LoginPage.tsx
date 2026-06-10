@@ -39,6 +39,18 @@ const DEMO_ACCOUNTS = [
   // olivar heterogéneo. Seed: seedProfessorDemo.ts. Flag isSyntheticDemo
   // hace que el pipeline las ignore.
   { label: 'Aula Jaén Jesús', googleId: 'jesus-vivar-edu', icon: '/smart-farming.svg',           color: 'bg-earth-50 border-earth-300/50 text-earth-700 hover:bg-earth-100' },
+  // Encineño · cliente fondo de inversión (10-jun-2026 · Garage1 + Mac).
+  // CASO DISTINTO al Pistachar de Jonh: los datos del KMZ vienen
+  // DIRECTAMENTE del cliente con autorización explícita para mostrar en
+  // demo (Guillermo Morales Sánchez · vía Jorge Leccia · sector evaluación
+  // pre-demo Microsoft viernes 12-jun de cartera total 2.300 ha). 407 ha
+  // olivar Subbética Córdoba · parcela REAL `isSyntheticDemo:false` · datos
+  // Sentinel-2/Landsat reales tras pipeline manual 10-jun · advisory
+  // matching Prays oleae Córdoba MEDIUM a 19.7 km con cifras LITERALES
+  // portal RAIF. JuanCho lo llama "Jorge" mentalmente para click rápido
+  // en demos comerciales. Color terra (premium) para destacar como cuenta
+  // cliente B2B real.
+  { label: 'Jorge',       googleId: 'demo-encineno-fondo',  icon: '/vegetables.svg',             color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
   { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
 ];
 
