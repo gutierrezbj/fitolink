@@ -1,6 +1,6 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-06-09 · 23:00 CEST · v1.7 (post-Bloque C cerrado + PRIMER ADVISORY REAL + F1 día 1 + UX iconos alerta + TAGLINE OFICIAL)
+**Snapshot:** 2026-06-10 · 15:50 CEST · v1.8 (Encineño 407 ha cliente real cargada + pipeline manual ejecutado + datos Sentinel-2/Landsat reales para demo MS 12-jun)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
 
@@ -132,6 +132,31 @@
 - [ ] **AdvDashboardHome** (rol ADV · ~10 min)
 - [ ] **RegantesDashboardHome** (rol Regantes · ~10 min)
 - [ ] **AlertBell topbar farmer** (dropdown 5 recientes · ~10 min)
+
+
+#### Cliente real ENCINEÑO 407 ha (10-jun-2026 · pre-demo MS)
+
+✅ **Cliente fondo de inversión cargado en sistema** desde KMZ recibido vía Jorge Leccia (jorgeleccia@hotmail.com) de Guillermo Morales Sanchez (guillermoms@live.com). Asunto literal del forward: "AgroM · Aplicación Aerea Agricola". El fondo gestiona **2.300 ha cartera total** · ENCINEÑO 407 ha es solo un sector enviado para evaluación de alcance pre-demo Microsoft 12-jun.
+
+**Datos cargados en BD prod**:
+- Usuario demo identificable: `demo-encineno@agrom.es` rol `farmer` (NO usamos email real del propietario en la cuenta — borrable post-demo)
+- Parcela "Finca Encineño · Sector 407 ha" · `cropType: olivo` · `province: Cordoba` · 70 vértices del KMZ · 407.7 ha calculadas vs 407 declaradas
+- Centroide -4.594, 37.781 (campiña SO Córdoba ciudad · comarca Subbética auto-asignada por sistema)
+
+**Pipeline manual ejecutado 10-jun 15:21-15:49** sobre las 44 parcelas en BD (29 vía openEO, 0 ODATA fallback, 7 alerts creadas total). Encineño cargada con datos REALES Sentinel-2 + Landsat:
+- 1 lectura NDVI: mean 0.351 · NDRE 0.232 · NDMI 0.028 (cero anomalía detectada)
+- Thermal Landsat C2-L2: LST 39 °C (escena 26-may, 2 escenas usadas)
+- Recent climate 31d: 2 mm precipitación total (sequía estacional típica)
+- 0 alertas críticas (parcela no está estresada al umbral del detector)
+- Climate baseline + MODIS baseline: vacíos (fallback openEO no los rellenó en este run · re-correr si la demo lo pide)
+
+**Advisory matching verificado E2E** vía `/api/v1/parcels/:id/insights/pest-advisories`:
+- **Prays oleae · MEDIUM · 19.7 km** · cifras LITERALES portal RAIF oct 2025 (35,1% aceitunas con Prays vivo en Córdoba · por encima del umbral 20%) · `sourceUrl` clickeable al portal Junta de Andalucía
+- Comarca auto: "Subbética · campiña olivar"
+
+**Seed canónico** `apps/api/src/seed/seedEncinenoDemo.ts` (idempotente, patrón seedProfessorDemo) committed en este snapshot.
+
+**Login para la demo**: dev-login-by-email con `demo-encineno@agrom.es` (no requiere Google OAuth · ALLOW_DEV_LOGIN sigue true).
 
 #### Otras mejoras
 - [ ] **Logs-con-body en pipeline Python** (~30 min) · workers/geo-pipeline/src/* con loguru · mismo patrón que TS
