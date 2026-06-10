@@ -41,6 +41,26 @@ async function seed() {
     logger.info({ deletedCount: cleanup.deletedCount }, 'cleanup: removed old polilla advisory with invented sourceRef');
   }
 
+  // Cleanup · 11-jun-2026 · forzar refresh del copy de los 5 advisories Prays
+  // provincia oct-2025 con el nuevo framing "última publicación oficial vigente"
+  // tras feedback PM JuanCho viendo demo Encineño cuenta fondo: "Navegante esto
+  // data del 2025 !!!". Como el seed usa $setOnInsert (idempotente por fingerprint),
+  // si los advisories ya existen NO se sobrescriben · borramos primero y dejamos
+  // que el upsert posterior los reinserte con el copy actualizado.
+  // Idempotente: si ya se ejecutó antes, deleteMany devuelve 0 borrados.
+  const cleanupPraysProvincias = await PestAdvisory.deleteMany({
+    fingerprint: { $in: [
+      'polilla-olivo-RAIF-informe-oficial-2025-10',
+      'polilla-olivo-RAIF-Malaga-2025-10',
+      'polilla-olivo-RAIF-Cordoba-2025-10',
+      'polilla-olivo-RAIF-Cadiz-2025-10',
+      'polilla-olivo-RAIF-Granada-2025-10',
+    ] },
+  });
+  if (cleanupPraysProvincias.deletedCount > 0) {
+    logger.info({ deletedCount: cleanupPraysProvincias.deletedCount }, 'cleanup: removed 5 Prays oct-2025 advisories for copy refresh');
+  }
+
   const now = new Date();
   // Detected start of this month so the same advisory survives until the
   // next monthly bulletin cycle (applies to advisories without explicit dates).
