@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 import { getAlertTypeMetadata, type AlertType } from './alertTypeMetadata.js';
+import PestAdvisoriesCard from '@/features/parcels/PestAdvisoriesCard.js';
 
 const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
@@ -135,25 +136,31 @@ export default function AlertsPage() {
         </button>
         <h1 className="text-2xl font-bold text-gray-900">Alertas</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Anomalias detectadas por satelite · haz click en una alerta para ver el mapa y decidir
+          Anomalias satelitales en sus parcelas + avisos oficiales de su comarca
         </p>
       </div>
 
+      {/* ── Sección 1 · anomalías satelitales sobre SUS parcelas ── */}
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        Satélite — anomalías en sus parcelas
+      </h2>
       {alerts.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
             <span className="text-green-600 text-xl">✓</span>
           </div>
-          <p className="text-gray-600 font-medium">Todo en orden</p>
-          <p className="text-gray-400 text-sm mt-1">No hay alertas activas en tus parcelas.</p>
+          <p className="text-gray-600 font-medium">Sin anomalías satelitales</p>
+          <p className="text-gray-400 text-sm mt-1">
+            La última pasada Sentinel-2 no detectó caídas anómalas en sus parcelas.
+          </p>
         </div>
       ) : (
         <>
           {activeAlerts.length > 0 && (
             <>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Pendientes — {activeAlerts.length} alerta{activeAlerts.length > 1 ? 's' : ''} sin revisar
-              </h2>
+              <p className="text-xs text-gray-400 mb-3">
+                {activeAlerts.length} alerta{activeAlerts.length > 1 ? 's' : ''} sin revisar · haz click para ver el mapa y decidir
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
                 {activeAlerts.map((alert) => <AlertCard key={alert._id} alert={alert} />)}
               </div>
@@ -162,16 +169,27 @@ export default function AlertsPage() {
 
           {pastAlerts.length > 0 && (
             <>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Historial ({pastAlerts.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
                 {pastAlerts.map((alert) => <AlertCard key={alert._id} alert={alert} dimmed />)}
               </div>
             </>
           )}
         </>
       )}
+
+      {/* ── Sección 2 · avisos oficiales geolocalizados a su comarca ──
+          Sprint AlertsPage comarca · 11-jun-2026. Sin esta sección la
+          página decía "Todo en orden" vacía aunque hubiera un advisory
+          oficial activo en la comarca del usuario (caso Encineño · Prays
+          oleae a 19.7 km). PestAdvisoriesCard sin parcelId agrega los
+          avisos de TODAS las parcelas del usuario vía /pest-advisories/mine. */}
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        Comarca — avisos fitosanitarios oficiales
+      </h2>
+      <PestAdvisoriesCard />
     </div>
   );
 }

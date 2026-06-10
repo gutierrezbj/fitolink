@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 
 /**
@@ -9,12 +10,18 @@ import { api } from '@/lib/api.js';
  * advisory from the official RAIF / MAPA / SAIF bulletin in the admin
  * panel; this widget reads them via the parcel-scoped endpoint.
  *
+ * Dual mode (Sprint AlertsPage comarca · 11-jun-2026): without `parcelId`
+ * the card consumes `/pest-advisories/mine` — advisories matching ANY of
+ * the user's parcels, deduped, each listing the affected parcels as
+ * clickable chips. AlertsPage mounts it this way so the page stays alive
+ * even when there are no satellite anomalies.
+ *
  * Empty state is intentionally non-alarming — most of the year no
  * advisory is active on a given parcel, and that is good news.
  */
 
 type Severity = 'low' | 'medium' | 'high';
-type Source = 'RAIF' | 'MAPA' | 'SAIF' | 'SIAM' | 'CSCV' | 'otros';
+type Source = 'RAIF' | 'DARP' | 'MAPA' | 'SAIF' | 'SIAM' | 'CSCV' | 'otros';
 
 interface PestAdvisory {
   advisoryId: string;
@@ -31,10 +38,13 @@ interface PestAdvisory {
   recommendation?: string;
   sourceUrl?: string;
   message: string;
+  /** Only present in user-level mode (endpoint /pest-advisories/mine) */
+  affectedParcels?: Array<{ _id: string; name: string; distanceKm: number }>;
 }
 
 interface Props {
-  parcelId: string;
+  /** Parcel-scoped mode. Omit to aggregate across all the user's parcels. */
+  parcelId?: string;
 }
 
 const SEV_TONE: Record<Severity, { strip: string; pill: string; dot: string; label: string }> = {
@@ -44,10 +54,13 @@ const SEV_TONE: Record<Severity, { strip: string; pill: string; dot: string; lab
 };
 
 export default function PestAdvisoriesCard({ parcelId }: Props) {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery<PestAdvisory[]>({
-    queryKey: ['pest-advisories', parcelId],
+    queryKey: ['pest-advisories', parcelId ?? 'mine'],
     queryFn: async () => {
-      const res = await api.get(`/parcels/${parcelId}/insights/pest-advisories`);
+      const res = await api.get(
+        parcelId ? `/parcels/${parcelId}/insights/pest-advisories` : '/pest-advisories/mine',
+      );
       return res.data.data;
     },
     refetchInterval: 60 * 60 * 1000,
@@ -109,6 +122,23 @@ export default function PestAdvisoriesCard({ parcelId }: Props) {
                   <p className="text-sm text-brand-900 leading-relaxed">
                     {adv.message}
                   </p>
+                  {adv.affectedParcels && adv.affectedParcels.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-gray-500">
+                        Afecta a:
+                      </span>
+                      {adv.affectedParcels.map((p) => (
+                        <button
+                          key={p._id}
+                          onClick={() => navigate(`/dashboard/parcels/${p._id}`)}
+                          className="font-mono text-[9px] uppercase tracking-wider bg-earth-50 border border-earth-300/40 text-brand-900 px-2 py-0.5 rounded-full hover:border-brand-600 hover:text-brand-600 transition-colors"
+                          title={`Ver ${p.name} · foco a ${p.distanceKm} km`}
+                        >
+                          {p.name} · {p.distanceKm} km
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {(adv.sourceRef || adv.sourceUrl) && (
                     <p className="font-mono text-[10px] uppercase tracking-wider text-gray-500 mt-2">
                       {adv.sourceUrl ? (

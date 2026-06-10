@@ -238,3 +238,95 @@ export async function getAdvisoriesForParcel(parcelId: string): Promise<ParcelPe
 
   return matches;
 }
+
+// ── User-level aggregation (Sprint AlertsPage comarca · 11-jun-2026) ───
+
+export interface UserPestAdvisory extends ParcelPestAdvisory {
+  /** Names of the user's parcels inside the advisory radius */
+  affectedParcels: Array<{ _id: string; name: string; distanceKm: number }>;
+}
+
+/**
+ * Pull active advisories that match ANY of the user's parcels, deduped
+ * by advisory. Feeds the "§ AVISOS FITOSANITARIOS EN SU COMARCA" section
+ * of AlertsPage so the page stays useful even when there are no satellite
+ * anomalies on the user's own parcels.
+ *
+ * One DB query for parcels + one for advisory candidates (crop-filtered);
+ * the geo matching runs in JS like getAdvisoriesForParcel because each
+ * advisory carries several affected areas with custom radii.
+ */
+export async function getAdvisoriesForUser(userId: string): Promise<UserPestAdvisory[]> {
+  const parcels = await Parcel.find({ ownerId: userId, isActive: true })
+    .select('_id name cropType geometry')
+    .lean();
+  if (parcels.length === 0) return [];
+
+  const cropTypes = [...new Set(parcels.map((p) => p.cropType))];
+  const candidates = await PestAdvisory.find({
+    isActive: true,
+    expiresAt: { $gte: new Date() },
+    cropTypes: { $in: cropTypes },
+  })
+    .sort({ severity: -1, detectedAt: -1 })
+    .lean();
+  if (candidates.length === 0) return [];
+
+  const centroids = parcels.map((p) => ({
+    _id: p._id.toString(),
+    name: p.name,
+    cropType: p.cropType,
+    centroid: polygonCentroid(p.geometry as { type: 'Polygon'; coordinates: number[][][] }),
+  }));
+
+  const byAdvisory = new Map<string, UserPestAdvisory>();
+  for (const adv of candidates) {
+    for (const parcel of centroids) {
+      if (!adv.cropTypes.includes(parcel.cropType)) continue;
+      for (const area of adv.affectedAreas) {
+        const [aLng, aLat] = area.centroid.coordinates as [number, number];
+        const distKm = Math.round(haversineKm(parcel.centroid, [aLng, aLat]) * 10) / 10;
+        if (distKm > area.radiusKm) continue;
+
+        const key = adv._id.toString();
+        let entry = byAdvisory.get(key);
+        if (!entry) {
+          entry = {
+            advisoryId: key,
+            pestName: adv.pestName,
+            scientificName: adv.scientificName,
+            severity: adv.severity,
+            source: adv.source,
+            sourceRef: adv.sourceRef,
+            detectedAt: isoDate(adv.detectedAt),
+            expiresAt: isoDate(adv.expiresAt),
+            comarca: area.comarca,
+            province: area.province,
+            distanceKm: distKm,
+            recommendation: adv.recommendation,
+            sourceUrl: adv.sourceUrl,
+            message: '',
+            affectedParcels: [],
+          };
+          entry.message = buildMessage(entry, parcel.name);
+          byAdvisory.set(key, entry);
+        }
+        entry.affectedParcels.push({ _id: parcel._id, name: parcel.name, distanceKm: distKm });
+        // Keep the closest match as the advisory's headline distance
+        if (distKm < entry.distanceKm) {
+          entry.distanceKm = distKm;
+          entry.comarca = area.comarca;
+          entry.province = area.province;
+        }
+        break;  // this parcel matched — skip remaining areas of this advisory
+      }
+    }
+  }
+
+  // Severity desc, then proximity asc — most urgent and closest first
+  const sevRank: Record<PestSeverity, number> = { high: 0, medium: 1, low: 2 };
+  return [...byAdvisory.values()].sort((a, b) => {
+    if (sevRank[a.severity] !== sevRank[b.severity]) return sevRank[a.severity] - sevRank[b.severity];
+    return a.distanceKm - b.distanceKm;
+  });
+}

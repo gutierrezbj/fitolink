@@ -42,6 +42,20 @@ export async function deactivate(req: AuthRequest, res: Response, next: NextFunc
 }
 
 /**
+ * User-scoped: advisories matching ANY of the caller's parcels, deduped
+ * by advisory with the list of affected parcels. Feeds the comarca
+ * section of AlertsPage (Sprint AlertsPage comarca · 11-jun-2026).
+ */
+export async function getMine(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const advisories = await pestService.getAdvisoriesForUser(req.user!._id.toString());
+    res.json({ success: true, data: advisories });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Parcel-scoped: advisories that match this parcel's crop + radius.
  * Same auth pattern as the other parcel insight endpoints.
  */
