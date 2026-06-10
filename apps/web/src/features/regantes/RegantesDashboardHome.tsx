@@ -5,6 +5,7 @@ import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
 import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 
 /**
  * RegantesDashboardHome — vista inicial del rol `regantes`.
@@ -38,6 +39,13 @@ import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.
  *   · Match alertas FitoLink ↔ tabla aforos comunidad
  */
 
+interface AlertTypeBreakdown {
+  ndvi_drop: number;
+  ndre_anomaly: number;
+  stress_pattern: number;
+  fire_proximity: number;
+}
+
 interface RegantesOverview {
   members: Array<{
     _id: string;
@@ -46,6 +54,7 @@ interface RegantesOverview {
     areaHa: number;
     ndviAvg: number | null;
     alertCount: number;
+    alertTypes?: AlertTypeBreakdown;
   }>;
   parcels: Array<{
     _id: string;
@@ -270,7 +279,7 @@ export default function RegantesDashboardHome() {
                         : 'border-earth-300/30 hover:border-brand-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-1.5 gap-2">
+                    <div className="flex items-start justify-between mb-1.5 gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <span className="font-mono text-[9px] tracking-wider text-gray-400 flex-shrink-0">
                           {String(idx + 1).padStart(2, '0')}
@@ -278,9 +287,29 @@ export default function RegantesDashboardHome() {
                         <p className="text-sm font-semibold text-brand-900 truncate">{m.name}</p>
                       </div>
                       {m.alertCount > 0 && (
-                        <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">
-                          {m.alertCount}
-                        </span>
+                        m.alertTypes ? (
+                          <div className="flex items-center gap-1 flex-wrap justify-end">
+                            {(['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                              const count = m.alertTypes![t];
+                              if (count === 0) return null;
+                              const meta = getAlertTypeMetadata(t);
+                              return (
+                                <span
+                                  key={t}
+                                  className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 flex-shrink-0"
+                                  title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
+                                >
+                                  <span>{meta.icon}</span>
+                                  {count} {meta.shortLabel}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">
+                            {m.alertCount}
+                          </span>
+                        )
                       )}
                     </div>
                     <div className="flex items-center justify-between gap-2 text-[11px]">

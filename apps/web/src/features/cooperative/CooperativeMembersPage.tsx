@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 import DownloadReportButtons from './DownloadReportButtons.js';
 
 /**
@@ -27,6 +28,13 @@ import DownloadReportButtons from './DownloadReportButtons.js';
  *   · Ordenamiento configurable
  */
 
+interface AlertTypeBreakdown {
+  ndvi_drop: number;
+  ndre_anomaly: number;
+  stress_pattern: number;
+  fire_proximity: number;
+}
+
 interface SocioRow {
   _id: string;
   name: string;
@@ -34,6 +42,7 @@ interface SocioRow {
   areaHa: number;
   ndviAvg: number | null;
   alertCount: number;
+  alertTypes?: AlertTypeBreakdown;
 }
 
 interface OverviewResponse {
@@ -214,9 +223,27 @@ export default function CooperativeMembersPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-brand-900 text-sm truncate">{m.name}</p>
                     {hasAlerts && (
-                      <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        {m.alertCount} aviso{m.alertCount > 1 ? 's' : ''}
-                      </span>
+                      m.alertTypes ? (
+                        (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                          const count = m.alertTypes![t];
+                          if (count === 0) return null;
+                          const meta = getAlertTypeMetadata(t);
+                          return (
+                            <span
+                              key={t}
+                              className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"
+                              title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
+                            >
+                              <span>{meta.icon}</span>
+                              {count} {meta.shortLabel}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          {m.alertCount} aviso{m.alertCount > 1 ? 's' : ''}
+                        </span>
+                      )
                     )}
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5">

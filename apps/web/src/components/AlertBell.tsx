@@ -12,9 +12,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 
 interface Alert {
   _id: string;
+  type?: AlertType;
   severity: 'critical' | 'high' | 'medium' | 'low';
   status: 'new' | 'notified' | 'acknowledged' | 'resolved';
   ndviValue: number;
@@ -125,7 +127,9 @@ export default function AlertBell() {
               </div>
             ) : (
               <div className="max-h-96 overflow-y-auto divide-y divide-gray-100">
-                {recent.map((alert) => (
+                {recent.map((alert) => {
+                  const typeMeta = getAlertTypeMetadata(alert.type);
+                  return (
                   <button
                     key={alert._id}
                     onClick={() => {
@@ -141,9 +145,18 @@ export default function AlertBell() {
                     <span className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${SEV_DOT[alert.severity]}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wide ${SEV_TEXT[alert.severity]}`}>
-                          {SEV_LABEL[alert.severity]}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold uppercase tracking-wide ${SEV_TEXT[alert.severity]}`}>
+                            {SEV_LABEL[alert.severity]}
+                          </span>
+                          <span
+                            className="flex items-center gap-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500"
+                            title={typeMeta.label}
+                          >
+                            <span className="text-gray-400">{typeMeta.icon}</span>
+                            <span>{typeMeta.shortLabel}</span>
+                          </span>
+                        </div>
                         <span className="text-[10px] text-gray-400">{formatDate(alert.detectedAt)}</span>
                       </div>
                       <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">
@@ -159,7 +172,8 @@ export default function AlertBell() {
                       </p>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
             {active.length > 0 && (

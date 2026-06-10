@@ -5,6 +5,7 @@ import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
 import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.js';
+import { getAlertTypeMetadata, type AlertType } from '@/features/alerts/alertTypeMetadata.js';
 
 /**
  * AdvDashboardHome — vista inicial del rol ADV (Agrupación de Defensa Vegetal).
@@ -37,6 +38,13 @@ import DownloadReportButtons from '@/features/cooperative/DownloadReportButtons.
  * — el copy del dashboard cambia para hablar el idioma del técnico ADV.
  */
 
+interface AlertTypeBreakdown {
+  ndvi_drop: number;
+  ndre_anomaly: number;
+  stress_pattern: number;
+  fire_proximity: number;
+}
+
 interface AdvOverview {
   members: Array<{
     _id: string;
@@ -47,6 +55,7 @@ interface AdvOverview {
     areaHa: number;
     ndviAvg: number | null;
     alertCount: number;
+    alertTypes?: AlertTypeBreakdown;
   }>;
   parcels: Array<{
     _id: string;
@@ -218,12 +227,32 @@ export default function AdvDashboardHome() {
                     : 'border-earth-300/30 hover:border-brand-200'
                 }`}
               >
-                <div className="flex items-start justify-between mb-1.5">
+                <div className="flex items-start justify-between mb-1.5 gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-brand-900 truncate flex-1">{m.name}</p>
                   {m.alertCount > 0 && (
-                    <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                      {m.alertCount} avisos
-                    </span>
+                    m.alertTypes ? (
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        {(['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                          const count = m.alertTypes![t];
+                          if (count === 0) return null;
+                          const meta = getAlertTypeMetadata(t);
+                          return (
+                            <span
+                              key={t}
+                              className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 flex-shrink-0"
+                              title={`${count} aviso${count !== 1 ? 's' : ''} de ${meta.label.toLowerCase()}`}
+                            >
+                              <span>{meta.icon}</span>
+                              {count} {meta.shortLabel}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="font-mono text-[9px] bg-terra-500/10 text-terra-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">
+                        {m.alertCount} avisos
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-[11px] text-gray-500">
