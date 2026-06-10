@@ -106,7 +106,7 @@
 - Esqueleto `apps/api/src/services/raifIngestService.ts` con interfaz lista para sustituir hardcoded por scraper HTML real (TODO comentado)
 
 ❌ **PENDIENTE F1 RAIF** (~6-8 días):
-- [ ] **F1 día 2-3:** convertir `fetchPraysOleaeReport()` a scraper HTML real (fetch + regex sobre portal RAIF · misma interfaz · cero refactor downstream)
+- [ ] **F1 día 2-3:** convertir `fetchPraysOleaeReport()` a ingesta del **dataset abierto oficial RAIF** (NO scraper HTML · hallazgo 11-jun). La Junta publica ZIP+XML trimestral CC BY 4.0 comercial en `datosabiertos/portal/dataset/raif` con muestreos REALES por parcela+fecha (ver entrada glossary "RAIF · dataset abierto oficial"). Plan: script Python en geo-pipeline que descarga `raif_olivar_andalucia_2006_2026.zip` + `raif_citricos...zip`, parsea XML `_2017_2025` (desescapar campos x0020), reproyecta UTM→WGS84, indexa estaciones RAIF por comarca+cultivo, y dada una parcela cliente devuelve la estación más cercana + su última lectura real de plagas. Misma interfaz downstream (PestAdvisory) · cero refactor. Convierte el advisory de "cifra provincial del resumen anual" a "estación RAIF oficial a X km de su finca midió esto el [fecha]". Cron trimestral re-descarga.
 - [ ] **F1 día 4-6:** ampliar a otros endpoints RAIF (Bactrocera oleae · Spilocaea oleagina Repilo · Saissetia oleae · otros con páginas dedicadas del portal)
 
 ❌ **PENDIENTE F1 DARP + SAIF + IRIAF** (~6-8 días):
