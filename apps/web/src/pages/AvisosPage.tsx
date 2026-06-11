@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
@@ -49,6 +49,16 @@ const SOURCE_LABEL: Record<string, string> = {
   otros: 'Boletín oficial',
 };
 
+// Comunidad autónoma por fuente — para el filtro "ir al grano".
+const SOURCE_REGION: Record<string, string> = {
+  RAIF: 'Andalucía',
+  DARP: 'Cataluña',
+  SAIF: 'C. Valenciana',
+  SIAM: 'Murcia',
+  ITACYL: 'Castilla y León',
+  MAPA: 'Nacional',
+};
+
 const CROP_LABEL: Record<string, string> = {
   olivo: 'Olivar', citrico: 'Cítrico', vinedo: 'Viñedo', frutal: 'Frutal',
   almendro: 'Almendro', pistacho: 'Pistacho', cereal: 'Cereal', patata: 'Patata',
@@ -74,12 +84,20 @@ export default function AvisosPage() {
   });
 
   const advisories = data ?? [];
+  const [region, setRegion] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const sources = new Set(advisories.map((a) => a.source));
     const high = advisories.filter((a) => a.severity === 'high').length;
     return { total: advisories.length, sources: sources.size, high };
   }, [advisories]);
+
+  // Comunidades presentes (para los chips de filtro) + lista filtrada.
+  const regions = useMemo(
+    () => Array.from(new Set(advisories.map((a) => SOURCE_REGION[a.source] ?? a.source))).sort(),
+    [advisories],
+  );
+  const filtered = region ? advisories.filter((a) => SOURCE_REGION[a.source] === region) : advisories;
 
   return (
     <div className="min-h-screen bg-earth-50 text-brand-900">
@@ -102,11 +120,14 @@ export default function AvisosPage() {
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-5 pt-12 pb-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-earth-400 mb-3">
-          § Avisos fitosanitarios oficiales · España
+          § Servicio público · España
         </p>
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-brand-800 leading-tight max-w-3xl">
-          Lo que se mueve en el campo español, en un solo sitio.
+        <h1 className="font-display text-4xl md:text-5xl font-bold text-brand-800 leading-[1.05]">
+          Avisos fitosanitarios oficiales
         </h1>
+        <p className="mt-3 font-display text-xl md:text-2xl text-brand-900/55 italic max-w-2xl">
+          Lo que se mueve en el campo español, en un solo sitio.
+        </p>
         <p className="mt-4 text-base text-brand-900/70 max-w-2xl leading-relaxed">
           FitoLink reúne los boletines oficiales de plagas de las comunidades
           autónomas y los pone en un mapa común. Cada aviso enlaza a su fuente
@@ -133,8 +154,24 @@ export default function AvisosPage() {
           <p className="text-sm text-earth-400 py-10 text-center">No hay avisos vigentes ahora mismo.</p>
         )}
 
+        {/* Filtro por comunidad — ir al grano */}
+        {regions.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mr-1">Comunidad:</span>
+            <FilterChip label={`Todas (${advisories.length})`} active={region === null} onClick={() => setRegion(null)} />
+            {regions.map((r) => (
+              <FilterChip
+                key={r}
+                label={`${r} (${advisories.filter((a) => SOURCE_REGION[a.source] === r).length})`}
+                active={region === r}
+                onClick={() => setRegion(r)}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2">
-          {advisories.map((a) => {
+          {filtered.map((a) => {
             const sev = SEVERITY_META[a.severity] ?? SEVERITY_META.medium;
             return (
               <article key={a.id} className="bg-white rounded-xl border border-earth-300/40 overflow-hidden flex flex-col">
@@ -233,5 +270,21 @@ function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean
       <p className={`font-display text-3xl font-bold ${accent ? 'text-terra-500' : 'text-brand-700'}`}>{n}</p>
       <p className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mt-0.5">{label}</p>
     </div>
+  );
+}
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+        active
+          ? 'bg-brand-700 text-earth-50 border-brand-700'
+          : 'bg-white text-brand-700 border-earth-300/60 hover:border-brand-700/40'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
