@@ -1,5 +1,11 @@
 services:
   web:
+    # Imagen pre-construida en GHCR por GitHub Actions (.github/workflows/deploy.yml).
+    # El VPS hace `docker compose pull` y NO compila Vite localmente → deploy en
+    # segundos en vez de ~30 min. El bloque `build` se mantiene como rollback:
+    # `docker compose up -d --build` vuelve a compilar en el VPS si GHCR fallara.
+    # (11-jun-2026 · sacar el build pesado del VPS)
+    image: ghcr.io/gutierrezbj/fitolink-web:latest
     build:
       context: .
       dockerfile: docker/Dockerfile.web
@@ -8,6 +14,7 @@ services:
     restart: unless-stopped
 
   api:
+    image: ghcr.io/gutierrezbj/fitolink-api:latest
     build:
       context: .
       dockerfile: docker/Dockerfile.api
@@ -24,6 +31,7 @@ services:
     restart: unless-stopped
 
   geo-pipeline:
+    image: ghcr.io/gutierrezbj/fitolink-geo:latest
     build:
       context: .
       dockerfile: docker/Dockerfile.geo
