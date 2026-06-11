@@ -23,8 +23,13 @@ git pull --ff-only origin main
 echo "→ docker compose pull (imágenes ya construidas en GHCR)"
 $COMPOSE pull web api geo-pipeline
 
-echo "→ docker compose up -d (web · api · proxy)"
-$COMPOSE up -d web api proxy
+echo "→ docker compose up -d (web · api)"
+# OJO: NO levantamos el servicio `proxy` del compose. Este VPS es compartido
+# (varios proyectos) y tiene un nginx en el HOST que hace de reverse proxy
+# central, enrutando fitolink.agrom.es → 127.0.0.1:3040. El proxy del compose
+# chocaria en el puerto 80 contra ese nginx del host. web/api exponen sus
+# puertos en 127.0.0.1 y el nginx del host los sirve. (11-jun-2026)
+$COMPOSE up -d web api
 
 echo "→ limpiando imágenes huérfanas"
 docker image prune -f >/dev/null 2>&1 || true
