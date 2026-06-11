@@ -173,6 +173,15 @@ function Navbar() {
             Visor SIGPAC
           </Link>
           <Link
+            to="/avisos"
+            className="flex items-center gap-1.5 text-brand-700 hover:text-brand-800 transition-colors font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            Visor de plagas
+          </Link>
+          <Link
             to="/login"
             className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-all hover:shadow-lg hover:shadow-brand-500/25"
           >
@@ -784,6 +793,7 @@ function Footer() {
             <a href="#como-funciona" className="hover:text-white transition-colors">Proceso</a>
             <a href="#roles" className="hover:text-white transition-colors">Roles</a>
             <Link to="/sigpac" className="hover:text-white transition-colors">Visor SIGPAC</Link>
+            <Link to="/avisos" className="hover:text-white transition-colors">Visor de plagas</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Precio</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Términos</Link>
             <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>

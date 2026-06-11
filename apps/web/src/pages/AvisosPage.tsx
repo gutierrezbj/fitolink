@@ -91,10 +91,10 @@ export default function AvisosPage() {
             <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-earth-400 align-middle">FitoLink</span>
           </Link>
           <Link
-            to="/register"
-            className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-brand-700 text-earth-50 hover:bg-brand-800 transition-colors"
+            to="/login"
+            className="text-xs font-medium text-brand-700 hover:text-brand-900 transition-colors"
           >
-            Monitorizar mis parcelas →
+            Acceder
           </Link>
         </div>
       </header>
@@ -194,19 +194,26 @@ export default function AvisosPage() {
         </p>
       </section>
 
-      {/* CTA */}
-      <section className="bg-brand-800 text-earth-50">
-        <div className="max-w-5xl mx-auto px-5 py-12 text-center">
-          <h2 className="font-display text-2xl font-bold">¿Y si te avisara solo de lo de TU comarca?</h2>
-          <p className="mt-3 text-earth-50/75 max-w-xl mx-auto leading-relaxed">
-            Crea tu cuenta, añade tus parcelas y recibe en tu correo únicamente
-            los avisos que te afectan — cruzados con el estado de tu cultivo por satélite.
+      {/* Nota de servicio público (no anuncio): el tablón es abierto y gratuito;
+          la cuenta solo se ofrece como opción para filtrar por comarca. */}
+      <section className="border-t border-earth-300/40 bg-white">
+        <div className="max-w-5xl mx-auto px-5 py-10 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-earth-400 mb-2">
+            § Servicio abierto de AgroM
+          </p>
+          <h2 className="font-display text-xl font-bold text-brand-800">
+            Este tablón es público y gratuito.
+          </h2>
+          <p className="mt-3 text-brand-900/65 max-w-xl mx-auto leading-relaxed text-sm">
+            Consúltalo siempre que quieras, sin cuenta. Si además te interesa recibir
+            solo los avisos de tu comarca y tu cultivo —cruzados con el estado de tus
+            parcelas por satélite— puedes crear una cuenta en FitoLink.
           </p>
           <Link
-            to="/register"
-            className="inline-block mt-6 px-6 py-3 rounded-lg bg-terra-500 text-white font-semibold hover:bg-terra-600 transition-colors"
+            to="/login"
+            className="inline-block mt-5 text-sm font-semibold text-terra-600 hover:text-terra-700"
           >
-            Empezar gratis →
+            Crear cuenta en FitoLink →
           </Link>
         </div>
       </section>
