@@ -9,6 +9,14 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.web
+      # Build args del frontend (se embeben en el bundle al compilar). Para el
+      # flujo GHCR estos mismos valores se pasan en .github/workflows/deploy.yml
+      # desde los secrets del repo. Para el rollback `--build` se leen del .env
+      # del VPS. VITE_GOOGLE_CLIENT_ID es el client ID público de OAuth (va en
+      # el front de todas formas) → hace funcionar el login con Google.
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - '127.0.0.1:3040:3000'
     restart: unless-stopped
@@ -28,6 +36,11 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
+      # Dev-login (chips de demo como "Jorge"). Configurable vía .env del VPS
+      # — default false por seguridad: en producción sin el .env, el bypass de
+      # auth queda DESACTIVADO. Para la demo, el .env del VPS lleva
+      # ALLOW_DEV_LOGIN=true. (Antes estaba hardcoded a mano en el VPS.)
+      - ALLOW_DEV_LOGIN=${ALLOW_DEV_LOGIN:-false}
     restart: unless-stopped
 
   geo-pipeline:

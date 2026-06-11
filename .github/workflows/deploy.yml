@@ -51,9 +51,13 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ github.sha }}
           # Build args del frontend (los Dockerfiles api/geo los ignoran).
           # VITE_API_URL vacío: el proxy nginx del VPS enruta /api en runtime.
+          # VITE_GOOGLE_CLIENT_ID: client ID PÚBLICO de OAuth (va en el bundle
+          # del front igualmente) → necesario para el login con Google. Se lee
+          # del secret GOOGLE_CLIENT_ID del repo (Settings → Secrets → Actions).
           build-args: |
             VITE_API_URL=
             VITE_SHOW_DEMO=true
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           # Cache entre corridas → builds incrementales rápidos.
           cache-from: type=gha
           cache-to: type=gha,mode=max
