@@ -29,8 +29,15 @@ import { inferCoverLevel, lowCoverNote, cropLabel, isCalibrating, calibrationDay
 // pipeline. Mirrored here so the API doesn't need to load Python.
 // (min_normal per month — falling below this enters the "alert" zone.)
 const SEASONAL_FLOOR: Record<string, number[]> = {
-  // Olivo, citrico, almendro (evergreen)
+  // Citrico (regadío, copa densa, NDVI alto).
   evergreen: [0.32, 0.33, 0.35, 0.38, 0.40, 0.38, 0.35, 0.33, 0.34, 0.34, 0.32, 0.31],
+  // Olivar de secano (11-jun-2026): separado de 'evergreen' porque compartir
+  // floor con el cítrico de regadío marcaba como "por debajo de umbral" un
+  // olivar de secano normal (0.35 en junio). Floors de secano realistas
+  // (árboles dispersos, mucho suelo desnudo, mínimo en sequía estival).
+  // Espejo del rango 'olive' de ParcelDetailPage.tsx (su valor mínimo).
+  // PENDIENTE: sincronizar el mismo floor en feature_extractor.py (detector).
+  olive: [0.22, 0.24, 0.28, 0.30, 0.30, 0.25, 0.22, 0.22, 0.24, 0.28, 0.28, 0.25],
   // Vinedo, frutal, pistacho, almendro caduco
   deciduous: [0.08, 0.08, 0.08, 0.08, 0.38, 0.48, 0.52, 0.50, 0.42, 0.28, 0.12, 0.08],
   // Cereal, leguminosa, remolacha, patata
@@ -41,7 +48,7 @@ const SEASONAL_FLOOR: Record<string, number[]> = {
 };
 
 const CROP_TO_GROUP: Record<string, keyof typeof SEASONAL_FLOOR> = {
-  olivo: 'evergreen',
+  olivo: 'olive',
   citrico: 'evergreen',
   almendro: 'deciduous',
   pistacho: 'deciduous',
