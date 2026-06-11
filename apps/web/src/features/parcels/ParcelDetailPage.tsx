@@ -25,9 +25,23 @@ import { useAuthStore } from '@/features/auth/authStore.js';
 // ── Seasonal baselines per crop group ───────────────────────────────────────
 const SEASONAL_RANGE: Record<string, [number, number][]> = {
   // [min_normal, max_normal] indexed month 0=Jan … 11=Dec
+  // 'evergreen' aquí es cítrico (regadío, copa densa, cobertura alta).
   evergreen: [
     [0.32,0.62],[0.33,0.63],[0.35,0.65],[0.38,0.68],[0.40,0.70],[0.38,0.68],
     [0.35,0.65],[0.33,0.63],[0.34,0.64],[0.34,0.64],[0.32,0.62],[0.31,0.61],
+  ],
+  // 'olive' separado de 'evergreen' (11-jun-2026). El olivar tradicional
+  // de secano —mayoritario en España— tiene NDVI estructuralmente BAJO:
+  // árboles dispersos (marco 8×8 m o más), mucho suelo desnudo entre ellos,
+  // y descenso fuerte en sequía estival. Antes compartía umbral con el
+  // cítrico de regadío (0.38–0.70) y eso marcaba como "riesgo / por debajo"
+  // un olivar de secano perfectamente normal a 0.35 en junio. Rango de
+  // secano realista por mes (más alto en primavera húmeda, mínimo en
+  // verano). Cuando exista campo secano/regadío en Parcel se afina; por
+  // ahora se asume secano (lo común) para NO ser alarmista.
+  olive: [
+    [0.22,0.48],[0.24,0.50],[0.28,0.54],[0.30,0.56],[0.30,0.56],[0.25,0.52],
+    [0.22,0.48],[0.22,0.46],[0.24,0.48],[0.28,0.52],[0.28,0.52],[0.25,0.50],
   ],
   deciduous: [
     [0.08,0.25],[0.08,0.28],[0.10,0.35],[0.18,0.48],[0.38,0.65],[0.48,0.72],
@@ -44,7 +58,7 @@ const SEASONAL_RANGE: Record<string, [number, number][]> = {
 };
 
 const CROP_GROUP: Record<string, keyof typeof SEASONAL_RANGE> = {
-  olivo: 'evergreen', citrico: 'evergreen', almendro: 'deciduous', pistacho: 'deciduous',
+  olivo: 'olive', citrico: 'evergreen', almendro: 'deciduous', pistacho: 'deciduous',
   vinedo: 'deciduous', frutal: 'deciduous',
   cereal: 'winter_annual', leguminosa: 'winter_annual', remolacha: 'winter_annual', patata: 'winter_annual',
   girasol: 'summer_annual', maiz: 'summer_annual', algodon: 'summer_annual', arroz: 'summer_annual',
@@ -80,39 +94,48 @@ function buildSeasonalNote(ndvi: number, cropType: string, month: number): strin
   return '';
 }
 
+/**
+ * Factores ambientales/espaciales a revisar cuando una parcela sale baja.
+ *
+ * Reescrito 11-jun-2026 (CRITICAL_no_inventar). La versión anterior
+ * nombraba patógenos concretos como "causa probable" — verticillium,
+ * repilo, mildiu, roya, fusarium... — basándose SOLO en un NDVI bajo,
+ * sin haber detectado ninguna enfermedad. Eso alarma sin fundamento (y
+ * sobre la finca de un cliente que la está viendo, es inaceptable).
+ *
+ * El sistema observa una señal satelital; NO diagnostica enfermedades.
+ * Aquí solo se nombran factores INFERIBLES del contexto real (estación +
+ * sequía + heterogeneidad espacial calculada) y se cierra invitando a una
+ * inspección en campo, que es exactamente donde un agrónomo —o el dron—
+ * distingue la causa real. Señalamos dónde mirar; no ponemos etiquetas de
+ * patógeno que no hemos visto.
+ */
 function buildCauseNote(ndvi: number, cropType: string, month: number, range: number): string {
-  const group = CROP_GROUP[cropType] ?? 'other';
   const seasonal = getSeasonalRange(cropType, month);
-  const isSeasonallyLow = seasonal ? ndvi < seasonal[0] : ndvi < 0.35;
+  const isSeasonallyLow = seasonal ? ndvi < seasonal[0] : ndvi < 0.30;
   const isHeterogeneous = range > 0.40;
 
   if (!isSeasonallyLow && !isHeterogeneous) return '';
 
   const causes: string[] = [];
 
-  // Crop + season specific causes
-  if (group === 'evergreen') {
-    if (month >= 3 && month <= 5) causes.push('helada tardia (muy frecuente en meseta en marzo-abril)');
-    if (month >= 6 && month <= 9) causes.push('estres hidrico por sequia estival');
-    causes.push('verticillium dahliae (marchitez del olivo)', 'repilo (Spilocaea oleagina)');
-  } else if (group === 'deciduous') {
-    if (month >= 5 && month <= 9) {
-      causes.push('mildiu o oidio', 'estres hidrico', 'cicadela (Scaphoideus titanus en viñedo)');
-    }
-    if (month >= 3 && month <= 5) causes.push('helada en brotacion', 'excoriosis');
-  } else if (group === 'winter_annual') {
-    if (month >= 2 && month <= 5) causes.push('roya amarilla (Puccinia striiformis)', 'sequia primaveral', 'carencia de nitrogeno');
-    if (month >= 6 && month <= 8) causes.push('paraje normal post-cosecha');
-  } else if (group === 'summer_annual') {
-    if (month >= 6 && month <= 9) causes.push('deficiencia hidrica', 'trips o araña roja', 'fusarium');
-  }
-
+  // Factor espacial (calculado, no inferido): la heterogeneidad apunta a
+  // algo localizado, no a un problema generalizado de la finca.
   if (isHeterogeneous) {
-    causes.unshift('distribucion heterogenea — posible causa localizada (zona baja, suelo variable, foco de enfermedad)');
+    causes.push('distribucion heterogenea dentro de la parcela — apunta a una causa localizada (zona baja, suelo variable o foco puntual), no a un problema general de la finca');
   }
 
-  if (causes.length === 0) return '';
-  return `Causas probables: ${causes.slice(0, 3).join('; ')}.`;
+  // Factores ambientales inferibles del calendario y el clima de la zona.
+  // Genéricos y honestos · NO se nombra ningún patógeno concreto.
+  if (isSeasonallyLow) {
+    if (month >= 6 && month <= 9) causes.push('estres hidrico por sequia estival, habitual en secano en esta epoca del año');
+    else if (month >= 3 && month <= 4) causes.push('efecto de una helada tardia, frecuente en interior peninsular en primavera');
+  }
+
+  // Cierre prudente: el sistema señala, el campo confirma.
+  causes.push('conviene una inspeccion en campo para distinguir entre causa hidrica, de suelo o sanitaria');
+
+  return `Factores a revisar: ${causes.slice(0, 3).join('; ')}.`;
 }
 
 const SEVERITY_COLORS = {
@@ -598,6 +621,7 @@ export default function ParcelDetailPage() {
                 showLabel
                 establishmentPhase={parcel.establishmentPhase}
                 calibratingUntil={parcel.calibratingUntil}
+                seasonalNormal={isSeasonallyNormal}
               />
               <div className="flex-1 grid grid-cols-2 gap-y-3">
                 <div>

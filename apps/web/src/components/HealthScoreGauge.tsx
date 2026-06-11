@@ -25,6 +25,17 @@ interface HealthScoreGaugeProps {
    * etiqueta correcta para el día 1 es "Calibrando".
    */
   calibratingUntil?: Date | string | null;
+  /**
+   * El cultivo está dentro de su rango estacional normal para su tipo y
+   * mes (lo calcula ParcelDetailPage con SEASONAL_RANGE). Cuando es true,
+   * el gauge NO etiqueta "Riesgo/Crítico" aunque el NDVI absoluto sea bajo:
+   * un olivar de secano a 0.35 en junio es perfectamente normal, y marcar
+   * "Riesgo" sobre la finca de un cliente es alarmista sin fundamento
+   * (11-jun-2026). Misma filosofía que establishmentPhase: el score
+   * absoluto no es el contexto. Precedencia: calibrating > establishment >
+   * seasonalNormal > score absoluto.
+   */
+  seasonalNormal?: boolean;
 }
 
 function ndviToScore(ndvi: number): number {
@@ -55,22 +66,35 @@ const CALIBRATION_LOOK = {
   label: 'Calibrando',
 };
 
-export default function HealthScoreGauge({ ndvi, size = 120, showLabel = true, establishmentPhase, calibratingUntil }: HealthScoreGaugeProps) {
+// Tono verde-suave para cultivos dentro de su rango estacional normal
+// aunque el NDVI absoluto sea bajo (p.ej. olivar de secano en verano). No
+// es "Saludable" verde fuerte —el valor sí es bajo— pero tampoco "Riesgo":
+// es lo normal para su tipo. Honesto y no alarmista.
+const SEASONAL_OK_LOOK = {
+  stroke: '#84a98c',           // verde-salvia apagado
+  text: 'text-green-700',
+  label: 'Normal',
+};
+
+export default function HealthScoreGauge({ ndvi, size = 120, showLabel = true, establishmentPhase, calibratingUntil, seasonalNormal }: HealthScoreGaugeProps) {
   const score = ndvi !== null && ndvi !== undefined ? ndviToScore(ndvi) : null;
   const cover = inferCoverLevel({ ndvi, establishmentPhase });
   const calibrating = isCalibrating({ calibratingUntil });
   const daysLeft = calibrationDaysLeft({ calibratingUntil });
 
-  // Precedencia: calibrating > establecimiento > score absoluto.
-  // Sin datos → gris "Sin datos". Calibrando → ocre "Calibrando". Cover
-  // low (establecimiento) → gris "En establecimiento". Resto → score normal.
+  // Precedencia: calibrating > establecimiento > seasonalNormal > score
+  // absoluto. Sin datos → gris. Calibrando → ocre. Cover low
+  // (establecimiento) → gris. Estacionalmente normal → verde-suave "Normal".
+  // Resto → score absoluto.
   const colors = score === null
     ? { stroke: '#94a3b8', text: 'text-gray-400', label: 'Sin datos' }
     : calibrating
       ? CALIBRATION_LOOK
       : cover === 'low'
         ? ESTABLISHMENT_LOOK
-        : scoreToColor(score);
+        : seasonalNormal
+          ? SEASONAL_OK_LOOK
+          : scoreToColor(score);
 
   const strokeWidth = size * 0.1;
   const radius = (size - strokeWidth) / 2;
