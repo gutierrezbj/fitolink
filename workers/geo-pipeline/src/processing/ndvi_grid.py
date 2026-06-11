@@ -1,14 +1,24 @@
 """
 NDVI Intra-Parcel Grid — Sprint Intra-Parcela.
 
-Samples the NDVI GeoTIFF at pixel level, projects to UTM, applies RBF
-interpolation, and returns a uniform grid of lat/lng/ndvi points clipped
-to the parcel polygon.
+Samples the NDVI GeoTIFF at pixel level and aggregates it into a uniform
+grid of lat/lng/ndvi cells clipped to the parcel polygon, where each cell
+holds the MEAN of the real pixels that fall inside it (zonal mean / binning).
+
+Why binning and not interpolation (cambio 11-jun-2026):
+- The previous version used a dense RBFInterpolator over every pixel. For a
+  large parcel (Encineño, 407 ha ≈ 40.000 Sentinel-2 px) that builds an
+  n×n matrix (~12 GB) and an O(n^3) solve → it pinned the VPS CPU and the
+  host (Hostinger) flagged the server over its resource limit. The grid
+  silently failed and large parcels were left WITHOUT a heatmap.
+- Binning is O(n): assign each pixel to its cell, average per cell. It scales
+  to parcels of any size without exhausting memory or CPU, and it is more
+  EXACT than interpolation — each cell shows the real mean of its pixels,
+  not a smoothed estimate. No scipy/pyproj dependency needed.
 
 The grid is stored in the `ndvi_snapshots` MongoDB collection and served
 via GET /api/v1/parcels/:id/ndvi-snapshot for the frontend heatmap.
 """
-import io
 import logging
 from datetime import datetime
 from typing import Optional
@@ -16,9 +26,6 @@ from typing import Optional
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-# Half-side of each output cell in degrees (~10m at Spain latitude)
-_CELL_HALF_DEG = 0.000045
 
 
 def extract_pixel_samples(
@@ -78,104 +85,88 @@ def extract_pixel_samples(
     return samples
 
 
-def interpolate_rbf(
+def zonal_grid(
     samples: list[tuple[float, float, float]],
     geometry: dict,
     resolution: int = 20,
 ) -> list[dict]:
     """
-    Interpolate NDVI values on a uniform grid inside the parcel polygon.
+    Aggregate NDVI pixels into a uniform grid by zonal mean (binning).
 
-    Uses scipy RBFInterpolator with thin_plate_spline kernel in UTM
-    coordinates for metric accuracy, then converts output back to WGS84.
+    Builds a resolution×resolution grid over the parcel bbox and assigns
+    each real pixel to its cell, then averages per cell. NO interpolation,
+    NO smoothing: every cell carries the real mean NDVI of its slice of the
+    parcel. Linear O(n) in the number of pixels (NumPy bincount, no Python
+    loop over pixels) so it scales to parcels of any size without exhausting
+    memory or CPU.
 
     Args:
         samples: List of (lat, lng, ndvi) from extract_pixel_samples.
         geometry: GeoJSON Polygon (WGS84) for clipping the grid.
-        resolution: Number of grid cells per axis (default 20 → ~400 points).
+        resolution: Number of grid cells per axis (default 20 → up to 400 cells).
 
     Returns:
-        List of {"lat": float, "lng": float, "ndvi": float} dicts
-        for points that fall inside the polygon.
+        List of {"lat": float, "lng": float, "ndvi": float} dicts — one per
+        cell that has at least one pixel AND whose centre is inside the polygon.
     """
     if len(samples) < 4:
         logger.warning('ndvi_grid_too_few_samples', count=len(samples))
         return []
 
-    # Submuestreo para parcelas grandes (fix 11-jun-2026). RBFInterpolator
-    # con kernel denso es O(n^2) en memoria (matriz n×n) y O(n^3) al
-    # resolver. Una parcela de cientos de hectáreas tiene decenas de miles
-    # de píxeles Sentinel-2 (Encineño 407 ha ≈ 40.000 px → matriz de ~12 GB),
-    # lo que reventaba la interpolación y dejaba la finca SIN grid intra-parcela
-    # (heatmap vacío). No se necesitan tantos puntos para interpolar una rejilla
-    # de ~400 celdas: 2.500 muestras bien distribuidas dan la misma calidad y el
-    # RBF corre en milisegundos. Submuestreo aleatorio con seed fijo para que el
-    # resultado sea reproducible entre corridas del pipeline.
-    MAX_RBF_SAMPLES = 2500
-    if len(samples) > MAX_RBF_SAMPLES:
-        rng = np.random.default_rng(42)
-        idx = rng.choice(len(samples), size=MAX_RBF_SAMPLES, replace=False)
-        samples = [samples[i] for i in idx]
-        logger.info('ndvi_grid_subsampled', kept=MAX_RBF_SAMPLES)
-
     try:
-        from scipy.interpolate import RBFInterpolator
         from shapely.geometry import shape, Point
-        from pyproj import Transformer
     except ImportError as e:
-        raise RuntimeError(f'scipy, shapely and pyproj are required: {e}')
+        raise RuntimeError(f'shapely is required: {e}')
 
     polygon = shape(geometry)
 
-    # Project to UTM zone 30N (EPSG:25830) for metric RBF
-    to_utm = Transformer.from_crs('EPSG:4326', 'EPSG:25830', always_xy=True)
-    to_wgs = Transformer.from_crs('EPSG:25830', 'EPSG:4326', always_xy=True)
-
-    lats = np.array([s[0] for s in samples])
-    lngs = np.array([s[1] for s in samples])
-    ndvis = np.array([s[2] for s in samples])
-
-    # Transform known points to UTM
-    east_known, north_known = to_utm.transform(lngs, lats)
-    xy_known = np.column_stack([east_known, north_known])
-
-    # Build RBF interpolator
-    rbf = RBFInterpolator(xy_known, ndvis, kernel='thin_plate_spline', smoothing=0.1)
-
-    # Generate uniform grid in bbox
     coords = geometry['coordinates'][0]
     min_lng = min(c[0] for c in coords)
     max_lng = max(c[0] for c in coords)
     min_lat = min(c[1] for c in coords)
     max_lat = max(c[1] for c in coords)
 
-    grid_lngs = np.linspace(min_lng, max_lng, resolution)
-    grid_lats = np.linspace(min_lat, max_lat, resolution)
-    mesh_lng, mesh_lat = np.meshgrid(grid_lngs, grid_lats)
-    flat_lngs = mesh_lng.ravel()
-    flat_lats = mesh_lat.ravel()
-
-    # Filter to points inside polygon
-    inside_mask = np.array([
-        polygon.contains(Point(lng, lat))
-        for lng, lat in zip(flat_lngs, flat_lats)
-    ])
-    query_lngs = flat_lngs[inside_mask]
-    query_lats = flat_lats[inside_mask]
-
-    if len(query_lngs) == 0:
+    lng_span = max_lng - min_lng
+    lat_span = max_lat - min_lat
+    if lng_span <= 0 or lat_span <= 0:
         return []
 
-    # Transform query points to UTM and evaluate RBF
-    east_q, north_q = to_utm.transform(query_lngs, query_lats)
-    xy_query = np.column_stack([east_q, north_q])
-    ndvi_interp = rbf(xy_query)
-    ndvi_interp = np.clip(ndvi_interp, -1.0, 1.0)
+    lats = np.array([s[0] for s in samples])
+    lngs = np.array([s[1] for s in samples])
+    ndvis = np.array([s[2] for s in samples])
 
-    return [
-        {'lat': round(float(lat), 6), 'lng': round(float(lng), 6), 'ndvi': round(float(v), 4)}
-        for lat, lng, v in zip(query_lats, query_lngs, ndvi_interp)
-    ]
+    # Asignar cada píxel a su celda (índice fila/col en la rejilla regular).
+    # Vectorizado: O(n) sin bucle Python sobre los píxeles.
+    col = np.clip(((lngs - min_lng) / lng_span * resolution).astype(int), 0, resolution - 1)
+    row = np.clip(((lats - min_lat) / lat_span * resolution).astype(int), 0, resolution - 1)
+    cell_id = row * resolution + col
+
+    n_cells = resolution * resolution
+    sums = np.bincount(cell_id, weights=ndvis, minlength=n_cells)
+    counts = np.bincount(cell_id, minlength=n_cells)
+
+    # Centro geográfico de cada celda de la rejilla.
+    cell_lng = min_lng + (np.arange(resolution) + 0.5) / resolution * lng_span
+    cell_lat = min_lat + (np.arange(resolution) + 0.5) / resolution * lat_span
+
+    out: list[dict] = []
+    for idx in range(n_cells):
+        if counts[idx] == 0:
+            continue  # celda sin píxeles reales → no inventamos dato
+        r = idx // resolution
+        c = idx % resolution
+        lat = float(cell_lat[r])
+        lng = float(cell_lng[c])
+        if not polygon.contains(Point(lng, lat)):
+            continue  # centro de celda fuera del polígono
+        mean_ndvi = float(sums[idx] / counts[idx])
+        out.append({
+            'lat': round(lat, 6),
+            'lng': round(lng, 6),
+            'ndvi': round(mean_ndvi, 4),
+        })
+
+    return out
 
 
 def build_grid_snapshot(
@@ -186,7 +177,7 @@ def build_grid_snapshot(
     resolution: int = 20,
 ) -> Optional[dict]:
     """
-    Full pipeline: sample pixels → RBF interpolation → snapshot document.
+    Full pipeline: sample pixels → zonal-mean grid → snapshot document.
 
     Args:
         geotiff_bytes: Raw GeoTIFF bytes (NDVI band).
@@ -215,7 +206,7 @@ def build_grid_snapshot(
             logger.info('ndvi_grid_skipped_no_samples', parcel_id=parcel_id)
             return None
 
-        points = interpolate_rbf(samples, geometry, resolution=resolution)
+        points = zonal_grid(samples, geometry, resolution=resolution)
         if not points:
             logger.info('ndvi_grid_skipped_empty_grid', parcel_id=parcel_id)
             return None
