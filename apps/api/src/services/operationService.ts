@@ -55,11 +55,14 @@ export async function createOperation(farmerId: string, data: CreateOperation): 
 }
 
 export async function getOperationsByFarmer(farmerId: string): Promise<IOperation[]> {
+  // Read-only listing → .lean() returns plain objects (no Mongoose hydration),
+  // lighter to serialize to the frontend. The populated refs keep their _id.
   return Operation.find({ farmerId })
     .sort({ createdAt: -1 })
     .populate('parcelId', 'name cropType province')
     .populate('pilotId', 'name email rating')
-    .populate('alertId', 'type severity ndviValue');
+    .populate('alertId', 'type severity ndviValue')
+    .lean<IOperation[]>();
 }
 
 export async function getOperationsByPilot(pilotId: string): Promise<IOperation[]> {
@@ -67,15 +70,19 @@ export async function getOperationsByPilot(pilotId: string): Promise<IOperation[
     .sort({ createdAt: -1 })
     .populate('parcelId', 'name cropType province areaHa')
     .populate('farmerId', 'name email phone')
-    .populate('alertId', 'severity ndviValue ndviDelta');
+    .populate('alertId', 'severity ndviValue ndviDelta')
+    .lean<IOperation[]>();
 }
 
 export async function getOperationById(operationId: string, userId: string): Promise<IOperation> {
+  // Read-only detail view → .lean(). The ownership check below reads
+  // farmerId._id / pilotId._id which stay as ObjectId on the lean object.
   const operation = await Operation.findById(operationId)
     .populate('parcelId', 'name cropType province areaHa geometry')
     .populate('farmerId', 'name email phone')
     .populate('pilotId', 'name email phone rating')
-    .populate('alertId', 'type severity ndviValue ndviDelta');
+    .populate('alertId', 'type severity ndviValue ndviDelta')
+    .lean<IOperation>();
 
   if (!operation) throw AppError.notFound('Operacion');
 

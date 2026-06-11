@@ -79,5 +79,10 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ location: '2dsphere' });
 userSchema.index({ role: 1, isVerified: 1 });
+// Aggregator dashboards (cooperative/adv/regantes) query members by
+// cooperativeId on every overview/report/parcel-access check. Without this
+// index those are full collection scans. Compound with role so the common
+// "members of this cooperative that are farmers" filter is fully indexed.
+userSchema.index({ cooperativeId: 1, role: 1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

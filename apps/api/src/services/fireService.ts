@@ -165,7 +165,15 @@ export async function fetchActiveFiresNearGeometry(
   for (const source of SOURCES) {
     const url = `${FIRMS_BASE}/${env.FIRMS_MAP_KEY}/${source}/${bboxStr}/${daysClamped}`;
     try {
-      const res = await fetch(url, { headers: { Accept: 'text/csv' } });
+      // Timeout 6s: NASA FIRMS ocasionalmente se cuelga. Sin AbortSignal el
+      // endpoint /parcels/:id/fires (y el digest matutino) quedan esperando
+      // indefinidamente y la card § FOCOS TÉRMICOS no carga. 6s es holgado
+      // para una respuesta CSV pequeña; si NASA tarda más, seguimos sin focos
+      // (la ausencia de focos no es bloqueante para el resto del dashboard).
+      const res = await fetch(url, {
+        headers: { Accept: 'text/csv' },
+        signal: AbortSignal.timeout(6000),
+      });
       if (!res.ok) {
         // 05-jun-2026: capturamos también el body del 400 — antes solo el
         // status sin context. NASA devuelve mensajes legibles tipo
