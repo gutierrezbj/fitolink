@@ -102,6 +102,22 @@ def interpolate_rbf(
         logger.warning('ndvi_grid_too_few_samples', count=len(samples))
         return []
 
+    # Submuestreo para parcelas grandes (fix 11-jun-2026). RBFInterpolator
+    # con kernel denso es O(n^2) en memoria (matriz n×n) y O(n^3) al
+    # resolver. Una parcela de cientos de hectáreas tiene decenas de miles
+    # de píxeles Sentinel-2 (Encineño 407 ha ≈ 40.000 px → matriz de ~12 GB),
+    # lo que reventaba la interpolación y dejaba la finca SIN grid intra-parcela
+    # (heatmap vacío). No se necesitan tantos puntos para interpolar una rejilla
+    # de ~400 celdas: 2.500 muestras bien distribuidas dan la misma calidad y el
+    # RBF corre en milisegundos. Submuestreo aleatorio con seed fijo para que el
+    # resultado sea reproducible entre corridas del pipeline.
+    MAX_RBF_SAMPLES = 2500
+    if len(samples) > MAX_RBF_SAMPLES:
+        rng = np.random.default_rng(42)
+        idx = rng.choice(len(samples), size=MAX_RBF_SAMPLES, replace=False)
+        samples = [samples[i] for i in idx]
+        logger.info('ndvi_grid_subsampled', kept=MAX_RBF_SAMPLES)
+
     try:
         from scipy.interpolate import RBFInterpolator
         from shapely.geometry import shape, Point
