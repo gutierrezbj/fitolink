@@ -34,6 +34,12 @@ AgroM (SystemRapid SL) detecta anomalías de cultivo por satélite + IA y activa
 - **(b) Demo en 30s:** no es una pantalla, es el cierre narrativo. Tras enseñar la señal satelital y el aviso oficial → *"el satélite sospecha, el dron lo confirma en finca, y si hay que actuar, se actúa con parte firmado y archivado un año."*
 - **(c) Frase de JuanCho (verbatim):** *"Los grandes venden imágenes. Nosotros vendemos el canal completo: de la señal al campo. Esa es la diferencia, y es la única columna donde nadie compite."*
 
+### Carta 4 · El momento óptimo de cosecha — el gancho de futuro (petición explícita del fondo)
+- **(a) Contexto:** Jorge avisó por WhatsApp (11-jun): *"Recuerda que están especialmente interesados en algo que les ayude a identificar el momento óptimo de cosecha. Si consigues algo que nos pueda ayudar ahí, mejor!"*. Es su dolor real y la señal de compra más fuerte que han dado.
+- **(b) Postura HONESTA (CRITICAL_no_inventar):** FitoLink NO tiene hoy un índice de cosecha — y NO se finge. Lo correcto: NO es una feature que falta, es la **evolución natural** del seguimiento temporal que el motor YA hace. Además estamos en junio: el olivar está en endurecimiento de hueso, la cosecha es en otoño (oct-ene). No hay nada que cosechar todavía.
+- **(c) Frase de JuanCho (verbatim) — no improvisar:** *"El sistema ya sigue vuestra finca campaña a campaña. La ventana óptima de cosecha es la evolución natural de ese seguimiento: cuando el olivar entre en envero en octubre, la curva del satélite más la acumulación térmica os la van marcando. Hoy os enseño el motor funcionando y siguiendo vuestro cultivo en el tiempo; la recomendación de cosecha crece con vosotros esta misma campaña."*
+- **(d) Por qué gana:** convierte una petición que NO tenemos resuelta en el gancho perfecto de la 2ª reunión, sin mentir una palabra. La herramienta se desarrolla con el tiempo y sigue el cultivo — ese es el producto, no un parche.
+
 ---
 
 ## 3 · GUION DE DEMO ENCINEÑO (5-7 min cronometrado)
