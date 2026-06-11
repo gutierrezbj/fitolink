@@ -5,6 +5,7 @@ import TermsPage from '@/pages/TermsPage.js';
 import PrivacyPage from '@/pages/PrivacyPage.js';
 import PricingPage from '@/pages/PricingPage.js';
 import SigpacViewerPage from '@/pages/SigpacViewerPage.js';
+import AvisosPage from '@/pages/AvisosPage.js';
 import LoginPage from '@/features/auth/LoginPage.js';
 import RegisterPage from '@/features/auth/RegisterPage.js';
 import DashboardLayout from '@/layouts/DashboardLayout.js';
@@ -44,6 +45,8 @@ export default function App() {
           la parcela. /sigpac sin params muestra formulario vacío. */}
       <Route path="/sigpac" element={<SigpacViewerPage />} />
       <Route path="/sigpac/:prov/:muni/:agre/:zona/:poligono/:parcela/:recinto" element={<SigpacViewerPage />} />
+      {/* Tablón de avisos fitosanitarios oficiales · 2º lead magnet · 11-jun-2026 */}
+      <Route path="/avisos" element={<AvisosPage />} />
 
       {/* Protected Dashboard */}
       <Route

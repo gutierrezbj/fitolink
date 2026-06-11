@@ -92,4 +92,6 @@ export const PROVINCES = [
   'Lleida', 'Tarragona',
   'Murcia',
   'Valencia', 'Alicante', 'Castellon',
+  // Castilla y León (fuente ITACYL · añadida 11-jun-2026)
+  'Avila', 'Burgos', 'Leon', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora',
 ] as const;

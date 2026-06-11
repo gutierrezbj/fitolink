@@ -1,7 +1,34 @@
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import * as pestService from '../services/pestAdvisoryService.js';
 import * as parcelService from '../services/parcelService.js';
+
+/**
+ * Público (SIN auth): tablón de avisos fitosanitarios para la página /avisos
+ * (lead magnet — "FitoLink agrega los boletines oficiales de plagas de
+ * España"). Devuelve los avisos activos vigentes con campos públicos; NO
+ * expone internos (fingerprint, createdBy). 11-jun-2026.
+ */
+export async function publicList(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const advisories = await pestService.listAdvisories({ activeOnly: true });
+    const data = advisories.map((a) => ({
+      id: String(a._id),
+      pestName: a.pestName,
+      cropTypes: a.cropTypes,
+      severity: a.severity,
+      source: a.source,
+      sourceRef: a.sourceRef,
+      sourceUrl: a.sourceUrl,
+      regions: (a.affectedAreas ?? []).map((z) => z.comarca ?? z.province).filter(Boolean),
+      detectedAt: a.detectedAt,
+      notes: a.notes,
+    }));
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
 
 /**
  * Admin: create a new advisory (curated from RAIF / MAPA / SAIF bulletin).
