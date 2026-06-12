@@ -110,7 +110,7 @@ export default function AvisosPage() {
           </Link>
           <Link
             to="/login"
-            className="text-xs font-medium text-brand-700 hover:text-brand-900 transition-colors"
+            className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-colors"
           >
             Acceder
           </Link>
