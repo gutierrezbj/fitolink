@@ -9,6 +9,7 @@ Corre en **local / Mac mini**, NUNCA en el VPS (el VPS solo sirve).
 ## Qué hay
 - `encineno.geojson` — el polígono real de la finca (70 vértices, extraído del seed).
 - `ingest_sentinel.py` — **Paso 1**: baja la serie temporal Sentinel-2 (NDVI/NDRE/NDMI) vía Microsoft Planetary Computer, a 10 m, recortada al polígono, con máscara de nubes → CSV.
+- `analyze.py` — **Paso 2-3**: lee la serie y deriva **features por campaña** (pico de NDVI y su día, integral, amplitud, y la **pendiente de NDRE en otoño = proxy del envero**) + gráfico de la curva plurianual. Lógica verificada con datos sintéticos (capta fenología + envero correctamente).
 - `requirements.txt` — dependencias.
 
 ## Cómo arrancar
@@ -24,8 +25,7 @@ Sale un CSV con una fila por escena: `date, ndvi, ndre, ndmi, valid_px`. Esa es 
 ## Plan de pasos (cada uno entra cuando el anterior funciona)
 - [x] **Paso 0** — geometría real de Encineño en el sandbox.
 - [ ] **Paso 1** — ingesta Sentinel-2 (serie NDVI/NDRE/NDMI). *Script listo, a correr en local.*
-- [ ] **Paso 2** — features: GDD (acumulación térmica), agregados por campaña, curva de envero (pendiente de NDRE en otoño), variabilidad por zona.
-- [ ] **Paso 3** — EDA + visualización: la curva plurianual, la fenología, las zonas que rinden distinto (del heatmap).
+- [x] **Paso 2-3** — `analyze.py`: features por campaña (pico, integral, **pendiente de NDRE en otoño = envero**) + gráfico de la serie. Lógica verificada con sintéticos. *(Sub-pasos siguientes: GDD con ERA5, y variabilidad por zona desde el grid del heatmap.)*
 - [ ] **Paso 4** — *cuando llegue el TARGET del fondo* (kg/campaña): correlación señal ↔ rendimiento → primer modelo de yield + backtesting.
 - [ ] **Paso 5** — vuelos de dron (censo de árboles + NDVI por copa + fruto) como ground-truth de alta resolución.
 
