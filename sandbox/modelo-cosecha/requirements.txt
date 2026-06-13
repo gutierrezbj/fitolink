@@ -1,0 +1,10 @@
+# Sandbox modelo de cosecha · ingesta + análisis (correr en local / Mac mini)
+pystac-client>=0.8
+planetary-computer>=1.0
+odc-stac>=0.3
+rioxarray>=0.15
+rasterio>=1.3
+shapely>=2.0
+numpy>=1.26
+pandas>=2.0
+matplotlib>=3.8
