@@ -32,7 +32,7 @@ services:
       - NODE_ENV=production
       - PORT=4040
       - MONGODB_URI=${MONGODB_URI:?MONGODB_URI no definido en el .env del VPS}
-      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET no definido en el .env del VPS — genera uno con: openssl rand -base64 32}
+      - JWT_SECRET=${JWT_SECRET:?Falta JWT_SECRET en el .env del VPS (genera uno con openssl rand -base64 32)}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
