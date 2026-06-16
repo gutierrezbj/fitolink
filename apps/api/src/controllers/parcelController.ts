@@ -75,7 +75,11 @@ export async function remove(req: AuthRequest, res: Response, next: NextFunction
 
 export async function getNdviHistory(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const history = await parcelService.getNdviHistory(req.params.id as string, req.user!._id.toString());
+    const history = await parcelService.getNdviHistory(
+      req.params.id as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
     res.json({ success: true, data: history });
   } catch (error) {
     next(error);

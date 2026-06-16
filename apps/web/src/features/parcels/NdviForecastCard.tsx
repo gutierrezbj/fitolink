@@ -65,7 +65,7 @@ const CONFIDENCE_LABEL: Record<Confidence, string> = {
 };
 
 export default function NdviForecastCard({ parcelId, calibratingUntil, ndviReadingsCount }: Props) {
-  const { data, isLoading } = useQuery<NdviForecast>({
+  const { data, isLoading, error } = useQuery<NdviForecast>({
     queryKey: ['ndvi-forecast', parcelId],
     queryFn: async () => {
       const res = await api.get(`/parcels/${parcelId}/insights/ndvi-forecast`);
@@ -112,6 +112,12 @@ export default function NdviForecastCard({ parcelId, calibratingUntil, ndviReadi
       </div>
     );
   }
+
+  // En fallo de API no dejamos la card colgada en "Cargando proyección…"
+  // indefinidamente. La proyección es accesoria (la morning digest también
+  // salta las parcelas sin datos), así que ocultamos la card en error en
+  // lugar de meter ruido — coherente con el "no muestra nada" de n<3.
+  if (error) return null;
 
   if (isLoading || !data) {
     return (

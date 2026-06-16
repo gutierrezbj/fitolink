@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { OPERATION_STATUSES, type OperationStatus } from '@fitolink/shared';
 import { User } from '../models/User.js';
 import { Parcel } from '../models/Parcel.js';
 import { Alert } from '../models/Alert.js';
@@ -5,6 +7,7 @@ import { Operation } from '../models/Operation.js';
 import { Lead } from '../models/Lead.js';
 import { Provider } from '../models/Provider.js';
 import { NdviSnapshot } from '../models/NdviSnapshot.js';
+import { AppError } from '../utils/AppError.js';
 
 /**
  * Admin platform KPIs.
@@ -301,4 +304,122 @@ export async function getAlertTimeline(weeks = 8): Promise<AlertTimelineResponse
   const buckets = [...bucketMap.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 
   return { weeks, buckets, bySeverity, byType, topParcels };
+}
+
+// ── Gestión de usuarios / operaciones (admin) ──────────────────────────
+
+/**
+ * Listado de usuarios para el panel admin.
+ *
+ * PII mínima: se devuelven SOLO los campos que el dashboard renderiza
+ * (AdminUsersPage). Se excluyen deliberadamente `phone` y `location`
+ * (datos personales que la UI no pinta) además de `googleId`. Si el panel
+ * llega a necesitar más campos, ampliar esta lista de forma explícita.
+ */
+const ADMIN_USER_FIELDS =
+  'name email role isVerified company rating ratingCount certifications equipment createdAt';
+
+export async function listUsers() {
+  return User.find({})
+    .select(ADMIN_USER_FIELDS)
+    .sort({ createdAt: -1 })
+    .lean();
+}
+
+/**
+ * Asignación manual de piloto a una operación.
+ *
+ * Valida que el id de operación y el de piloto sean ObjectId reales
+ * (Mongoose 8 NO lanza ante un id inválido — silenciosamente no encuentra
+ * o, peor, corrompe el doc) y que el piloto exista de verdad con rol
+ * 'pilot'. Cualquier entrada inválida → AppError.badRequest (400), nunca
+ * un 500 sin capturar.
+ */
+export async function assignPilot(operationId: string, pilotId: unknown) {
+  if (!mongoose.isValidObjectId(operationId)) {
+    throw AppError.badRequest('id de operacion invalido');
+  }
+  if (typeof pilotId !== 'string' || !mongoose.isValidObjectId(pilotId)) {
+    throw AppError.badRequest('pilotId invalido');
+  }
+
+  // El piloto debe existir y tener rol 'pilot' antes de asignar.
+  const pilot = await User.findOne({ _id: pilotId, role: 'pilot' }).select('_id').lean();
+  if (!pilot) {
+    throw AppError.badRequest('Piloto no encontrado o el usuario no es piloto');
+  }
+
+  const op = await Operation.findByIdAndUpdate(
+    operationId,
+    { pilotId, status: 'assigned' },
+    { new: true },
+  )
+    .populate('parcelId', 'name cropType province areaHa')
+    .populate('farmerId', 'name email phone')
+    .populate('pilotId', 'name email phone rating')
+    .populate('alertId', 'type severity ndviValue ndviDelta');
+
+  if (!op) {
+    throw AppError.notFound('Operacion');
+  }
+  return op;
+}
+
+/**
+ * Override de estado de una operación por parte del admin.
+ *
+ * Valida el ObjectId de la operación y que el estado pertenezca al enum
+ * canónico (OPERATION_STATUSES en @fitolink/shared). Estado o id inválido
+ * → 400, nunca 500.
+ */
+export async function updateOperationStatus(operationId: string, status: unknown) {
+  if (!mongoose.isValidObjectId(operationId)) {
+    throw AppError.badRequest('id de operacion invalido');
+  }
+  if (typeof status !== 'string' || !OPERATION_STATUSES.includes(status as OperationStatus)) {
+    throw AppError.badRequest(
+      `status invalido (esperado: ${OPERATION_STATUSES.join(', ')})`,
+    );
+  }
+
+  const op = await Operation.findByIdAndUpdate(
+    operationId,
+    { status },
+    { new: true },
+  ).lean();
+
+  if (!op) {
+    throw AppError.notFound('Operacion');
+  }
+  return op;
+}
+
+/**
+ * Listado de operaciones para el dispatcher admin, con el contexto
+ * completo poblado. Filtro opcional por estado (validado contra el enum;
+ * un estado desconocido devuelve lista vacía en lugar de 500).
+ */
+export async function listOperations(status?: unknown) {
+  const filter: Record<string, unknown> = {};
+  if (typeof status === 'string' && OPERATION_STATUSES.includes(status as OperationStatus)) {
+    filter.status = status;
+  }
+
+  return Operation.find(filter)
+    .populate('parcelId', 'name cropType province areaHa sigpacRef geometry')
+    .populate('farmerId', 'name email phone')
+    .populate('pilotId', 'name email phone rating')
+    .populate('alertId', 'type severity ndviValue ndviDelta aiConfidence')
+    .sort({ createdAt: -1 })
+    .lean();
+}
+
+/**
+ * Pilotos verificados disponibles para asignación manual.
+ */
+export async function listVerifiedPilots() {
+  return User.find({ role: 'pilot', isVerified: true })
+    .select('name email phone rating ratingCount operationalRadiusKm certifications equipment location')
+    .sort({ rating: -1 })
+    .lean();
 }

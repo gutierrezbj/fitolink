@@ -211,8 +211,14 @@ export async function getInsuredParcels(insurerId: string): Promise<IParcel[]> {
     .populate('ownerId', 'name email phone');
 }
 
-export async function getNdviHistory(parcelId: string, userId: string) {
-  const parcel = await Parcel.findById(parcelId);
-  if (!parcel) throw AppError.notFound('Parcela');
+export async function getNdviHistory(
+  parcelId: string,
+  userId: string,
+  options: { allowAdminRead?: boolean; userRole?: string } = {},
+) {
+  // Fail closed: misma lógica de propiedad/rol que el detalle de la parcela.
+  // Antes el userId entraba pero NO se usaba → cualquier autenticado leía el
+  // histórico NDVI de cualquier parcela.
+  const parcel = await getParcelById(parcelId, userId, options);
   return parcel.ndviHistory;
 }

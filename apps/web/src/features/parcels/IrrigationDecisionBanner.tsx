@@ -91,7 +91,30 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
   }
 
   if (error || !data) {
-    return null; // silencioso · si falla, no mostramos nada (no rompemos detalle)
+    // Decisión de riego = decisión crítica de reparto de agua para
+    // regantes/cooperativa/ADV. Si el cálculo falla, el silencio es
+    // peligroso: el gerente asume "no aplica riego" cuando en realidad
+    // NO se pudo calcular. Mostramos una tarjeta de error VISIBLE que
+    // deja claro que falló el cálculo — sin sugerir ninguna conclusión
+    // de riego (no inventar). Patrón de error tomado de WeatherWidget.
+    return (
+      <div className="bg-white border-2 border-red-200 rounded-xl p-5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-red-700">
+          § DECISIÓN DE RIEGO {ownerName ? `· ${ownerName.toUpperCase()}` : ''}
+        </p>
+        <h2 className="font-display text-base text-brand-900 leading-tight mt-1.5">
+          No se pudo calcular la decisión de riego de esta parcela.
+        </h2>
+        <p className="text-sm text-brand-900 leading-relaxed mt-2">
+          El cálculo de cupo y déficit hídrico no está disponible ahora mismo.
+          Esto <span className="font-semibold">no significa que no se requiera riego</span> —
+          vuelva a intentarlo en unos minutos o revise la parcela manualmente.
+        </p>
+        {error instanceof Error && error.message && (
+          <p className="text-[10px] text-gray-400 mt-3 leading-snug">{error.message}</p>
+        )}
+      </div>
+    );
   }
 
   const style = URGENCY_STYLES[data.urgency];

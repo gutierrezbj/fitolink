@@ -1037,8 +1037,11 @@ export interface DemoRequestPayload {
   message?: string;
 }
 
-const DEMO_REQUEST_TO = 'gutierrezbj@gmail.com';
-const DEMO_REQUEST_CC = 'johnj@agrom.es';
+// PII fuera del código (el repo puede ser público). Los destinatarios del
+// aviso de lead se inyectan por variables de entorno; los fallbacks NO
+// contienen PII real. Si DEMO_REQUEST_CC queda vacío, simplemente no hay CC.
+const DEMO_REQUEST_TO = process.env.DEMO_REQUEST_TO || 'demo@example.com';
+const DEMO_REQUEST_CC = process.env.DEMO_REQUEST_CC || '';
 
 /**
  * Notifica al equipo comercial (JuanCho + Jonh) que ha llegado un lead.
@@ -1051,15 +1054,17 @@ export async function sendDemoRequestEmail(payload: DemoRequestPayload): Promise
   const text = renderDemoRequestText(payload);
   const html = renderDemoRequestHtml(payload);
 
+  const cc = DEMO_REQUEST_CC || undefined;
+
   if (!isLive || !transporter) {
-    logger.info({ mode: 'dry-run', to: DEMO_REQUEST_TO, cc: DEMO_REQUEST_CC, subject, payload }, 'Demo-request email would be sent');
+    logger.info({ mode: 'dry-run', to: DEMO_REQUEST_TO, cc, subject, payload }, 'Demo-request email would be sent');
     return;
   }
   try {
     const info = await transporter.sendMail({
       from: env.SMTP_FROM,
       to: DEMO_REQUEST_TO,
-      cc: DEMO_REQUEST_CC,
+      cc,
       replyTo: payload.email, // que un click en "Responder" caiga sobre el prospect directamente
       subject,
       html,

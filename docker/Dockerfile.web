@@ -14,9 +14,11 @@ COPY apps/web/ ./apps/web/
 RUN npm run build --workspace=packages/shared
 
 ARG VITE_API_URL=
-ARG VITE_SHOW_DEMO=true
+ARG VITE_SHOW_DEMO=false
+ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SHOW_DEMO=$VITE_SHOW_DEMO
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 RUN npm run build --workspace=apps/web
 

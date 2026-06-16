@@ -16,6 +16,7 @@ import FireProximityCard from './FireProximityCard.js';
 import NdviForecastCard from './NdviForecastCard.js';
 import WeatherEventsCard from './WeatherEventsCard.js';
 import PestAdvisoriesCard from './PestAdvisoriesCard.js';
+import HarvestModelPocCard from './HarvestModelPocCard.js';
 import WeatherWidget from '@/features/weather/WeatherWidget.js';
 import { polygonCentroid } from '@/features/marketplace/distance.js';
 import { useNdviSnapshot } from './useNdviSnapshot.js';
@@ -314,7 +315,7 @@ export default function ParcelDetailPage() {
     enabled: !!id,
   });
 
-  const { data: alertsData, isLoading: loadingAlerts } = useQuery<Alert[]>({
+  const { data: alertsData, isLoading: loadingAlerts, error: errorAlerts } = useQuery<Alert[]>({
     queryKey: ['alerts', 'parcel', id],
     queryFn: async () => {
       const res = await api.get(`/alerts/parcel/${id}`);
@@ -741,13 +742,18 @@ export default function ParcelDetailPage() {
           <span className="text-xs text-gray-400">Sentinel-2 · cada 5 dias</span>
         </div>
         {parcel.ndviHistory?.length > 0 ? (
-          <NdviChart data={parcel.ndviHistory} height={220} />
+          <NdviChart data={parcel.ndviHistory} height={220} cropType={parcel.cropType} />
         ) : (
           <div className="h-32 flex items-center justify-center text-gray-400 text-sm">
             Sin datos NDVI disponibles aun
           </div>
         )}
       </div>
+
+      {/* Modelo de cosecha POC (olivar) — el muneco del fondo */}
+      {parcel.cropType === 'olivo' && (
+        <HarvestModelPocCard ndviHistory={parcel.ndviHistory ?? []} />
+      )}
 
       {/* Ola 1.5 · Pieza 1 — NDVI trend forecast (the morning-digest preview) */}
       <div className="mb-4">
@@ -812,8 +818,35 @@ export default function ParcelDetailPage() {
         <FireProximityCard parcelId={parcel._id} />
       </div>
 
+      {/* Alerts — loading skeleton.
+          Antes 'loadingAlerts' se capturaba pero no se usaba: durante la
+          carga (o si fallaba) la sección quedaba vacía y parecía "sin
+          alertas". Mostramos un skeleton replicando el patrón de
+          'loadingParcel' para dar feedback de que aún se está cargando. */}
+      {loadingAlerts && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="h-5 w-40 bg-gray-200 rounded mb-4 animate-pulse" />
+          <div className="space-y-3 animate-pulse">
+            {[...Array(2)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
+          </div>
+        </div>
+      )}
+
+      {/* Alerts — error visible.
+          Si la consulta de alertas falla, no dejamos la sección en blanco
+          (parecería "sin alertas" cuando en realidad no se pudieron cargar).
+          Mensaje honesto sin afirmar que no hay alertas. */}
+      {!loadingAlerts && errorAlerts && (
+        <div className="bg-white rounded-xl border border-red-200 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Historial de Alertas</h2>
+          <p className="text-sm text-gray-500">
+            No se pudieron cargar las alertas de esta parcela. Vuelve a intentarlo en unos minutos.
+          </p>
+        </div>
+      )}
+
       {/* Alerts */}
-      {alerts.length > 0 && (
+      {!loadingAlerts && !errorAlerts && alerts.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">
             Historial de Alertas

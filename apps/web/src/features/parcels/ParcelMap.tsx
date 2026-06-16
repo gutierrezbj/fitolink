@@ -3,6 +3,7 @@ import type React from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
+import { ndviColor, ndviHealthLabel, ndviLowForCrop } from '@/lib/cropHealth.js';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -61,23 +62,19 @@ function hasAlertOnParcel(parcel: Parcel): boolean {
   if (parcel.hasActiveAlert !== undefined) return parcel.hasActiveAlert;
   const last = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
   if (!last) return false;
-  return last.anomalyDetected || last.mean < 0.3;
+  // Alerta solo si está bajo PARA SU CULTIVO (olivar de secano vive en 0.2–0.4).
+  return last.anomalyDetected || ndviLowForCrop(last.mean, parcel.cropType);
 }
 
 function getParcelColor(parcel: Parcel): string {
   const v = getLatestNdvi(parcel);
   if (v === null) return '#94a3b8';
-  if (hasAlertOnParcel(parcel) || v < 0.30) return '#ef4444';
-  if (v < 0.40) return '#f97316';
-  if (v < 0.55) return '#eab308';
-  return '#22c55e';
+  if (hasAlertOnParcel(parcel)) return '#ef4444';
+  return ndviColor(v, parcel.cropType);
 }
 
-function getHealthLabel(ndvi: number): string {
-  if (ndvi >= 0.55) return 'Saludable';
-  if (ndvi >= 0.40) return 'Atencion';
-  if (ndvi >= 0.30) return 'Riesgo';
-  return 'Critico';
+function getHealthLabel(ndvi: number, cropType?: string): string {
+  return ndviHealthLabel(ndvi, cropType);
 }
 
 function getPolygonCenter(geometry: GeoJSON.Polygon): [number, number] {
@@ -152,22 +149,39 @@ function FitAllButton({ parcels }: { parcels: Parcel[] }) {
   return null;
 }
 
-function NdviLegend() {
+// Leyenda NDVI. Consciente del cultivo: para olivar de secano usa la escala
+// real (0.2–0.4 es lo normal), no la genérica de cultivo denso — coherente
+// con getParcelColor/cropHealth. Evita la contradicción "verde en el mapa,
+// pero la leyenda dice Muy baja".
+function NdviLegend({ cropType }: { cropType?: string }) {
   const map = useMap();
   useEffect(() => {
+    const isOlive = cropType === 'olivo';
+    const title = isOlive ? 'NDVI · SECANO' : 'NDVI';
+    const rows: Array<[string, string]> = isOlive
+      ? [
+          ['#22c55e', '≥ 0.22 &nbsp;Normal'],
+          ['#eab308', '0.15–0.22 &nbsp;Atención'],
+          ['#f97316', '0.09–0.15 &nbsp;Bajo'],
+          ['#ef4444', '&lt; 0.09 &nbsp;Crítico'],
+        ]
+      : [
+          ['#ef4444', '&lt; 0.15 &nbsp;Sin vegetación'],
+          ['#f97316', '0.15–0.25 &nbsp;Muy baja'],
+          ['#eab308', '0.25–0.35 &nbsp;Estrés'],
+          ['#84cc16', '0.35–0.45 &nbsp;Aceptable'],
+          ['#22c55e', '0.45–0.55 &nbsp;Bueno'],
+          ['#16a34a', '&gt; 0.55 &nbsp;&nbsp;&nbsp;&nbsp;Óptimo'],
+        ];
     const LegendControl = L.Control.extend({
       onAdd() {
         const div = L.DomUtil.create('div');
         div.style.cssText = 'background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.12);padding:7px 9px;border-radius:8px;font-size:10px;line-height:1.7;box-shadow:0 1px 4px rgba(0,0,0,0.12);backdrop-filter:blur(4px);';
-        div.innerHTML = `
-          <div style="font-weight:700;color:#354b23;margin-bottom:4px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase">NDVI</div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#ef4444;flex-shrink:0"></div><span style="color:#374151">&lt; 0.15 &nbsp;Sin vegetación</span></div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#f97316;flex-shrink:0"></div><span style="color:#374151">0.15–0.25 &nbsp;Muy baja</span></div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#eab308;flex-shrink:0"></div><span style="color:#374151">0.25–0.35 &nbsp;Estrés</span></div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#84cc16;flex-shrink:0"></div><span style="color:#374151">0.35–0.45 &nbsp;Aceptable</span></div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#22c55e;flex-shrink:0"></div><span style="color:#374151">0.45–0.55 &nbsp;Bueno</span></div>
-          <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#16a34a;flex-shrink:0"></div><span style="color:#374151">&gt; 0.55 &nbsp;&nbsp;&nbsp;&nbsp;Óptimo</span></div>
-        `;
+        div.innerHTML =
+          `<div style="font-weight:700;color:#354b23;margin-bottom:4px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase">${title}</div>` +
+          rows
+            .map(([c, t]) => `<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div><span style="color:#374151">${t}</span></div>`)
+            .join('');
         L.DomEvent.disableClickPropagation(div);
         return div;
       },
@@ -175,7 +189,7 @@ function NdviLegend() {
     const control = new LegendControl({ position: 'bottomright' });
     control.addTo(map);
     return () => { control.remove(); };
-  }, [map]);
+  }, [map, cropType]);
   return null;
 }
 
@@ -227,7 +241,7 @@ function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
           <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></div>
           <div>
             <div style="font-size:13px;font-weight:700;color:${color}">${latest.mean.toFixed(3)}</div>
-            <div style="font-size:10px;color:#9ca3af">${getHealthLabel(latest.mean)}</div>
+            <div style="font-size:10px;color:#9ca3af">${getHealthLabel(latest.mean, parcel.cropType)}</div>
           </div>
         </div>
       ` : '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Sin datos NDVI</div>'}
@@ -306,7 +320,15 @@ export default function ParcelMap({
       <FitBounds parcels={parcels} />
       <FitAllButton parcels={parcels} />
       <FlyToParcel parcel={focusParcel} />
-      {showLegend && <NdviLegend />}
+      {showLegend && (
+        <NdviLegend
+          cropType={
+            parcels.length > 0 && parcels.every((p) => p.cropType === parcels[0].cropType)
+              ? parcels[0].cropType
+              : undefined
+          }
+        />
+      )}
 
       {parcels.map((parcel) => (
         <ParcelLayer

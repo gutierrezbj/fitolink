@@ -1,0 +1,10 @@
+{
+  "parcel": "encineno",
+  "flightDate": "2026-06-13",
+  "treeCount": 84923,
+  "treesPerHa": 208.7,
+  "loadIndexMean": 0.5305,
+  "pctLowLoadTrees": 0.25,
+  "crownNdviMean": 0.4602,
+  "crownAreaMeanM2": 15.2
+}

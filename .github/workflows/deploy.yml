@@ -11,7 +11,43 @@ on:
   workflow_dispatch: {}   # permite lanzarlo a mano desde la pestaña Actions
 
 jobs:
+  # Valida ANTES de gastar minutos compilando imágenes Docker: type-check +
+  # build de los workspaces TS + lint. Si algo no compila, falla aquí en
+  # segundos en vez de aflorar tras minutos de `docker build`. (16-jun-2026)
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      # shared se compila primero: api y web hacen type-check contra su dist/.
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Type-check & build API
+        run: npm run build --workspace=apps/api
+
+      - name: Type-check & build web
+        run: npm run build --workspace=apps/web
+
+      # Lint no bloqueante: ESLint v9 exige eslint.config.js y el repo aún no lo
+      # tiene → sin continue-on-error tumbaría TODO el publish a GHCR (build
+      # needs: validate). Cuando se añada la config de ESLint, quitar esta línea.
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint --workspaces --if-present
+
   build:
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,7 +92,7 @@ jobs:
           # del secret GOOGLE_CLIENT_ID del repo (Settings → Secrets → Actions).
           build-args: |
             VITE_API_URL=
-            VITE_SHOW_DEMO=true
+            VITE_SHOW_DEMO=false
             VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           # Cache entre corridas → builds incrementales rápidos.
           cache-from: type=gha

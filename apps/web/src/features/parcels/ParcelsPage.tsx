@@ -7,6 +7,7 @@ import { toast } from '@/stores/toastStore.js';
 import ParcelMap from './ParcelMap.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
+import { ndviColor, ndviLowForCrop } from '@/lib/cropHealth.js';
 
 type NdviReading = { date: string; mean: number; min: number; max: number; anomalyDetected: boolean; source?: string };
 type Parcel = {
@@ -135,8 +136,8 @@ export default function ParcelsPage() {
             parcels.map((parcel) => {
               const latestNdvi = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
               const isSelected = parcel._id === selectedParcelId;
-              const hasAlert = latestNdvi?.anomalyDetected || (latestNdvi && latestNdvi.mean < 0.3);
-              const ndviColor = latestNdvi ? (latestNdvi.mean < 0.3 ? '#ef4444' : latestNdvi.mean < 0.4 ? '#f97316' : latestNdvi.mean < 0.55 ? '#eab308' : '#22c55e') : '#94a3b8';
+              const hasAlert = latestNdvi?.anomalyDetected || ndviLowForCrop(latestNdvi?.mean, parcel.cropType);
+              const dotColor = ndviColor(latestNdvi?.mean, parcel.cropType);
 
               return (
                 <button
@@ -155,8 +156,8 @@ export default function ParcelsPage() {
                   <p className="text-[10px] text-gray-400 truncate">{parcel.province} · {parcel.areaHa} ha</p>
                   {latestNdvi ? (
                     <div className="flex items-center gap-1 mt-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: ndviColor }} />
-                      <span className="text-[11px] font-bold" style={{ color: ndviColor }}>
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                      <span className="text-[11px] font-bold" style={{ color: dotColor }}>
                         {latestNdvi.mean.toFixed(2)}
                       </span>
                     </div>
@@ -249,7 +250,7 @@ export default function ParcelsPage() {
                   </div>
 
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Evolucion NDVI</h3>
-                  <NdviChart data={selectedParcel.ndviHistory} height={260} />
+                  <NdviChart data={selectedParcel.ndviHistory} height={260} cropType={selectedParcel.cropType} />
                 </div>
               ) : (
                 <div className="h-48 flex items-center justify-center text-gray-400 text-sm bg-gray-50 rounded-xl">

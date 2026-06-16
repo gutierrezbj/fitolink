@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:api"],
       "port": 4000
+    },
+    {
+      "name": "fitolink-web-preview",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/juanguti/dev/srs/fitolink/node_modules/vite/bin/vite.js", "--config", "/Users/juanguti/dev/srs/fitolink/apps/web/vite.config.ts", "--port", "3041", "--host"],
+      "port": 3041
     }
   ]
 }

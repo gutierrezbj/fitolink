@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import * as alertService from '../services/alertService.js';
+import * as parcelService from '../services/parcelService.js';
 import { sendAlertEmail } from '../services/emailService.js';
 import { Alert } from '../models/Alert.js';
 import { Parcel } from '../models/Parcel.js';
@@ -18,6 +19,14 @@ export async function getMyAlerts(req: AuthRequest, res: Response, next: NextFun
 
 export async function getByParcel(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
+    // Fail closed: verificar que el usuario puede ver la parcela ANTES de
+    // devolver sus alertas. Antes no había check → cualquier autenticado
+    // enumeraba IDs y leía alertas/NDVI/severidad de otros agricultores.
+    await parcelService.getParcelById(
+      req.params.parcelId as string,
+      req.user!._id.toString(),
+      { allowAdminRead: true, userRole: req.user!.role },
+    );
     const alerts = await alertService.getAlertsByParcel(req.params.parcelId as string);
     res.json({ success: true, data: alerts });
   } catch (error) {

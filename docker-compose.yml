@@ -7,6 +7,15 @@ services:
       - fitolink-mongo-data:/data/db
     environment:
       MONGO_INITDB_DATABASE: fitolink
+    restart: unless-stopped
+    # Healthcheck para que la api pueda esperar a `service_healthy` (no solo a
+    # que el contenedor exista). mongosh viene en la imagen mongo:7.
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
 
   api:
     build:
@@ -25,10 +34,19 @@ services:
       - PORT=4040
       - MONGODB_URI=mongodb://mongo:27017/fitolink
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./packages/shared/src:/app/packages/shared/src
+    # Healthcheck contra GET /api/health (puerto 4040). La imagen base es
+    # node:alpine (sin curl) → usamos el wget de BusyBox. (16-jun-2026)
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4040/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
 
   web:
     build:
@@ -57,7 +75,8 @@ services:
       - NDVI_GRID_ENABLED=true
       - NDVI_GRID_RESOLUTION=20
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

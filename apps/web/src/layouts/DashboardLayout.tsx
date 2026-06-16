@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/authStore.js';
+import { api } from '@/lib/api.js';
 import ToastContainer from '@/components/ToastContainer.js';
 import AlertBell from '@/components/AlertBell.js';
 
@@ -12,6 +14,7 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
   farmer: [
     { to: '/dashboard', label: 'Inicio', icon: '/nav-home.svg' },
     { to: '/dashboard/parcels', label: 'Mis Parcelas', icon: '/nav-parcels.svg' },
+    { to: '/dashboard/prediction', label: 'Predicción', icon: '/nav-prediction.svg' },
     { to: '/dashboard/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
     { to: '/dashboard/operations', label: 'Operaciones', icon: '/nav-operations.svg' },
     { to: '/dashboard/services', label: 'Servicios', icon: '/nav-services.svg' },
@@ -38,7 +41,8 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/admin/dispatch', label: 'Despacho', icon: '/nav-pilot.svg' },
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/nav-users.svg' },
     { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/nav-parcels.svg' },
-    { to: '/dashboard/admin/alerts', label: 'Alertas', icon: '/nav-alerts.svg' },
+    // "Alertas" quitado: /dashboard/admin/alerts no tiene ruta real (era un
+    // placeholder "Próximamente"). El loop de alertas se ve desde el Inicio.
   ],
   cooperative: [
     // Sprint Onboarding Cooperativa básico · 05-jun-2026 · añadido "Socios"
@@ -75,12 +79,35 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
+  // ¿Tiene esta cuenta la parcela elegible para Predicción? La sección está
+  // ligada a ENCINEÑO (la parcela del fondo, identificada por nombre, con
+  // histórico satelital). Si no la tiene, ocultamos el item de nav: el resto
+  // de farmers (pistacho/cereal/olivar sin calibrar) no verían más que el
+  // estado honesto. Misma condición que PredictionPage → nav y página
+  // coherentes. Reusa la caché de ['parcels','mine'] (ya la piden otras
+  // vistas), así que no añade carga real.
+  const { data: parcels } = useQuery({
+    queryKey: ['parcels', 'mine'],
+    queryFn: async () => {
+      const res = await api.get('/parcels/mine');
+      return res.data.data as Array<{ name?: string; ndviHistory?: unknown[] }>;
+    },
+    enabled: user?.role === 'farmer',
+  });
+  const hasPrediction =
+    (parcels ?? []).some(
+      (p) => /encine[ñn]o/i.test(p.name ?? '') && (p.ndviHistory?.length ?? 0) > 0,
+    );
+
   if (!user) {
     navigate('/login');
     return null;
   }
 
-  const navItems = NAV_ITEMS[user.role] || NAV_ITEMS.farmer;
+  const baseNav = NAV_ITEMS[user.role] || NAV_ITEMS.farmer;
+  const navItems = baseNav.filter(
+    (item) => item.to !== '/dashboard/prediction' || hasPrediction,
+  );
 
   return (
     // h-screen + overflow-hidden contain the layout so inner pages can use

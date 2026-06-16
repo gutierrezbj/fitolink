@@ -31,6 +31,6 @@ RUN npm ci --omit=dev --workspace=packages/shared --workspace=apps/api
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-EXPOSE 4000
+EXPOSE 4040
 
 CMD ["node", "apps/api/dist/server.js"]

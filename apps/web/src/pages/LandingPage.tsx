@@ -378,13 +378,13 @@ function PacPain() {
           {/* Pain 1 */}
           <div className="group rounded-2xl border border-red-900/40 bg-red-950/30 p-7 hover:border-red-700/60 transition-all duration-300">
             <div className="font-serif text-5xl font-bold text-red-400 mb-3 leading-none">
-              315<span className="text-2xl">M€</span>
+              PAC
             </div>
             <h3 className="text-base font-bold text-white mb-2">
-              Subvenciones PAC en juego
+              Tus ayudas en juego
             </h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              El Estado subvenciona 315M&euro;/a&ntilde;o en seguros agrarios. Sin cuaderno de campo digital actualizado, tu expediente queda bloqueado en inspecci&oacute;n.
+              Sin un cuaderno de campo actualizado y documentaci&oacute;n t&eacute;cnica de cada tratamiento, tu expediente queda bloqueado en inspecci&oacute;n.
             </p>
           </div>
 
@@ -426,7 +426,7 @@ function PacPain() {
             </p>
           </div>
           <p className="mt-4 text-sm text-gray-500 text-center max-w-xl">
-            Cada vuelo queda registrado digitalmente con fecha, parcela, producto, dosis y condiciones meteo. Informaci&oacute;n lista para incorporar al cuaderno de explotaci&oacute;n seg&uacute;n normativa PAC.
+            Cada vuelo queda registrado digitalmente con fecha, parcela, producto, dosis y condiciones meteo, para que incorpores esos datos a tu cuaderno de explotaci&oacute;n.
           </p>
         </div>
 

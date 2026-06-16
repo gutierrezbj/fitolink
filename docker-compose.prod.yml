@@ -31,8 +31,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4040
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
+      - MONGODB_URI=${MONGODB_URI:?MONGODB_URI no definido en el .env del VPS}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET no definido en el .env del VPS — genera uno con: openssl rand -base64 32}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
@@ -42,6 +42,16 @@ services:
       # ALLOW_DEV_LOGIN=true. (Antes estaba hardcoded a mano en el VPS.)
       - ALLOW_DEV_LOGIN=${ALLOW_DEV_LOGIN:-false}
     restart: unless-stopped
+    # Healthcheck contra GET /api/health (puerto 4040). La imagen base es
+    # node:alpine (sin curl) → usamos el wget de BusyBox. Mientras el contenedor
+    # no responda 200, queda `unhealthy` y el proxy (depends_on: service_healthy)
+    # no arranca → evita los 502 de los primeros segundos de arranque. (16-jun-2026)
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4040/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
 
   geo-pipeline:
     image: ghcr.io/gutierrezbj/fitolink-geo:latest
@@ -67,8 +77,12 @@ services:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - web
-      - api
+      web:
+        condition: service_started
+      # El proxy espera a que la API esté healthy (no solo arrancada) antes de
+      # enrutar → sin esto nginx podría devolver 502 mientras la API aún levanta.
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
 networks:

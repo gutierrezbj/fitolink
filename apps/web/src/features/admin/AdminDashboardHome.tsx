@@ -197,8 +197,6 @@ export default function AdminDashboardHome() {
               value={`${kpis.operations.alertsActive}`}
               hint={`${critCount} crítica${critCount === 1 ? '' : 's'}`}
               tone={critCount > 0 ? 'red' : kpis.operations.alertsActive > 0 ? 'amber' : 'green'}
-              clickable
-              onClick={() => navigate('/dashboard/admin/alerts')}
             />
             <KpiTile
               label="Solicitadas"
@@ -254,7 +252,6 @@ export default function AdminDashboardHome() {
                     <span className="ml-2 bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{critCount}</span>
                   )}
                 </h2>
-                <button onClick={() => navigate('/dashboard/admin/alerts')} className="text-xs text-brand-600 font-medium">Ver todas →</button>
               </div>
               <div className="space-y-2 overflow-y-auto flex-1">
                 {(alerts as Alert[]).slice(0, 8).map(alert => (

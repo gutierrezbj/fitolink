@@ -24,6 +24,7 @@ import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
 import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
 import DispatchPage from '@/features/admin/DispatchPage.js';
 import CooperativeMembersPage from '@/features/cooperative/CooperativeMembersPage.js';
+import PredictionPage from '@/features/prediction/PredictionPage.js';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="parcels/new" element={<CreateParcelPage />} />
         <Route path="parcels/:id" element={<ParcelDetailPage />} />
         <Route path="parcels" element={<ParcelsPage />} />
+        <Route path="prediction" element={<PredictionPage />} />
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="operations/:id" element={<OperationDetailPage />} />
         <Route path="operations" element={<OperationsPage />} />
@@ -69,12 +71,10 @@ export default function App() {
         <Route path="services" element={<ServicesPage />} />
         <Route path="b2b/parcels" element={<B2BParcelsPage />} />
         <Route path="b2b/alerts" element={<B2BAlertsPage />} />
-        <Route path="b2b/inspections" element={<PlaceholderPage title="Inspecciones" />} />
         {/* Sprint Onboarding Cooperativa · 05-jun-2026 · admin de socios */}
         <Route path="cooperative/socios" element={<CooperativeMembersPage />} />
         <Route path="admin/users" element={<AdminUsersPage />} />
         <Route path="admin/parcels" element={<ParcelsPage />} />
-        <Route path="admin/alerts" element={<PlaceholderPage title="Todas las Alertas" />} />
         <Route path="admin/dispatch" element={<DispatchPage />} />
       </Route>
 
@@ -82,14 +82,5 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">{title}</h2>
-      <p className="text-gray-400">Proximamente</p>
-    </div>
   );
 }

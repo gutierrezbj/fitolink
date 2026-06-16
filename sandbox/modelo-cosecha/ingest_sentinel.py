@@ -24,12 +24,13 @@ import argparse
 import json
 from datetime import datetime, timedelta, timezone
 
-import numpy as np
 import pandas as pd
 import planetary_computer
 import pystac_client
+import xarray as xr
 from odc.stac import load as odc_load
 from rasterio.features import geometry_mask
+from rasterio.warp import transform_geom
 from shapely.geometry import shape
 
 MPC_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
@@ -84,10 +85,14 @@ def main() -> None:
         chunks={},
     )
 
-    # Máscara del polígono REAL sobre la grilla cargada (no solo bbox).
+    # Máscara del polígono REAL sobre la grilla cargada — reproyectada al CRS
+    # del ráster (Sentinel viene en UTM/metros; el geojson, en grados WGS84).
     gb = ds.odc.geobox
+    epsg = gb.crs.to_epsg()
+    dst_crs = f"EPSG:{epsg}" if epsg else gb.crs.to_wkt()
+    geom_utm = transform_geom("EPSG:4326", dst_crs, geom)
     poly_mask = geometry_mask(
-        [geom], out_shape=gb.shape, transform=gb.transform, invert=True
+        [geom_utm], out_shape=gb.shape, transform=gb.transform, invert=True
     )
 
     scl = ds["SCL"]
@@ -98,17 +103,28 @@ def main() -> None:
     ndre = ((nir - re) / (nir + re)).where(valid)
     ndmi = ((nir - swir) / (nir + swir)).where(valid)
 
+    # Serie temporal: media espacial sobre píxeles válidos, en UNA pasada dask
+    # (cada banda se lee una vez · evita los miles de .compute() por escena).
+    series = xr.Dataset(
+        {
+            "ndvi": ndvi.mean(dim=("y", "x")),
+            "ndre": ndre.mean(dim=("y", "x")),
+            "ndmi": ndmi.mean(dim=("y", "x")),
+            "valid_px": valid.sum(dim=("y", "x")),
+        }
+    ).compute()
+
     rows = []
-    for t in ds.time.values:
-        npx = int(valid.sel(time=t).sum().compute())
+    for t in series.time.values:
+        npx = int(series["valid_px"].sel(time=t))
         if npx < 10:  # escena casi toda nublada sobre la finca → saltar
             continue
         rows.append(
             {
                 "date": pd.Timestamp(t).strftime("%Y-%m-%d"),
-                "ndvi": round(float(ndvi.sel(time=t).mean().compute()), 4),
-                "ndre": round(float(ndre.sel(time=t).mean().compute()), 4),
-                "ndmi": round(float(ndmi.sel(time=t).mean().compute()), 4),
+                "ndvi": round(float(series["ndvi"].sel(time=t)), 4),
+                "ndre": round(float(series["ndre"].sel(time=t)), 4),
+                "ndmi": round(float(series["ndmi"].sel(time=t)), 4),
                 "valid_px": npx,
             }
         )

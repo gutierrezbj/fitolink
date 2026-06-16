@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, ReferenceLine, ReferenceArea,
 } from 'recharts';
 import { formatDate } from '@/lib/utils.js';
+import { ndviBands, ndviColor } from '@/lib/cropHealth.js';
 
 interface NdviReading {
   date: string;
@@ -18,12 +19,15 @@ interface NdviReading {
 interface NdviChartProps {
   data: NdviReading[];
   height?: number;
+  /** Calibra las bandas de salud al cultivo (olivar de secano ≠ regadío denso). */
+  cropType?: string;
 }
 
-function CustomTooltip({ active, payload, label }: {
+function CustomTooltip({ active, payload, label, cropType }: {
   active?: boolean;
   payload?: Array<{ value: number; name: string; payload: NdviReading }>;
   label?: string;
+  cropType?: string;
 }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
@@ -33,7 +37,7 @@ function CustomTooltip({ active, payload, label }: {
       <div className="space-y-1">
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">NDVI Medio</span>
-          <span className={`font-bold ${d.mean < 0.3 ? 'text-red-600' : d.mean < 0.5 ? 'text-yellow-600' : 'text-green-600'}`}>
+          <span className="font-bold" style={{ color: ndviColor(d.mean, cropType) }}>
             {d.mean.toFixed(3)}
           </span>
         </div>
@@ -69,7 +73,8 @@ function CustomTooltip({ active, payload, label }: {
   );
 }
 
-export default function NdviChart({ data, height = 320 }: NdviChartProps) {
+export default function NdviChart({ data, height = 320, cropType }: NdviChartProps) {
+  const b = ndviBands(cropType);
   const chartData = [...data]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((d) => ({ ...d, dateLabel: formatDate(d.date) }));
@@ -107,11 +112,11 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
             </linearGradient>
           </defs>
 
-          {/* Background health zones */}
-          <ReferenceArea y1={0.55} y2={1.0} fill="#dcfce7" fillOpacity={0.4} />
-          <ReferenceArea y1={0.40} y2={0.55} fill="#fef9c3" fillOpacity={0.4} />
-          <ReferenceArea y1={0.30} y2={0.40} fill="#ffedd5" fillOpacity={0.5} />
-          <ReferenceArea y1={0}    y2={0.30} fill="#fee2e2" fillOpacity={0.5} />
+          {/* Background health zones — calibradas al cultivo */}
+          <ReferenceArea y1={b.healthy} y2={1.0} fill="#dcfce7" fillOpacity={0.4} />
+          <ReferenceArea y1={b.attention} y2={b.healthy} fill="#fef9c3" fillOpacity={0.4} />
+          <ReferenceArea y1={b.risk} y2={b.attention} fill="#ffedd5" fillOpacity={0.5} />
+          <ReferenceArea y1={0}    y2={b.risk} fill="#fee2e2" fillOpacity={0.5} />
 
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
 
@@ -130,13 +135,13 @@ export default function NdviChart({ data, height = 320 }: NdviChartProps) {
             width={30}
           />
 
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip cropType={cropType} />} />
 
-          <ReferenceLine y={0.55} stroke="#16a34a" strokeDasharray="3 2" strokeWidth={1}
+          <ReferenceLine y={b.healthy} stroke="#16a34a" strokeDasharray="3 2" strokeWidth={1}
             label={{ value: 'Saludable', position: 'insideTopRight', fontSize: 9, fill: '#16a34a' }} />
-          <ReferenceLine y={0.40} stroke="#ca8a04" strokeDasharray="3 2" strokeWidth={1}
+          <ReferenceLine y={b.attention} stroke="#ca8a04" strokeDasharray="3 2" strokeWidth={1}
             label={{ value: 'Atencion', position: 'insideTopRight', fontSize: 9, fill: '#ca8a04' }} />
-          <ReferenceLine y={0.30} stroke="#ea580c" strokeDasharray="3 2" strokeWidth={1}
+          <ReferenceLine y={b.risk} stroke="#ea580c" strokeDasharray="3 2" strokeWidth={1}
             label={{ value: 'Riesgo critico', position: 'insideTopRight', fontSize: 9, fill: '#ea580c' }} />
 
           {/* Range band: max */}
