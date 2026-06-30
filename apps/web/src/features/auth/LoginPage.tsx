@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './authStore.js';
 import { api } from '@/lib/api.js';
 
@@ -57,6 +58,7 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuthStore();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,12 +74,13 @@ export default function LoginPage() {
           credential: response.credential,
         });
         login(res.data.data.token, res.data.data.user);
+        queryClient.clear(); // evita que datos cacheados de otra cuenta se queden pegados
         navigate('/dashboard');
       } catch {
         navigate('/register', { state: { credential: response.credential } });
       }
     },
-    [login, navigate],
+    [login, navigate, queryClient],
   );
 
   const handleDevLogin = async (googleId: string) => {
@@ -85,6 +88,7 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login/dev', { googleId });
       login(res.data.data.token, res.data.data.user);
+      queryClient.clear(); // limpia la caché al cambiar de cuenta demo (no bleed de datos)
       navigate('/dashboard');
     } catch {
       setLoading(null);
@@ -102,6 +106,7 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login/dev/email', { email: demoEmail.trim() });
       login(res.data.data.token, res.data.data.user);
+      queryClient.clear();
       navigate('/dashboard');
     } catch (err) {
       const msg =
