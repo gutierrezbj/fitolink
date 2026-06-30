@@ -104,7 +104,7 @@ function sevSpanish(s: WeatherEventSeverity): string {
 
 // ── The 7 rules ─────────────────────────────────────────────────────────
 
-function detectEvents(d: DailyRaw, parcelName: string, today: Date): WeatherEvent[] {
+function detectEvents(d: DailyRaw, parcelName: string, today: Date, cropType?: string): WeatherEvent[] {
   const events: WeatherEvent[] = [];
   const n = d.time.length;
 
@@ -178,13 +178,20 @@ function detectEvents(d: DailyRaw, parcelName: string, today: Date): WeatherEven
     }
 
     // RULE 6 — Extreme heat: tempMax > 35°C
+    // Consciente del régimen: el olivar se asume SECANO (convención del repo, no
+    // alarmista). En secano NO hay riego de auxilio que recomendar → mensaje de
+    // vigilancia (aviso), no crítica. En cultivos de regadío (cítricos, etc.) sí
+    // se mantiene la recomendación de riego (acción real disponible).
     if (tmax != null && tmax > 35) {
+      const isSecanoOlive = cropType === 'olivo';
       events.push({
         type: 'extreme_heat',
-        severity: 'alert',
+        severity: isSecanoOlive ? 'warning' : 'alert',
         date,
         dayLabel: label,
-        message: `Calor extremo ${label} (${round(tmax)}°). Estrés hídrico fuerte garantizado, prepare riego de auxilio.`,
+        message: isSecanoOlive
+          ? `Calor extremo ${label} (${round(tmax)}°). Estrés térmico en el olivar de secano; sin riego de apoyo disponible, vigílelo y evite labores en las horas centrales.`
+          : `Calor extremo ${label} (${round(tmax)}°). Estrés hídrico fuerte garantizado, prepare riego de auxilio.`,
         data: { tmax: round(tmax) },
       });
     }
@@ -287,7 +294,7 @@ async function fetchForecast(lat: number, lon: number): Promise<ForecastRaw> {
 
 export async function getWeatherEventsForParcel(parcelId: string): Promise<WeatherEventsResponse> {
   const parcel = await Parcel.findById(parcelId)
-    .select('_id name geometry')
+    .select('_id name geometry cropType')
     .lean();
   if (!parcel) throw AppError.notFound('Parcela');
 
@@ -295,7 +302,7 @@ export async function getWeatherEventsForParcel(parcelId: string): Promise<Weath
 
   try {
     const raw = await fetchForecast(lat, lon);
-    const events = detectEvents(raw.daily, parcel.name, new Date());
+    const events = detectEvents(raw.daily, parcel.name, new Date(), parcel.cropType);
     return {
       parcelId: parcel._id.toString(),
       parcelName: parcel.name,
