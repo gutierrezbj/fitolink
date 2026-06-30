@@ -56,7 +56,11 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_SHOW_DEMO: ${VITE_SHOW_DEMO:-true}
     ports:
-      - '127.0.0.1:3040:3000'
+      # 0.0.0.0 a propósito (demo): además de localhost, expone :3040 a la red
+      # local y a la interfaz Tailscale → acceso directo al Mac como SEGUNDA vía
+      # si el túnel cloudflared no estuviera arriba. NO es internet público (el
+      # router no reenvía 3040); la vía pública sigue siendo solo el túnel.
+      - '3040:3000'
     environment:
       - VITE_API_URL=http://localhost:4040
       - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
