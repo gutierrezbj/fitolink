@@ -1,6 +1,6 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-06-10 · 15:50 CEST · v1.8 (Sprint UX badges 100% cerrado mañana + Small Cards Cooperativa + tarde · Encineño 407 ha cliente real fondo de inversión cargada + pipeline manual ejecutado + datos Sentinel-2/Landsat reales para demo MS 12-jun)
+**Snapshot:** 2026-07-05 · 19:15 CEST · v1.9 (cliente PAC 2026 Aranjuez-Añover cargado 19 recintos SIGPAC + regla INE≠SIGPAC Toledo + requisito Mis Parcelas por titular anotado + Encineño ya cargado v1.8)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
 
@@ -166,6 +166,43 @@ Aplicado en **7 componentes** del producto:
 
 **Login para la demo**: dev-login-by-email con `demo-encineno@agrom.es` (no requiere Google OAuth · ALLOW_DEV_LOGIN sigue true).
 
+
+#### Cliente PAC 2026 Aranjuez-Añover (5-jul-2026 · pre-reunión martes)
+
+✅ **Segundo cliente B2B cargado en sistema** desde PAC 2026 entregado voluntariamente. Cliente potencial ancla — se guarda como recurrente. Placeholder cuenta demo `pac-aranjuez-anover-2026@demo.agrom.es` (renombrar tras confirmar nombre real).
+
+**Datos cargados** (19 recintos · 10.90 ha SIGPAC oficial):
+- **Aranjuez** (10 recintos) — PROV 28 · MUNI 013 · cuadros Herradura, Rio, Triangulo, Lista
+- **Añover de Tajo** (9 recintos) — PROV 45 · MUNI 014 · cuadros Los Huertos, Madre Abuelos, Alhondiguilla
+- Etiquetado "Cuadro · Nombre" (habla el idioma del cliente, no código catastral)
+- cropType mapeado: cereal (trigo), maiz, leguminosa (alfalfa), olivo
+- Distribución baseline S2: 10 viables ≥0.4 ha (8.96 ha) · 7 marginales 0.15-0.4 (1.84 ha) · 2 subpíxel <0.15 (0.09 ha)
+
+**Aparcados hasta reunión martes**:
+- 5 co-declaraciones PAC de mismo recinto SIGPAC: `36-42-1` Aranjuez (Triangulo Eva huerto tomate + Eva trigo) y `36-53-1` Aranjuez (Triangulo Luis huerto alfalfa + espárragos + Luis trigo). Suma cuadra con SIGPAC. Decisión de modelo (parcel por co-declaración vs 1 parcel con mayoritario) pendiente.
+- 1 fantasma descartado: PAC Tira primos declara "6-166-1 · 0.08 maíz" pero ese recinto es Paula 0.84 ha alfalfa (SIGPAC 0.8359). Tira primos ya está representado por 6-166-4 (0.19 ha).
+
+**Regla operativa NUEVA · INE ≠ SIGPAC en Toledo (5-jul)**:
+- Añover de Tajo INE=013, SIGPAC=014 (desfase +1 histórico)
+- Aranjuez INE=013, SIGPAC=013 (coincide)
+- Al montar seed PAC de otras CCAA verificar empíricamente con brute force paralelo sobre pivot conocido antes de asumir INE=SIGPAC.
+
+**Advisories matcheables para este cliente**: 0 hoy. Los ingestores oficiales cargados son Andalucía (RAIF) + Cataluña (DARP) + Levante (SAIF/SIMD). Toledo/Madrid quedan fuera hasta F1 día 7-13 (IRIAF Castilla-La Mancha + expansión). Comunicar al cliente el martes con la línea "vendemos el CANAL, la cobertura se completa en el roadmap trimestral".
+
+**Discrepancias PAC vs SIGPAC ≥20%** (documentadas · área SIGPAC persiste):
+- Rio · Padre 36-45-1: PAC 0.44 ha vs SIGPAC 0.28 ha (-37%)
+- Rio · Esteban 36-103-4: PAC 0.12 ha vs SIGPAC 0.072 ha (-40%)
+
+**Fix técnico pequeño pendiente**: `Madrid` no está en `PROVINCES` enum de `packages/shared/src/constants.ts`. Los 10 recintos de Aranjuez se cargaron vía mongosh directo (bypass Mongoose validation). Añadir Madrid al enum + rebuild api/web cuando haya calma. No rompe nada mientras tanto (Mongoose no valida enum en read).
+
+**Requisito real de producto (bloque F, sin scope hoy)**:
+- **"Mis Parcelas" no distingue titular**: hoy 1 user = 1 titular. Un operador AgroM gestiona parcelas de N clientes. Anotado como sprint V2 en cola. Hoy resuelto pragmáticamente con user placeholder demo por cliente.
+
+**Encuadre honesto (CRITICAL_no_inventar)** aplicado al martes:
+- Vender seguimiento de evolución del cultivo, NO prueba de eficacia bioestimulante (Reg 2019/1009).
+- NO prometer cuaderno digital PAC ni PDF eIDAS (Epic 11 no construido).
+- Evidence hoy = documentación de la aplicación, nada certificado.
+
 #### Otras mejoras
 - [ ] **Logs-con-body en pipeline Python** (~30 min) · workers/geo-pipeline/src/* con loguru · mismo patrón que TS
 - [ ] **Healthcheck registrado** en `/opt/scripts/healthcheck.sh` del Servidor 2
@@ -249,6 +286,11 @@ ssh root@100.110.52.22
 cd /opt/fitolink && git log --oneline -5
 git checkout <SHA_anterior> && docker compose up -d --force-recreate --build web api
 ```
+
+### Requisitos reales salidos del uso (para V2 · no scope hoy)
+
+- **Mis Parcelas por titular** (5-jul-2026 · caso PAC Aranjuez-Añover): el modelo Parcel hoy asume 1 user = 1 titular. Un operador AgroM gestiona parcelas de N clientes distintos. Requisito: separar el concepto "operador que gestiona" del "titular del recinto". Modelar entidad Cliente con vínculo user↔cliente↔parcels. Pragmática hoy: cuenta demo separada por cliente PAC como placeholder.
+- **Co-declaraciones PAC de mismo recinto SIGPAC** (5-jul-2026): el mismo recinto puede tener 2-3 declaraciones distintas en el PAC (cultivos, superficies parciales). Modelo actual asume 1 parcel = 1 cultivo = 1 sigpacRef. Decisión pendiente: (a) N parcels por sigpacRef con mismo polígono, (b) subrecintos como submodel.
 
 ## 8 · Reglas no negociables del proyecto
 
