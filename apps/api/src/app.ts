@@ -7,6 +7,14 @@ import { logger } from './utils/logger.js';
 
 const app = express();
 
+// Confiar en 1 hop de proxy (el nginx del host delante del contenedor). Sin
+// esto, req.ip = IP del proxy para TODOS los visitantes → el rate-limit usaría
+// un único cubo global (un pico de audiencia o un bucle daría 429 a todos) y
+// express-rate-limit escupiría ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada
+// petición. Con trust proxy=1, req.ip = X-Forwarded-For real → rate-limit
+// per-IP como se pretende. Valor numérico (no `true`) para no abrir spoofing.
+app.set('trust proxy', 1);
+
 // Cabeceras de seguridad (helmet)
 // CSP DESACTIVADA a propósito: el SPA carga tiles de mapas (Esri/satélite),
 // Google OAuth y assets que una política por defecto rompería. Mantenemos el
