@@ -95,24 +95,26 @@ export async function devLogin(googleId: string): Promise<{ token: string; user:
   return { token, user };
 }
 
-// Cuentas demo que el dev-login PUEDE servir en producción. Allowlist
-// EXPLÍCITA que espeja los chips de LoginPage.tsx — NO un prefijo, porque
-// 'jesus-vivar-edu' no lleva 'demo-' y 'john-pistacho-real' SÍ debe quedar
-// fuera (son datos REALES y privados del cliente: 348 ha pistacho Toledo).
-// Si se añade un chip nuevo en LoginPage.tsx, su googleId va también aquí.
-const DEMO_LOGIN_GOOGLE_IDS = new Set<string>([
-  'demo-farmer-001', // Agricultor
-  'demo-insurer-001', // Aseguradora
-  'demo-cooperative-001', // Cooperativa
-  'demo-regantes-001', // Comunidad de Regantes
+// Cuentas con datos REALES privados que NUNCA se sirven por dev-login, aunque
+// por accidente llevaran prefijo 'demo-'. john-pistacho-real (cliente pistacho
+// real, 348 ha Toledo) no lleva prefijo y ya quedaría fuera; se lista explícito
+// por robustez. Sigue la misma convención que digestService (REAL_DATA_*).
+const DEV_LOGIN_DENYLIST = new Set<string>(['john-pistacho-real']);
+
+// Cuentas demo servibles que NO siguen el prefijo 'demo-' (excepciones).
+const DEV_LOGIN_EXTRA_ALLOW = new Set<string>([
   'jesus-vivar-edu', // Aula Jaén Jesús (pedagógica sintética)
-  'demo-encineno-fondo', // "Jorge" · fondo Encineño (autorizada por el cliente)
 ]);
 
 function isServableDemoAccount(user: IUser): boolean {
-  // Allowlist + las cuentas auto-creadas por el formulario de email
-  // (googleId 'demo-email-…'). Nunca cuentas reales ni admin.
-  return DEMO_LOGIN_GOOGLE_IDS.has(user.googleId) || user.googleId.startsWith('demo-email-');
+  // Datos reales privados fuera SIEMPRE.
+  if (DEV_LOGIN_DENYLIST.has(user.googleId)) return false;
+  // Sintéticas/demo: prefijo 'demo-' (seeds como demo-pac-…, demo-cooperative-…,
+  // socios, + auto-email 'demo-email-…') o excepción explícita. Los usuarios
+  // REALES tienen googleId = sub NUMÉRICO de Google → nunca llevan 'demo-' →
+  // no servibles por email (no hay takeover de cuentas reales). El rol admin lo
+  // veta aparte assertDevLoginAllowed (aunque tenga prefijo demo-).
+  return user.googleId.startsWith('demo-') || DEV_LOGIN_EXTRA_ALLOW.has(user.googleId);
 }
 
 /**
