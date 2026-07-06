@@ -8,6 +8,7 @@ import type { NdviSnapshot } from './useNdviSnapshot.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import ParcelMap from './ParcelMap.js';
+import ParcelExportButtons from './ParcelExportButtons.js';
 import NdviHeatmap from './NdviHeatmap.js';
 import NdviLegend from './NdviLegend.js';
 import MpcContextWidget from './MpcContextWidget.js';
@@ -410,6 +411,20 @@ export default function ParcelDetailPage() {
             {parcel.sigpacRef && ` · SIGPAC: ${parcel.sigpacRef}`}
           </p>
         </div>
+        <ParcelExportButtons
+          parcels={[
+            {
+              name: parcel.name,
+              cropType: parcel.cropType,
+              areaHa: parcel.areaHa,
+              sigpacRef: parcel.sigpacRef,
+              geometry: parcel.geometry,
+            },
+          ]}
+          filenameBase={`parcela-${parcel.name}`}
+          docName={`Parcela ${parcel.name}`}
+          compact
+        />
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-all shadow-sm hover:shadow"

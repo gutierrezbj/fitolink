@@ -5,6 +5,7 @@ import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 import { toast } from '@/stores/toastStore.js';
 import ParcelMap from './ParcelMap.js';
+import ParcelExportButtons from './ParcelExportButtons.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import { ndviColor, ndviLowForCrop } from '@/lib/cropHealth.js';
@@ -83,12 +84,27 @@ export default function ParcelsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Mis Parcelas</h1>
           <p className="text-gray-500 text-sm mt-1">{parcels.length} parcelas · monitorizado via Sentinel-2</p>
         </div>
-        <button
-          onClick={() => navigate('/dashboard/parcels/new')}
-          className="bg-terra-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-terra-600 transition-colors"
-        >
-          + Nueva Parcela
-        </button>
+        <div className="flex items-center gap-2">
+          {parcels.length > 0 && (
+            <ParcelExportButtons
+              parcels={parcels.map((p) => ({
+                name: p.name,
+                cropType: p.cropType,
+                areaHa: p.areaHa,
+                sigpacRef: p.sigpacRef,
+                geometry: p.geometry,
+              }))}
+              filenameBase="mis-parcelas"
+              docName={`Mis parcelas (${parcels.length})`}
+            />
+          )}
+          <button
+            onClick={() => navigate('/dashboard/parcels/new')}
+            className="bg-terra-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-terra-600 transition-colors"
+          >
+            + Nueva Parcela
+          </button>
+        </div>
       </div>
 
       {/* Main layout: map left + list/detail right */}
