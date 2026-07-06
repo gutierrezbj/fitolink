@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { cropLabel } from '@fitolink/shared';
 import { api } from '@/lib/api.js';
 import { formatDate } from '@/lib/utils.js';
 import { toast } from '@/stores/toastStore.js';
@@ -32,6 +33,32 @@ function getHealthColor(ndvi: number | undefined) {
   return 'text-red-600';
 }
 
+// Chip de color por cultivo DECLARADO (el que dijo el agricultor en SIGPAC, no
+// detección por satélite). Sirve para localizar de un vistazo, p.ej. el maíz.
+const CROP_CHIP: Record<string, string> = {
+  maiz: 'bg-amber-100 text-amber-800',
+  cereal: 'bg-yellow-100 text-yellow-800',
+  olivo: 'bg-green-100 text-green-800',
+  leguminosa: 'bg-lime-100 text-lime-800',
+  girasol: 'bg-amber-100 text-amber-800',
+  citrico: 'bg-orange-100 text-orange-800',
+  frutal: 'bg-rose-100 text-rose-800',
+  vinedo: 'bg-purple-100 text-purple-800',
+  pistacho: 'bg-emerald-100 text-emerald-800',
+  almendro: 'bg-pink-100 text-pink-800',
+  hortaliza: 'bg-teal-100 text-teal-800',
+  arroz: 'bg-sky-100 text-sky-800',
+  remolacha: 'bg-fuchsia-100 text-fuchsia-800',
+  patata: 'bg-stone-100 text-stone-700',
+  algodon: 'bg-slate-100 text-slate-700',
+};
+function cropChipClass(crop: string): string {
+  return CROP_CHIP[crop] ?? 'bg-gray-100 text-gray-700';
+}
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export default function ParcelsPage() {
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -47,6 +74,20 @@ export default function ParcelsPage() {
   });
 
   const parcels: Parcel[] = parcelsData || [];
+
+  // Resumen por cultivo declarado (recuento + ha), ordenado por nº de parcelas.
+  // Para ver "cuántas de maíz" sin cruzar con un excel aparte.
+  const cropSummary = useMemo(() => {
+    const m = new Map<string, { count: number; ha: number }>();
+    for (const p of parcels) {
+      const e = m.get(p.cropType) ?? { count: 0, ha: 0 };
+      e.count += 1;
+      e.ha += p.areaHa || 0;
+      m.set(p.cropType, e);
+    }
+    return [...m.entries()].sort((a, b) => b[1].count - a[1].count);
+  }, [parcels]);
+
   const selectedParcel = parcels.find((p) => p._id === selectedParcelId);
   const parcelToDelete = parcels.find((p) => p._id === confirmDeleteId);
 
@@ -131,6 +172,19 @@ export default function ParcelsPage() {
           {/* List header */}
           <div className="px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{parcels.length} parcelas</p>
+            {cropSummary.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {cropSummary.map(([crop, s]) => (
+                  <span
+                    key={crop}
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cropChipClass(crop)}`}
+                    title={`${s.count} parcela${s.count > 1 ? 's' : ''} de ${cropLabel(crop)} declarado · ${s.ha.toFixed(2)} ha`}
+                  >
+                    {cap(cropLabel(crop))} {s.count} · {s.ha.toFixed(1)} ha
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Scrollable content */}
@@ -169,7 +223,12 @@ export default function ParcelsPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-0.5" />
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-400 truncate">{parcel.province} · {parcel.areaHa} ha</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`text-[9px] font-semibold px-1 py-px rounded flex-shrink-0 ${cropChipClass(parcel.cropType)}`}>
+                      {cap(cropLabel(parcel.cropType))}
+                    </span>
+                    <span className="text-[10px] text-gray-400 truncate">{parcel.areaHa} ha</span>
+                  </div>
                   {latestNdvi ? (
                     <div className="flex items-center gap-1 mt-1.5">
                       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
