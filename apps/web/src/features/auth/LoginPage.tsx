@@ -67,8 +67,11 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
   const handleGoogleCallback = useCallback(
     async (response: { credential: string }) => {
+      setGoogleError(null);
       try {
         const res = await api.post('/auth/login/google', {
           credential: response.credential,
@@ -76,8 +79,17 @@ export default function LoginPage() {
         login(res.data.data.token, res.data.data.user);
         queryClient.clear(); // evita que datos cacheados de otra cuenta se queden pegados
         navigate('/dashboard');
-      } catch {
-        navigate('/register', { state: { credential: response.credential } });
+      } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 404) {
+          // Cuenta genuinamente nueva → registro (llevamos el credential para
+          // no volver a pedir Google).
+          navigate('/register', { state: { credential: response.credential } });
+        } else {
+          // Error real (red / config / token) → NO mandar a registro en bucle;
+          // mostrar el problema en la propia página y dejar reintentar.
+          setGoogleError('No pudimos iniciar sesión con esa cuenta. Prueba con otra cuenta de Google o regístrate.');
+        }
       }
     },
     [login, navigate, queryClient],
@@ -128,10 +140,14 @@ export default function LoginPage() {
       window.google?.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleCallback,
+        // No auto-logear silenciosamente a la cuenta de sesión del navegador.
+        // El usuario tiene que pulsar el botón; así puede usar el selector de
+        // cuentas de Google en vez de quedar clavado a una sola cuenta.
+        auto_select: false,
       });
       window.google?.accounts.id.renderButton(
         document.getElementById('google-signin-btn')!,
-        { theme: 'outline', size: 'large', width: 300, text: 'signin_with' },
+        { theme: 'outline', size: 'large', width: 300, text: 'continue_with' },
       );
     };
 
@@ -164,9 +180,20 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
           <div id="google-signin-btn" />
         </div>
+
+        {googleError && (
+          <p className="text-sm text-red-700 mb-4">{googleError}</p>
+        )}
+
+        <p className="text-sm text-gray-600 mb-6">
+          ¿Primera vez?{' '}
+          <span className="text-brand-700 font-medium">
+            entra con Google y te damos de alta al momento.
+          </span>
+        </p>
 
         <p className="text-xs text-gray-500 mb-6 leading-relaxed">
           Al acceder, aceptas los{' '}
@@ -246,7 +273,7 @@ declare global {
     google?: {
       accounts: {
         id: {
-          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
+          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void; auto_select?: boolean }) => void;
           renderButton: (element: HTMLElement, options: Record<string, unknown>) => void;
         };
       };
