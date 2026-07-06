@@ -40,18 +40,16 @@ const DEMO_ACCOUNTS = [
   // olivar heterogéneo. Seed: seedProfessorDemo.ts. Flag isSyntheticDemo
   // hace que el pipeline las ignore.
   { label: 'Aula Jaén Jesús', googleId: 'jesus-vivar-edu', icon: '/smart-farming.svg',           color: 'bg-earth-50 border-earth-300/50 text-earth-700 hover:bg-earth-100' },
-  // Encineño · cliente fondo de inversión (10-jun-2026 · Garage1 + Mac).
-  // CASO DISTINTO al Pistachar de Jonh: los datos del KMZ vienen
-  // DIRECTAMENTE del cliente con autorización explícita para mostrar en
-  // demo (Guillermo Morales Sánchez · vía Jorge Leccia · sector evaluación
-  // pre-demo Microsoft viernes 12-jun de cartera total 2.300 ha). 407 ha
-  // olivar Subbética Córdoba · parcela REAL `isSyntheticDemo:false` · datos
-  // Sentinel-2/Landsat reales tras pipeline manual 10-jun · advisory
-  // matching Prays oleae Córdoba MEDIUM a 19.7 km con cifras LITERALES
-  // portal RAIF. JuanCho lo llama "Jorge" mentalmente para click rápido
-  // en demos comerciales. Color terra (premium) para destacar como cuenta
-  // cliente B2B real.
-  { label: 'Jorge',       googleId: 'demo-encineno-fondo',  icon: '/vegetables.svg',             color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
+  // Encineño · cliente fondo de inversión (10-jun-2026). Parcela REAL de
+  // 407 ha (olivar Subbética Córdoba, `isSyntheticDemo:false`, Sentinel-2/
+  // Landsat reales). Autorizada por el cliente para DEMOS controladas.
+  // OCULTO del chip-row 06-jul-2026 (misma política que john-pistacho-real):
+  // con la consola demo pública (VITE_SHOW_DEMO=true) un chip clicable dejaba
+  // los datos reales del fondo expuestos a cualquier visitante 24/7. La cuenta
+  // sigue VIVA y servible por dev-login (está en el allowlist del backend
+  // DEMO_LOGIN_GOOGLE_IDS): se entra por el campo de email de abajo
+  // (demo-encineno@agrom.es) cuando se necesite en una demo comercial.
+  // { label: 'Jorge',       googleId: 'demo-encineno-fondo',  icon: '/vegetables.svg',             color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
   // Admin SOLO en desarrollo local: en producción el backend rechaza el
   // dev-login de cuentas admin (cualquiera podría hacerse administrador con
   // un click) → el chip se oculta y el admin real entra con su Google.
