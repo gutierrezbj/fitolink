@@ -69,9 +69,22 @@ export async function devLogin(googleId: string): Promise<{ token: string; user:
   if (!user) {
     throw AppError.notFound('Usuario demo no encontrado');
   }
+  assertNotAdminDevLogin(user);
 
   const token = generateToken(user._id.toString());
   return { token, user };
+}
+
+/**
+ * En producción el rol admin NUNCA entra por dev-login (ni por chip ni por
+ * email): con ALLOW_DEV_LOGIN=true cualquier visitante podría convertirse en
+ * administrador de toda la app con un click. El admin real entra con Google.
+ * En desarrollo local no aplica (NODE_ENV !== 'production').
+ */
+function assertNotAdminDevLogin(user: IUser): void {
+  if (env.NODE_ENV === 'production' && user.role === 'admin') {
+    throw AppError.forbidden('La cuenta de administración entra con Google');
+  }
 }
 
 /**
@@ -99,6 +112,9 @@ export async function devLoginByEmail(
   }
 
   let user = await User.findOne({ email: normalized });
+  if (user) {
+    assertNotAdminDevLogin(user);
+  }
   if (!user) {
     // Auto-provision a farmer demo user. googleId is synthesized from email
     // to satisfy the unique-required field on User without colliding with

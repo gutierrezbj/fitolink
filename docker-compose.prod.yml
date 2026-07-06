@@ -16,6 +16,9 @@ services:
       # el front de todas formas) → hace funcionar el login con Google.
       args:
         VITE_API_URL: ${VITE_API_URL:-}
+        # Paridad con .github/workflows/deploy.yml: la consola demo va
+        # encendida también si se rebuildea en el VPS como rollback.
+        VITE_SHOW_DEMO: ${VITE_SHOW_DEMO:-true}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - '127.0.0.1:3040:3000'

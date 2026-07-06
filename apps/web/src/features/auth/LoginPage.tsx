@@ -52,7 +52,12 @@ const DEMO_ACCOUNTS = [
   // en demos comerciales. Color terra (premium) para destacar como cuenta
   // cliente B2B real.
   { label: 'Jorge',       googleId: 'demo-encineno-fondo',  icon: '/vegetables.svg',             color: 'bg-orange-50 border-terra-500/40 text-terra-500 hover:bg-orange-100' },
-  { label: 'Admin',       googleId: 'demo-admin-001',       icon: '/system-administration.svg',  color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' },
+  // Admin SOLO en desarrollo local: en producción el backend rechaza el
+  // dev-login de cuentas admin (cualquiera podría hacerse administrador con
+  // un click) → el chip se oculta y el admin real entra con su Google.
+  ...(import.meta.env.DEV
+    ? [{ label: 'Admin', googleId: 'demo-admin-001', icon: '/system-administration.svg', color: 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100' }]
+    : []),
 ];
 
 export default function LoginPage() {

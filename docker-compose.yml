@@ -56,11 +56,14 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_SHOW_DEMO: ${VITE_SHOW_DEMO:-true}
     ports:
-      # 0.0.0.0 a propósito (demo): además de localhost, expone :3040 a la red
-      # local y a la interfaz Tailscale → acceso directo al Mac como SEGUNDA vía
-      # si el túnel cloudflared no estuviera arriba. NO es internet público (el
-      # router no reenvía 3040); la vía pública sigue siendo solo el túnel.
-      - '3040:3000'
+      # Bind parametrizado (06-jul-2026): default 127.0.0.1 para que en el VPS
+      # el merge con docker-compose.prod.yml dé una entrada IDÉNTICA (se
+      # dedupe) y no un doble bind 0.0.0.0+127.0.0.1 que impide arrancar.
+      # En el Mac de demos, el .env local lleva WEB_BIND=0.0.0.0 → expone
+      # :3040 a la red local y a Tailscale como segunda vía si el túnel
+      # cloudflared no estuviera arriba. NO es internet público (el router
+      # no reenvía 3040); la vía pública sigue siendo solo el túnel.
+      - '${WEB_BIND:-127.0.0.1}:3040:3000'
     environment:
       - VITE_API_URL=http://localhost:4040
       - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}

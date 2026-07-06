@@ -90,9 +90,13 @@ jobs:
           # VITE_GOOGLE_CLIENT_ID: client ID PÚBLICO de OAuth (va en el bundle
           # del front igualmente) → necesario para el login con Google. Se lee
           # del secret GOOGLE_CLIENT_ID del repo (Settings → Secrets → Actions).
+          # VITE_SHOW_DEMO=true: la consola demo (chips + email) es parte del
+          # producto en producción — es el canal de demos comerciales. La
+          # ENTRADA real la sigue gateando el backend (ALLOW_DEV_LOGIN en el
+          # .env del VPS) y el rol admin queda vetado del dev-login en prod.
           build-args: |
             VITE_API_URL=
-            VITE_SHOW_DEMO=false
+            VITE_SHOW_DEMO=true
             VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           # Cache entre corridas → builds incrementales rápidos.
           cache-from: type=gha
