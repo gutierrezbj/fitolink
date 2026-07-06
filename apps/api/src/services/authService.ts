@@ -39,7 +39,18 @@ async function verifyGoogleToken(credential: string): Promise<GooglePayload> {
 export async function loginWithGoogle(credential: string): Promise<{ token: string; user: IUser }> {
   const payload = await verifyGoogleToken(credential);
 
-  const user = await User.findOne({ googleId: payload.sub });
+  let user = await User.findOne({ googleId: payload.sub });
+  if (!user) {
+    // La cuenta pudo crearse antes con otro googleId (dev-login o alta
+    // despistada). Google ya verifica el email, así que enlazamos por email
+    // y estampamos el googleId real → el usuario existente entra sin quedar
+    // en el bucle "regístrate / ya existe con este email".
+    user = await User.findOne({ email: payload.email.toLowerCase() });
+    if (user && user.googleId !== payload.sub) {
+      user.googleId = payload.sub;
+      await user.save();
+    }
+  }
   if (!user) {
     throw AppError.notFound('Usuario no registrado. Por favor, registrate primero.');
   }
