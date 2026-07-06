@@ -101,6 +101,7 @@ export default function LoginPage() {
   );
 
   const handleDevLogin = async (googleId: string) => {
+    setGoogleError(null); // limpia un fallo previo de Google al cambiar de método
     setLoading(googleId);
     try {
       const res = await api.post('/auth/login/dev', { googleId });
@@ -118,6 +119,7 @@ export default function LoginPage() {
   const handleDevLoginByEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!demoEmail.trim()) return;
+    setGoogleError(null); // limpia un fallo previo de Google al cambiar de método
     setDemoEmailError(null);
     setLoading('email');
     try {

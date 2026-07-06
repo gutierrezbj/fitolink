@@ -56,13 +56,13 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_SHOW_DEMO: ${VITE_SHOW_DEMO:-true}
     ports:
-      # Bind parametrizado (06-jul-2026): default 127.0.0.1 para que en el VPS
-      # el merge con docker-compose.prod.yml dé una entrada IDÉNTICA (se
-      # dedupe) y no un doble bind 0.0.0.0+127.0.0.1 que impide arrancar.
-      # En el Mac de demos, el .env local lleva WEB_BIND=0.0.0.0 → expone
-      # :3040 a la red local y a Tailscale como segunda vía si el túnel
-      # cloudflared no estuviera arriba. NO es internet público (el router
-      # no reenvía 3040); la vía pública sigue siendo solo el túnel.
+      # Solo aplica al flujo LOCAL (Mac): prod usa docker-compose.prod.yml en
+      # SOLITARIO (deploy-ghcr.sh), que fija 127.0.0.1:3040. Aquí el bind es
+      # parametrizable: default 127.0.0.1 (seguro); el Mac de demos pone
+      # WEB_BIND=0.0.0.0 en su .env para exponer :3040 a la red local y a
+      # Tailscale como 2ª vía si el túnel cloudflared no estuviera arriba. NO es
+      # internet público (el router no reenvía 3040). No mezclar este fichero
+      # con docker-compose.prod.yml (con WEB_BIND=0.0.0.0 daría doble bind 3040).
       - '${WEB_BIND:-127.0.0.1}:3040:3000'
     environment:
       - VITE_API_URL=http://localhost:4040

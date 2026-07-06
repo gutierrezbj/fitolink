@@ -8,9 +8,21 @@ import type { UserRole } from '@fitolink/shared';
 
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
+// Roles que un usuario puede auto-darse de alta desde la web pública (los que
+// ofrece RegisterPage.tsx). 'admin' y 'agronomist' quedan FUERA a propósito.
+const SELF_SERVE_ROLES = new Set<UserRole>([
+  'farmer',
+  'cooperative',
+  'pilot',
+  'insurer',
+  'adv',
+  'regantes',
+]);
+
 interface GooglePayload {
   sub: string;
   email: string;
+  emailVerified: boolean;
   name: string;
   picture?: string;
 }
@@ -28,6 +40,10 @@ async function verifyGoogleToken(credential: string): Promise<GooglePayload> {
     return {
       sub: payload.sub,
       email: payload.email,
+      // Google marca email_verified=false en algunas cuentas (Workspace,
+      // federación SAML). Lo propagamos para no enlazar cuentas por un email
+      // que Google no ha verificado (guía oficial de Google Identity).
+      emailVerified: payload.email_verified === true,
       name: payload.name,
       picture: payload.picture,
     };
@@ -40,15 +56,19 @@ export async function loginWithGoogle(credential: string): Promise<{ token: stri
   const payload = await verifyGoogleToken(credential);
 
   let user = await User.findOne({ googleId: payload.sub });
-  if (!user) {
+  if (!user && payload.emailVerified) {
     // La cuenta pudo crearse antes con otro googleId (dev-login o alta
-    // despistada). Google ya verifica el email, así que enlazamos por email
-    // y estampamos el googleId real → el usuario existente entra sin quedar
-    // en el bucle "regístrate / ya existe con este email".
+    // despistada). Solo enlazamos si Google confirma el email como VERIFICADO:
+    // sin esa comprobación, un token con un email ajeno no verificado podría
+    // apropiarse de una cuenta existente. Estampamos el googleId real → el
+    // usuario existente entra sin quedar en el bucle "regístrate / ya existe".
     user = await User.findOne({ email: payload.email.toLowerCase() });
     if (user && user.googleId !== payload.sub) {
       user.googleId = payload.sub;
-      await user.save();
+      // validateModifiedOnly: no revalidar el documento entero al solo
+      // enlazar el googleId — un dato legacy incompleto dejaría al usuario
+      // sin poder entrar ni registrarse (encierro).
+      await user.save({ validateModifiedOnly: true });
     }
   }
   if (!user) {
@@ -69,21 +89,46 @@ export async function devLogin(googleId: string): Promise<{ token: string; user:
   if (!user) {
     throw AppError.notFound('Usuario demo no encontrado');
   }
-  assertNotAdminDevLogin(user);
+  assertDevLoginAllowed(user);
 
   const token = generateToken(user._id.toString());
   return { token, user };
 }
 
+// Cuentas demo que el dev-login PUEDE servir en producción. Allowlist
+// EXPLÍCITA que espeja los chips de LoginPage.tsx — NO un prefijo, porque
+// 'jesus-vivar-edu' no lleva 'demo-' y 'john-pistacho-real' SÍ debe quedar
+// fuera (son datos REALES y privados del cliente: 348 ha pistacho Toledo).
+// Si se añade un chip nuevo en LoginPage.tsx, su googleId va también aquí.
+const DEMO_LOGIN_GOOGLE_IDS = new Set<string>([
+  'demo-farmer-001', // Agricultor
+  'demo-insurer-001', // Aseguradora
+  'demo-cooperative-001', // Cooperativa
+  'demo-regantes-001', // Comunidad de Regantes
+  'jesus-vivar-edu', // Aula Jaén Jesús (pedagógica sintética)
+  'demo-encineno-fondo', // "Jorge" · fondo Encineño (autorizada por el cliente)
+]);
+
+function isServableDemoAccount(user: IUser): boolean {
+  // Allowlist + las cuentas auto-creadas por el formulario de email
+  // (googleId 'demo-email-…'). Nunca cuentas reales ni admin.
+  return DEMO_LOGIN_GOOGLE_IDS.has(user.googleId) || user.googleId.startsWith('demo-email-');
+}
+
 /**
- * En producción el rol admin NUNCA entra por dev-login (ni por chip ni por
- * email): con ALLOW_DEV_LOGIN=true cualquier visitante podría convertirse en
- * administrador de toda la app con un click. El admin real entra con Google.
- * En desarrollo local no aplica (NODE_ENV !== 'production').
+ * En producción el dev-login (chips + email) SOLO sirve cuentas demo del
+ * allowlist. Bloquea: el rol admin (cualquiera se haría administrador con un
+ * click, sin secreto), la cuenta real del cliente (john-pistacho-real) y
+ * cualquier usuario real. En desarrollo local no aplica — se puede depurar
+ * cualquier cuenta (NODE_ENV !== 'production').
  */
-function assertNotAdminDevLogin(user: IUser): void {
-  if (env.NODE_ENV === 'production' && user.role === 'admin') {
+function assertDevLoginAllowed(user: IUser): void {
+  if (env.NODE_ENV !== 'production') return;
+  if (user.role === 'admin') {
     throw AppError.forbidden('La cuenta de administración entra con Google');
+  }
+  if (!isServableDemoAccount(user)) {
+    throw AppError.forbidden('Esta cuenta no está disponible por acceso demo');
   }
 }
 
@@ -113,7 +158,10 @@ export async function devLoginByEmail(
 
   let user = await User.findOne({ email: normalized });
   if (user) {
-    assertNotAdminDevLogin(user);
+    // En prod, entrar por email a una cuenta EXISTENTE solo si es demo del
+    // allowlist: bloquea la suplantación de cuentas reales (john-pistacho-real
+    // u otros usuarios reales) tecleando su email. Las reales entran con Google.
+    assertDevLoginAllowed(user);
   }
   if (!user) {
     // Auto-provision a farmer demo user. googleId is synthesized from email
@@ -146,6 +194,14 @@ export async function registerWithGoogle(
   options: RegisterOptions = {},
 ): Promise<{ token: string; user: IUser }> {
   const payload = await verifyGoogleToken(credential);
+
+  // Blindaje de escalada de privilegios: el alta pública SOLO permite roles
+  // auto-servibles. Sin esto, cualquiera con una cuenta Google válida podía
+  // hacer POST /auth/register {role:'admin'} y volverse administrador de toda
+  // la app. 'admin' se crea por seed + Google; 'agronomist' es alta interna.
+  if (!SELF_SERVE_ROLES.has(role)) {
+    throw AppError.forbidden('Este rol no puede darse de alta públicamente');
+  }
 
   const existing = await User.findOne({
     $or: [{ googleId: payload.sub }, { email: payload.email }],
