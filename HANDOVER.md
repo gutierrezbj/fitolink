@@ -1,6 +1,6 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-07-05 · 19:15 CEST · v1.9 (cliente PAC 2026 Aranjuez-Añover cargado 19 recintos SIGPAC + regla INE≠SIGPAC Toledo + requisito Mis Parcelas por titular anotado + Encineño ya cargado v1.8)
+**Snapshot:** 2026-07-06 · 09:45 CEST · v1.10 (cierre sesión PAC · admin real juang activado + baseline S2 completado 18/19 con datos reales + auth demo reabierta + scope operativo maíz 13 recintos 5.22 ha marcados applicationTarget)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
 
@@ -192,6 +192,15 @@ Aplicado en **7 componentes** del producto:
 **Discrepancias PAC vs SIGPAC ≥20%** (documentadas · área SIGPAC persiste):
 - Rio · Padre 36-45-1: PAC 0.44 ha vs SIGPAC 0.28 ha (-37%)
 - Rio · Esteban 36-103-4: PAC 0.12 ha vs SIGPAC 0.072 ha (-40%)
+
+
+**Scope operativo · aplicación aérea = solo maíz** (6-jul-2026):
+- 13 recintos maíz marcados en BD con `applicationTarget: true` + `applicationCrop: "maiz"` (campo extra bypasa Mongoose enum · sin UI que lo consuma hoy · V2 sprint task #10).
+- **5.22 ha SIGPAC** (~5.12 ha efectivas descartando 2 subpíxel Rio·Esteban 0.07 y TIRITA 0.02).
+- **Aranjuez 7 recintos · 2.85 ha** (Herradura·Eva/Esteban/Luis + Rio·Padre/Eva/Esteban + Lista·Pilar).
+- **Añover 6 recintos · 2.36 ha** (Huertos·Juana/Tira primos + Madre·Casimiro/Máximo/Manuel/TIRITA).
+- Dimensionado dron T10 Drovinci ~2-3 ha/h → **~2h vuelo neto**, dos setups/días por dispersión geográfica.
+- Los 6 no-maíz (3 trigo Aranjuez ya cosechado + 2 alfalfa + 1 olivar Alhondiguilla LST 50.1°C) son contexto del cuaderno, no operación.
 
 **Fix técnico pequeño pendiente**: `Madrid` no está en `PROVINCES` enum de `packages/shared/src/constants.ts`. Los 10 recintos de Aranjuez se cargaron vía mongosh directo (bypass Mongoose validation). Añadir Madrid al enum + rebuild api/web cuando haya calma. No rompe nada mientras tanto (Mongoose no valida enum en read).
 
