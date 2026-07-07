@@ -87,6 +87,12 @@ function formatDateTimeEs(d: Date): string {
   return `${formatDateEs(d)} · ${hh}:${mm}`;
 }
 
+function formatShortEs(d: Date): string {
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${String(d.getFullYear()).slice(2)}`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // PDF · Cartera agregada
 // ─────────────────────────────────────────────────────────────────────────
@@ -395,6 +401,153 @@ export function generateApplicationPdf(input: ApplicationReportInput): Readable 
   doc.moveDown(0.5);
   doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(
     `Informe generado el ${formatDateEs(input.generatedAt)} a partir del registro de la operación. Parcela georreferenciada con SIGPAC catastral oficial (MAPA).`,
+    50, doc.y, { width: 495 },
+  );
+  doc.moveDown(0.5);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(MUTED)
+    .text('AGROM · FITOLINK · agrom.es · fitolink.agrom.es', { characterSpacing: 1.5, align: 'center' });
+
+  doc.end();
+  return doc as unknown as Readable;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PDF · Informe de TRABAJO (varias operaciones agregadas · 1 informe)
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface JobReportInput {
+  generatedAt: Date;
+  clientName: string;
+  operator: { company?: string; pilotName?: string };
+  cropType?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  parcels: Array<{ name: string; sigpacRef?: string; areaHa: number; date?: Date }>;
+  totalAreaHa: number;
+  // Productos agregados del trabajo: dosis/ha (si es la misma en todos los
+  // recintos) + total acumulado sobre la superficie tratada.
+  products: Array<{ name: string; unit: string; dosePerHa?: number; total: number }>;
+  applicationMethod?: string;
+}
+
+// Total en unidad legible: g→kg y mL→L cuando el acumulado es grande.
+function fmtJobTotal(total: number, unitPerHa: string): string {
+  const base = unitPerHa.split('/')[0];
+  if (base === 'g' && total >= 1000) return `${(total / 1000).toLocaleString('es-ES', { maximumFractionDigits: 2 })} kg`;
+  if (base === 'mL' && total >= 1000) return `${(total / 1000).toLocaleString('es-ES', { maximumFractionDigits: 2 })} L`;
+  return `${total.toLocaleString('es-ES', { maximumFractionDigits: 1 })} ${base}`;
+}
+
+export function generateJobReportPdf(input: JobReportInput): Readable {
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 50,
+    info: {
+      Title: `Informe de trabajo · ${input.clientName}`,
+      Author: 'AgroM · FitoLink',
+      Subject: 'Informe de trabajo de aplicación aérea con dron',
+      CreationDate: input.generatedAt,
+    },
+  });
+
+  const section = (label: string) => {
+    doc.moveDown(1);
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED).text(label, 50, doc.y, { characterSpacing: 1.5 });
+    doc.moveDown(0.4);
+  };
+  const kv = (k: string, v: string) => {
+    const y = doc.y;
+    doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(k, 50, y, { width: 175 });
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(v, 230, y, { width: 315 });
+    doc.moveDown(0.3);
+  };
+
+  // Header
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED)
+    .text('AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN', { characterSpacing: 2 });
+  doc.moveDown(0.5);
+  doc.moveTo(50, doc.y).lineTo(80, doc.y).strokeColor(TERRA_500).lineWidth(1.5).stroke();
+  doc.moveDown(1);
+  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('§ INFORME DE TRABAJO · APLICACIÓN AÉREA', { characterSpacing: 1.5 });
+  doc.moveDown(0.3);
+  const cropTxt = input.cropType ? cropLabel(input.cropType) : 'cultivo';
+  doc.font('Helvetica-Bold').fontSize(22).fillColor(INK).text(`Aplicación en ${cropTxt} · ${input.parcels.length} recintos`);
+  doc.moveDown(0.3);
+  doc.font('Helvetica-Oblique').fontSize(11).fillColor(MUTED).text(`Cliente: ${input.clientName}`);
+  doc.moveDown(0.2);
+  const fechaTxt = input.dateFrom
+    ? (input.dateTo && input.dateTo.getTime() !== input.dateFrom.getTime()
+        ? `Del ${formatDateEs(input.dateFrom)} al ${formatDateEs(input.dateTo)}`
+        : formatDateEs(input.dateFrom))
+    : formatDateEs(input.generatedAt);
+  doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Fechas de aplicación: ${fechaTxt}`);
+
+  // Resumen
+  section('§ RESUMEN DEL TRABAJO');
+  kv('Recintos tratados', String(input.parcels.length));
+  kv('Superficie total', `${input.totalAreaHa.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ha`);
+  if (input.operator.company) kv('Operador de drones', input.operator.company);
+
+  // Recintos
+  section('§ RECINTOS TRATADOS');
+  const tTop = doc.y;
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND_600);
+  doc.text('Recinto', 50, tTop);
+  doc.text('Ref. SIGPAC', 250, tTop);
+  doc.text('Ha', 430, tTop);
+  doc.text('Fecha', 480, tTop);
+  doc.moveTo(50, tTop + 13).lineTo(545, tTop + 13).strokeColor(RULE).lineWidth(0.5).stroke();
+  let ry = tTop + 20;
+  input.parcels.forEach((p, i) => {
+    if (ry > 740) { doc.addPage(); ry = 50; }
+    doc.font('Helvetica').fontSize(9.5).fillColor(INK).text(`${String(i + 1).padStart(2, '0')} · ${p.name}`, 50, ry, { width: 195 });
+    doc.fillColor(MUTED).fontSize(8.5).text(p.sigpacRef || '—', 250, ry, { width: 175 });
+    doc.fillColor(INK).fontSize(9.5).text(p.areaHa.toLocaleString('es-ES', { maximumFractionDigits: 2 }), 430, ry);
+    doc.fillColor(MUTED).fontSize(8.5).text(p.date ? formatShortEs(p.date) : '—', 480, ry, { width: 65 });
+    ry += 16;
+  });
+  doc.y = ry;
+
+  // Productos (agregado del trabajo)
+  section('§ PRODUCTOS APLICADOS (TOTAL DEL TRABAJO)');
+  if (input.products.length > 0) {
+    const pTop = doc.y;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND_600);
+    doc.text('Producto', 50, pTop);
+    doc.text('Dosis / ha', 320, pTop);
+    doc.text('Total aplicado', 440, pTop);
+    doc.moveTo(50, pTop + 13).lineTo(545, pTop + 13).strokeColor(RULE).lineWidth(0.5).stroke();
+    let py = pTop + 20;
+    input.products.forEach((p) => {
+      if (py > 740) { doc.addPage(); py = 50; }
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(p.name, 50, py, { width: 265 });
+      doc.font('Helvetica').fontSize(11).fillColor(INK).text(p.dosePerHa != null ? `${p.dosePerHa} ${p.unit}` : `var. (${p.unit})`, 320, py);
+      doc.fillColor(BRAND_600).font('Helvetica-Bold').text(fmtJobTotal(p.total, p.unit), 440, py);
+      py += 18;
+    });
+    doc.y = py;
+    doc.moveDown(0.4);
+    doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED)
+      .text(`* Total acumulado sobre las ${input.totalAreaHa.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ha tratadas del trabajo.`, 50, doc.y, { width: 495 });
+  }
+
+  // Método + operador
+  section('§ MÉTODO Y MARCO NORMATIVO');
+  kv('Método', input.applicationMethod || 'Pulverización aérea con dron');
+  if (input.operator.pilotName) kv('Piloto al mando', input.operator.pilotName);
+  doc.moveDown(0.4);
+  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(
+    'Trabajo de aplicación aérea ejecutado por el operador de drones indicado, en el marco de la normativa AESA de operaciones con aeronaves no tripuladas (UAS). AgroM · FitoLink coordina el trabajo y aporta la inteligencia satelital de decisión; la ejecución con dron corre a cargo del operador certificado.',
+    50, doc.y, { width: 495, align: 'left' },
+  );
+
+  // Footer
+  doc.moveDown(2);
+  if (doc.y < 720) doc.y = 720;
+  doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor(RULE).lineWidth(0.5).stroke();
+  doc.moveDown(0.5);
+  doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(
+    `Informe generado el ${formatDateEs(input.generatedAt)} a partir del registro de las operaciones. Recintos georreferenciados con SIGPAC catastral oficial (MAPA).`,
     50, doc.y, { width: 495 },
   );
   doc.moveDown(0.5);

@@ -136,6 +136,36 @@ export async function getOperationForReport(
   return op;
 }
 
+/**
+ * Varias operaciones populadas para el informe de TRABAJO (agregado). Todas
+ * deben ser accesibles por el usuario (dueño/piloto) o ser admin.
+ */
+export async function getOperationsForJobReport(
+  operationIds: string[],
+  userId: string,
+  isAdmin: boolean,
+): Promise<OperationReportData[]> {
+  const ops = await Operation.find({ _id: { $in: operationIds } })
+    .populate('parcelId', 'name cropType province areaHa sigpacRef')
+    .populate('farmerId', 'name')
+    .populate('pilotId', 'name company')
+    .lean();
+
+  if (ops.length === 0) throw AppError.notFound('Operaciones');
+
+  for (const o of ops) {
+    const op = o as unknown as {
+      farmerId?: { _id?: { toString(): string } };
+      pilotId?: { _id?: { toString(): string } };
+    };
+    const isOwner =
+      op.farmerId?._id?.toString() === userId || op.pilotId?._id?.toString() === userId;
+    if (!isOwner && !isAdmin) throw AppError.forbidden('No tienes acceso a alguna de las operaciones');
+  }
+
+  return ops as unknown as OperationReportData[];
+}
+
 export async function updateOperationStatus(
   operationId: string,
   userId: string,
