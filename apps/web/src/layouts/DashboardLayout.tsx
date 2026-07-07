@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/authStore.js';
@@ -79,6 +80,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const queryClient = useQueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ¿Tiene esta cuenta la parcela elegible para Predicción? La sección está
   // ligada a ENCINEÑO (la parcela del fondo, identificada por nombre, con
@@ -115,8 +117,20 @@ export default function DashboardLayout() {
     // `h-full`. With min-h-screen the sidebar grew past the viewport when an
     // inner page asked for more height (cut off "Cerrar sesion" + body scroll).
     <div className="h-screen flex overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-earth-300/30 flex flex-col h-full">
+      {/* Backdrop — solo móvil, cuando el drawer está abierto. */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {/* Sidebar — drawer deslizante en móvil, fijo en lg+. */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-earth-300/30 flex flex-col h-full transform transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* AgroM wordmark + FitoLink product label.
             Wordmark image keeps brand identity consistent with the email
             sender ("Agro•M"). The product label sits below as the route
@@ -134,6 +148,7 @@ export default function DashboardLayout() {
               key={item.to}
               to={item.to}
               end={item.to === '/dashboard'}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -182,16 +197,35 @@ export default function DashboardLayout() {
       {/* Main content — flex column so the topbar is a fixed-height row and
           the outlet wrapper handles its own scroll. */}
       <main className="flex-1 bg-gray-50 flex flex-col min-w-0 overflow-hidden">
-        {/* Minimal topbar — only renders meaningful chrome where it adds value.
-            Farmer (and future cooperative) get the alert bell because their
-            primary value prop is "we tell you when something happens". */}
+        {/* Barra superior MÓVIL (< lg): hamburguesa + logo + campana. Sin esto
+            el sidebar tapaba el contenido en móvil (drawer + botón para abrirlo). */}
+        <div className="lg:hidden flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-earth-300/30">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menú"
+            className="p-1.5 -ml-1.5 rounded-lg text-gray-600 hover:bg-gray-100"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-6 w-auto" />
+          {user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes' ? (
+            <AlertBell />
+          ) : (
+            <span className="w-8" />
+          )}
+        </div>
+        {/* Barra superior ESCRITORIO (lg+): solo la campana a la derecha.
+            Farmer/cooperativa/adv/regantes la tienen porque su valor es
+            "te avisamos cuando pasa algo". */}
         {(user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes') && (
-          <div className="flex-shrink-0 flex items-center justify-end px-8 pt-5 pb-1">
+          <div className="hidden lg:flex flex-shrink-0 items-center justify-end px-8 pt-5 pb-1">
             <AlertBell />
           </div>
         )}
         <div className={`flex-1 min-h-0 overflow-auto ${
-          user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes' ? 'px-8 pb-8 pt-2' : 'p-8'
+          user.role === 'farmer' || user.role === 'cooperative' || user.role === 'adv' || user.role === 'regantes' ? 'px-4 lg:px-8 pb-8 pt-4 lg:pt-2' : 'p-4 lg:p-8'
         }`}>
           <Outlet />
         </div>

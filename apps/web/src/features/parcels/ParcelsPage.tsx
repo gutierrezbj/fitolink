@@ -151,9 +151,9 @@ export default function ParcelsPage() {
       {/* Main layout: map left + list/detail right */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-        {/* Map — sticky, takes left 3 cols */}
-        <div className="lg:col-span-3 sticky top-6">
-          <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 'calc(100vh - 180px)' }}>
+        {/* Map — sticky en lg (izquierda); en móvil altura fija menor y encima. */}
+        <div className="lg:col-span-3 lg:sticky lg:top-6">
+          <div className="rounded-xl overflow-hidden border border-gray-200 h-72 lg:h-[calc(100vh-180px)]">
             <ParcelMap
               parcels={parcels}
               selectedParcelId={selectedParcelId || undefined}
@@ -166,8 +166,8 @@ export default function ParcelsPage() {
           </div>
         </div>
 
-        {/* Right panel: unified white card with list + detail */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+        {/* Right panel: en lg tiene su propio scroll interno; en móvil fluye. */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col lg:overflow-hidden lg:max-h-[calc(100vh-180px)]">
 
           {/* List header */}
           <div className="px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
@@ -188,7 +188,7 @@ export default function ParcelsPage() {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+          <div className="flex-1 lg:overflow-y-auto p-4 flex flex-col gap-4">
 
         {/* Parcel list — mini cards 2-col grid */}
         <div className="grid grid-cols-2 gap-2">
