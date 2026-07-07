@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { APPLICATION_UNITS } from '@fitolink/shared';
 import { api } from '@/lib/api.js';
 import { toast } from '@/stores/toastStore.js';
 
@@ -15,9 +16,9 @@ export default function CompleteOperationForm({ operationId, parcelName, areaHa,
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [flightAreaHa, setFlightAreaHa] = useState(areaHa?.toFixed(1) || '');
-  const [productName, setProductName] = useState('');
-  const [activeSubstance, setActiveSubstance] = useState('');
-  const [doseLPerHa, setDoseLPerHa] = useState('');
+  const [products, setProducts] = useState<Array<{ name: string; dose: string; unit: string }>>([
+    { name: '', dose: '', unit: 'L/ha' },
+  ]);
   const [applicationMethod, setApplicationMethod] = useState('');
   const [temp, setTemp] = useState('');
   const [windKmh, setWindKmh] = useState('');
@@ -33,12 +34,11 @@ export default function CompleteOperationForm({ operationId, parcelName, areaHa,
         },
       };
 
-      if (productName && activeSubstance && doseLPerHa) {
-        body.product = {
-          name: productName,
-          activeSubstance,
-          doseLPerHa: parseFloat(doseLPerHa),
-        };
+      const validProducts = products
+        .filter((p) => p.name.trim() && p.dose && parseFloat(p.dose) > 0)
+        .map((p) => ({ name: p.name.trim(), dose: parseFloat(p.dose), unit: p.unit }));
+      if (validProducts.length > 0) {
+        body.products = validProducts;
       }
 
       if (applicationMethod) {
@@ -122,43 +122,70 @@ export default function CompleteOperationForm({ operationId, parcelName, areaHa,
           </div>
         </div>
 
-        {/* Product - optional */}
+        {/* Productos aplicados (mezcla de tanque · multi-producto con unidad) */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Producto Aplicado
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Nombre del producto</label>
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Ej: Confidor 20 LS"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Sustancia activa</label>
-              <input
-                type="text"
-                value={activeSubstance}
-                onChange={(e) => setActiveSubstance(e.target.value)}
-                placeholder="Ej: Imidacloprid"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Dosis (L/ha)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={doseLPerHa}
-                onChange={(e) => setDoseLPerHa(e.target.value)}
-                placeholder="Ej: 0.5"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              Productos aplicados
+            </h2>
+            <button
+              type="button"
+              onClick={() => setProducts((ps) => [...ps, { name: '', dose: '', unit: 'L/ha' }])}
+              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+            >
+              + Añadir producto
+            </button>
+          </div>
+          <div className="space-y-3">
+            {products.map((p, i) => (
+              <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <div className="md:col-span-6">
+                  <label className="block text-sm text-gray-600 mb-1">Producto</label>
+                  <input
+                    type="text"
+                    value={p.name}
+                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                    placeholder="Ej: Love Green Plus"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-sm text-gray-600 mb-1">Dosis / ha</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={p.dose}
+                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, dose: e.target.value } : x)))}
+                    placeholder="Ej: 750"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-gray-600 mb-1">Unidad</label>
+                  <select
+                    value={p.unit}
+                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))}
+                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  >
+                    {APPLICATION_UNITS.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-1 flex justify-end">
+                  {products.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setProducts((ps) => ps.filter((_, j) => j !== i))}
+                      title="Quitar producto"
+                      className="text-gray-400 hover:text-red-600 py-2 px-2 text-lg leading-none"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="mt-4">
             <label className="block text-sm text-gray-600 mb-1">Metodo de aplicacion</label>

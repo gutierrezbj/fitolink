@@ -13,6 +13,7 @@ export interface IOperation extends Document {
   status: OperationStatus;
   alertId?: mongoose.Types.ObjectId;
   product?: { name: string; activeSubstance: string; doseLPerHa: number };
+  products?: Array<{ name: string; dose: number; unit: string; note?: string }>;
   applicationMethod?: string;
   weatherConditions?: { temp: number; windKmh: number; humidity: number };
   flightLog?: { startTime: Date; endTime: Date; areaHa: number };
@@ -38,6 +39,15 @@ const operationSchema = new Schema<IOperation>(
       activeSubstance: String,
       doseLPerHa: Number,
     },
+    products: [
+      {
+        _id: false,
+        name: String,
+        dose: Number,
+        unit: String,
+        note: String,
+      },
+    ],
     applicationMethod: String,
     weatherConditions: {
       temp: Number,

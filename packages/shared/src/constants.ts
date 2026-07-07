@@ -28,6 +28,12 @@ export type OperationType = (typeof OPERATION_TYPES)[number];
 export const OPERATION_STATUSES = ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'] as const;
 export type OperationStatus = (typeof OPERATION_STATUSES)[number];
 
+// Unidades de dosis para los productos de una aplicación (mezcla de tanque).
+// Sólidos en g/kg por ha, líquidos en mL/L por ha. Para bioestimulantes,
+// microbiota y fitosanitarios por igual — el informe muestra dosis + unidad.
+export const APPLICATION_UNITS = ['g/ha', 'kg/ha', 'mL/ha', 'L/ha'] as const;
+export type ApplicationUnit = (typeof APPLICATION_UNITS)[number];
+
 // Alert types
 // Sprint FIRMS · 04-jun-2026: añadido 'fire_proximity' — foco térmico
 // detectado por NASA FIRMS (VIIRS 375m) dentro del radio de la parcela.

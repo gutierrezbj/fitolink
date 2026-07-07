@@ -12,6 +12,7 @@ router.post('/', authorize('farmer'), validate(createOperationSchema), operation
 router.get('/mine', authorize('farmer'), operationController.getMyOperations);
 router.get('/assignments', authorize('pilot'), operationController.getAssignments);
 router.get('/:id', operationController.getById);
+router.get('/:id/report', operationController.downloadReport);
 router.patch('/:id/status', operationController.updateStatus);
 router.patch('/:id/complete', authorize('pilot'), validate(completeOperationSchema), operationController.complete);
 

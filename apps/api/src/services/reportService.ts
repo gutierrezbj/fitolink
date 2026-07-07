@@ -15,6 +15,7 @@
  */
 import PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
+import { cropLabel } from '@fitolink/shared';
 
 // Tipos compatibles con el shape devuelto por cooperativeService.getOverview.
 // Replicamos aquí para no acoplar el módulo al service (testeable aislado).
@@ -78,6 +79,12 @@ function formatDateEs(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   return `${day} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function formatDateTimeEs(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${formatDateEs(d)} · ${hh}:${mm}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -250,6 +257,151 @@ export function generateCarteraPdf(input: ReportInput): Readable {
 
   doc.end();
 
+  return doc as unknown as Readable;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PDF · Informe de aplicación (por operación de dron)
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface ApplicationReportInput {
+  generatedAt: Date;
+  clientName: string;
+  operator: { company?: string; pilotName?: string };
+  parcel: { name: string; cropType: string; province?: string; sigpacRef?: string; areaHa?: number };
+  completedAt?: Date;
+  flightLog?: { startTime?: Date; endTime?: Date; areaHa?: number };
+  // Mezcla aplicada — nombre + dosis + unidad (g/ha, L/ha…).
+  products: Array<{ name: string; dose: number; unit: string; note?: string }>;
+  applicationMethod?: string;
+  weather?: { temp: number; windKmh: number; humidity: number } | null;
+  prescription?: { ref: string; signedBy: string } | null;
+}
+
+/**
+ * PDF del informe de aplicación de UNA operación: parcela tratada, productos
+ * (mezcla) con dosis + unidad, método, condiciones meteo, registro de vuelo y
+ * el operador con el marco AESA (honesto: AgroM coordina, el operador de dron
+ * certificado ejecuta). Reutiliza la paleta/estilo del PDF de cartera.
+ */
+export function generateApplicationPdf(input: ApplicationReportInput): Readable {
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 50,
+    info: {
+      Title: `Informe de aplicación · ${input.parcel.name}`,
+      Author: 'AgroM · FitoLink',
+      Subject: 'Informe de aplicación aérea con dron',
+      CreationDate: input.generatedAt,
+    },
+  });
+
+  const section = (label: string) => {
+    doc.moveDown(1);
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED).text(label, 50, doc.y, { characterSpacing: 1.5 });
+    doc.moveDown(0.4);
+  };
+  const kv = (k: string, v: string) => {
+    const y = doc.y;
+    doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(k, 50, y, { width: 175 });
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(v, 230, y, { width: 315 });
+    doc.moveDown(0.3);
+  };
+
+  // ── Header editorial ──
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED)
+    .text('AGROM · INTELIGENCIA AGRARIA DE PRECISIÓN', { characterSpacing: 2 });
+  doc.moveDown(0.5);
+  doc.moveTo(50, doc.y).lineTo(80, doc.y).strokeColor(TERRA_500).lineWidth(1.5).stroke();
+  doc.moveDown(1);
+  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('§ INFORME DE APLICACIÓN', { characterSpacing: 1.5 });
+  doc.moveDown(0.3);
+  doc.font('Helvetica-Bold').fontSize(22).fillColor(INK).text(`Aplicación en ${input.parcel.name}`);
+  doc.moveDown(0.3);
+  doc.font('Helvetica-Oblique').fontSize(11).fillColor(MUTED).text(`Cliente: ${input.clientName}`);
+  doc.moveDown(0.2);
+  const fecha = input.completedAt ?? input.generatedAt;
+  doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Fecha de la aplicación: ${formatDateEs(fecha)}`);
+
+  // ── Parcela ──
+  section('§ PARCELA TRATADA');
+  kv('Parcela', input.parcel.name);
+  kv('Cultivo', cropLabel(input.parcel.cropType));
+  if (input.parcel.province) kv('Provincia', input.parcel.province);
+  if (input.parcel.sigpacRef) kv('Referencia SIGPAC', input.parcel.sigpacRef);
+  const areaTratada = input.flightLog?.areaHa ?? input.parcel.areaHa;
+  if (areaTratada != null) kv('Superficie tratada', `${areaTratada} ha`);
+
+  // ── Productos aplicados (mezcla) ──
+  section('§ PRODUCTOS APLICADOS');
+  if (input.products.length > 0) {
+    const tTop = doc.y;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND_600);
+    doc.text('Producto', 50, tTop);
+    doc.text('Dosis / ha', 340, tTop);
+    if (areaTratada != null) doc.text('Total estimado', 445, tTop);
+    doc.moveTo(50, tTop + 13).lineTo(545, tTop + 13).strokeColor(RULE).lineWidth(0.5).stroke();
+    let ry = tTop + 20;
+    input.products.forEach((p) => {
+      if (ry > 720) { doc.addPage(); ry = 50; }
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(p.name, 50, ry, { width: 285 });
+      doc.font('Helvetica').fontSize(11).fillColor(INK).text(`${p.dose} ${p.unit}`, 340, ry);
+      if (areaTratada != null) {
+        const totalUnit = p.unit.split('/')[0];
+        doc.fillColor(MUTED).text(`${(p.dose * areaTratada).toLocaleString('es-ES', { maximumFractionDigits: 1 })} ${totalUnit}`, 445, ry);
+      }
+      let dy = 18;
+      if (p.note) {
+        doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED).text(p.note, 50, ry + 14, { width: 285 });
+        dy = 28;
+      }
+      ry += dy;
+    });
+    doc.y = ry;
+    if (areaTratada != null) {
+      doc.moveDown(0.4);
+      doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED)
+        .text(`* Total estimado para las ${areaTratada} ha tratadas de esta parcela.`, 50, doc.y, { width: 495 });
+    }
+  } else {
+    doc.font('Helvetica-Oblique').fontSize(10).fillColor(MUTED).text('No se registraron productos en esta operación.', 50, doc.y);
+  }
+
+  // ── Método y condiciones ──
+  section('§ MÉTODO Y CONDICIONES');
+  kv('Método', input.applicationMethod || 'Pulverización aérea con dron');
+  if (input.weather) {
+    kv('Meteorología', `${input.weather.temp} °C · viento ${input.weather.windKmh} km/h · humedad ${input.weather.humidity} %`);
+  }
+  if (input.flightLog?.startTime) kv('Inicio del vuelo', formatDateTimeEs(input.flightLog.startTime));
+  if (input.flightLog?.endTime) kv('Fin del vuelo', formatDateTimeEs(input.flightLog.endTime));
+
+  // ── Operador + marco normativo (encuadre honesto) ──
+  section('§ OPERADOR Y MARCO NORMATIVO');
+  if (input.operator.company) kv('Operador de drones', input.operator.company);
+  if (input.operator.pilotName) kv('Piloto al mando', input.operator.pilotName);
+  if (input.prescription?.ref) kv('Prescripción / asesoramiento', input.prescription.ref);
+  if (input.prescription?.signedBy) kv('Firmado por', input.prescription.signedBy);
+  doc.moveDown(0.4);
+  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(
+    'Aplicación aérea ejecutada por el operador de drones indicado, en el marco de la normativa AESA de operaciones con aeronaves no tripuladas (UAS). AgroM · FitoLink coordina el tratamiento y aporta la inteligencia satelital de decisión; la ejecución con dron corre a cargo del operador certificado y su piloto.',
+    50, doc.y, { width: 495, align: 'left' },
+  );
+
+  // ── Footer ──
+  doc.moveDown(2);
+  if (doc.y < 720) doc.y = 720;
+  doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor(RULE).lineWidth(0.5).stroke();
+  doc.moveDown(0.5);
+  doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(
+    `Informe generado el ${formatDateEs(input.generatedAt)} a partir del registro de la operación. Parcela georreferenciada con SIGPAC catastral oficial (MAPA).`,
+    50, doc.y, { width: 495 },
+  );
+  doc.moveDown(0.5);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(MUTED)
+    .text('AGROM · FITOLINK · agrom.es · fitolink.agrom.es', { characterSpacing: 1.5, align: 'center' });
+
+  doc.end();
   return doc as unknown as Readable;
 }
 

@@ -3,6 +3,7 @@ import {
   USER_ROLES,
   OPERATION_TYPES,
   OPERATION_STATUSES,
+  APPLICATION_UNITS,
   ALERT_TYPES,
   ALERT_SEVERITIES,
   ALERT_STATUSES,
@@ -112,6 +113,17 @@ export const productSchema = z.object({
   doseLPerHa: z.number().positive(),
 });
 
+// Producto de una aplicación (mezcla de tanque): nombre + dosis + unidad.
+// Soporta sólidos (g/kg) y líquidos (mL/L). Reemplaza al productSchema de
+// un solo producto para representar mezclas reales (p.ej. bioestimulante +
+// microbiota) sin forzar "sustancia activa" (concepto de fitosanitario).
+export const productItemSchema = z.object({
+  name: z.string().min(1),
+  dose: z.number().positive(),
+  unit: z.enum(APPLICATION_UNITS),
+  note: z.string().max(200).optional(),
+});
+
 export const weatherSchema = z.object({
   temp: z.number(),
   windKmh: z.number().min(0),
@@ -132,6 +144,9 @@ export const createOperationSchema = z.object({
 
 export const completeOperationSchema = z.object({
   product: productSchema.optional(),
+  // Mezcla de tanque: varios productos con su dosis y unidad. Es el modo
+  // preferido; `product` (un solo producto en L/ha) se mantiene por compat.
+  products: z.array(productItemSchema).max(12).optional(),
   applicationMethod: z.string().optional(),
   weatherConditions: weatherSchema.optional(),
   flightLog: flightLogSchema,
@@ -140,6 +155,8 @@ export const completeOperationSchema = z.object({
     signedBy: z.string(),
   }).optional(),
 });
+
+export type ProductItem = z.infer<typeof productItemSchema>;
 
 // === Alerts ===
 

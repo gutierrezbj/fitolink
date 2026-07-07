@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import { formatDate } from '@/lib/utils.js';
+import { toast } from '@/stores/toastStore.js';
 import { useState } from 'react';
 import CompleteOperationForm from '@/features/pilot/CompleteOperationForm.js';
 
@@ -41,6 +42,7 @@ export default function OperationDetailPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   const { data: operationData, isLoading } = useQuery({
     queryKey: ['operations', id],
@@ -85,6 +87,33 @@ export default function OperationDetailPage() {
   const op = operationData;
   const isPilot = user?.role === 'pilot';
   const isFarmer = user?.role === 'farmer';
+
+  // Productos aplicados: mezcla nueva (products[]) o el producto legacy adaptado.
+  const appliedProducts: Array<{ name: string; dose: number; unit: string }> = op.products?.length
+    ? op.products
+    : op.product
+      ? [{ name: op.product.name, dose: op.product.doseLPerHa, unit: 'L/ha' }]
+      : [];
+
+  async function handleDownloadReport() {
+    setDownloadingReport(true);
+    try {
+      const res = await api.get(`/operations/${id}/report`, { responseType: 'blob' });
+      const blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `informe-aplicacion-${(op.parcelId?.name || 'parcela').replace(/[^0-9A-Za-z]+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch {
+      toast.error('No se pudo generar el informe');
+    } finally {
+      setDownloadingReport(false);
+    }
+  }
 
   if (showCompleteForm) {
     return (
@@ -131,6 +160,19 @@ export default function OperationDetailPage() {
               {op.completedAt && ` · Completada el ${formatDate(op.completedAt)}`}
             </p>
           </div>
+          {op.status === 'completed' && (
+            <button
+              onClick={handleDownloadReport}
+              disabled={downloadingReport}
+              className="inline-flex items-center gap-1.5 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
+              title="Descargar informe de aplicación en PDF"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {downloadingReport ? 'Generando…' : 'Descargar informe'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -263,17 +305,18 @@ export default function OperationDetailPage() {
                   <span className="text-sm font-medium text-gray-900">{op.flightLog.areaHa} ha</span>
                 </div>
               )}
-              {op.product && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Producto</span>
-                    <span className="text-sm font-medium text-gray-900">{op.product.name}</span>
+              {appliedProducts.length > 0 && (
+                <div className="pt-1">
+                  <span className="text-sm text-gray-500">Productos aplicados</span>
+                  <div className="mt-1 space-y-1">
+                    {appliedProducts.map((p, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                        <span className="text-sm font-medium text-brand-700">{p.dose} {p.unit}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Dosis</span>
-                    <span className="text-sm font-medium text-gray-900">{op.product.doseLPerHa} L/ha</span>
-                  </div>
-                </>
+                </div>
               )}
               {op.weatherConditions && (
                 <div className="flex justify-between">

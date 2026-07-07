@@ -78,9 +78,9 @@ export async function getOperationById(operationId: string, userId: string): Pro
   // Read-only detail view → .lean(). The ownership check below reads
   // farmerId._id / pilotId._id which stay as ObjectId on the lean object.
   const operation = await Operation.findById(operationId)
-    .populate('parcelId', 'name cropType province areaHa geometry')
+    .populate('parcelId', 'name cropType province areaHa sigpacRef geometry')
     .populate('farmerId', 'name email phone')
-    .populate('pilotId', 'name email phone rating')
+    .populate('pilotId', 'name email phone rating company')
     .populate('alertId', 'type severity ndviValue ndviDelta')
     .lean<IOperation>();
 
@@ -91,6 +91,49 @@ export async function getOperationById(operationId: string, userId: string): Pro
   if (!isOwner) throw AppError.forbidden('No tienes acceso a esta operacion');
 
   return operation;
+}
+
+// Shape de la operación (populada) que necesita el informe de aplicación.
+export interface OperationReportData {
+  status: string;
+  completedAt?: Date;
+  flightLog?: { startTime?: Date; endTime?: Date; areaHa?: number };
+  products?: Array<{ name: string; dose: number; unit: string; note?: string }>;
+  product?: { name: string; activeSubstance: string; doseLPerHa: number };
+  applicationMethod?: string;
+  weatherConditions?: { temp: number; windKmh: number; humidity: number };
+  prescription?: { ref: string; signedBy: string };
+  parcelId?: { name: string; cropType: string; province?: string; sigpacRef?: string; areaHa?: number };
+  farmerId?: { name: string };
+  pilotId?: { name: string; company?: string };
+}
+
+/**
+ * Operación populada para el informe de aplicación. Acceso: el agricultor
+ * dueño, el piloto asignado o un admin (para regenerar/enviar el informe).
+ */
+export async function getOperationForReport(
+  operationId: string,
+  userId: string,
+  isAdmin: boolean,
+): Promise<OperationReportData> {
+  const operation = await Operation.findById(operationId)
+    .populate('parcelId', 'name cropType province areaHa sigpacRef')
+    .populate('farmerId', 'name')
+    .populate('pilotId', 'name company')
+    .lean();
+
+  if (!operation) throw AppError.notFound('Operacion');
+
+  const op = operation as unknown as OperationReportData & {
+    farmerId?: { _id?: { toString(): string } };
+    pilotId?: { _id?: { toString(): string } };
+  };
+  const isOwner =
+    op.farmerId?._id?.toString() === userId || op.pilotId?._id?.toString() === userId;
+  if (!isOwner && !isAdmin) throw AppError.forbidden('No tienes acceso a esta operacion');
+
+  return op;
 }
 
 export async function updateOperationStatus(
@@ -127,6 +170,7 @@ export async function completeOperation(
   operation.status = 'completed';
   operation.completedAt = new Date();
   if (data.product) operation.product = data.product;
+  if (data.products) operation.products = data.products;
   if (data.applicationMethod) operation.applicationMethod = data.applicationMethod;
   if (data.weatherConditions) operation.weatherConditions = data.weatherConditions;
   if (data.flightLog) operation.flightLog = data.flightLog;
