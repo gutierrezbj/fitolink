@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap, CircleMarker } from 'react-le
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
 import { ndviColor, ndviHealthLabel, ndviLowForCrop } from '@/lib/cropHealth.js';
+import { cropLabel } from '@fitolink/shared';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -46,6 +47,8 @@ interface ParcelMapProps {
   showDetailLink?: boolean;
   showLegend?: boolean;
   mapStyle?: 'satellite' | 'light';
+  /** 'estado' = color por salud NDVI (con alertas); 'cultivo' = color por cultivo. */
+  colorMode?: 'estado' | 'cultivo';
   children?: React.ReactNode;
 }
 
@@ -66,7 +69,20 @@ function hasAlertOnParcel(parcel: Parcel): boolean {
   return last.anomalyDetected || ndviLowForCrop(last.mean, parcel.cropType);
 }
 
-function getParcelColor(parcel: Parcel): string {
+// Color por CULTIVO para el modo "Cultivo" del mapa. Familia coherente con los
+// chips de la lista; tono -600 para buen contraste sobre satélite.
+const CROP_HEX: Record<string, string> = {
+  maiz: '#d97706', cereal: '#ca8a04', olivo: '#16a34a', leguminosa: '#65a30d',
+  girasol: '#d97706', citrico: '#ea580c', frutal: '#e11d48', vinedo: '#9333ea',
+  pistacho: '#059669', almendro: '#db2777', hortaliza: '#0d9488', arroz: '#0284c7',
+  remolacha: '#c026d3', patata: '#a16207', algodon: '#475569',
+};
+function cropHex(crop?: string): string {
+  return (crop && CROP_HEX[crop]) || '#6b7280';
+}
+
+function getParcelColor(parcel: Parcel, colorMode: 'estado' | 'cultivo' = 'estado'): string {
+  if (colorMode === 'cultivo') return cropHex(parcel.cropType);
   const v = getLatestNdvi(parcel);
   if (v === null) return '#94a3b8';
   if (hasAlertOnParcel(parcel)) return '#ef4444';
@@ -193,6 +209,33 @@ function NdviLegend({ cropType }: { cropType?: string }) {
   return null;
 }
 
+// Leyenda de CULTIVO para el modo "Cultivo" — lista los cultivos presentes
+// con su color de contorno. Reemplaza la leyenda NDVI en ese modo.
+function CropLegend({ parcels }: { parcels: Parcel[] }) {
+  const map = useMap();
+  const cropsKey = [...new Set(parcels.map((p) => p.cropType))].sort().join(',');
+  useEffect(() => {
+    const crops = [...new Set(parcels.map((p) => p.cropType))].sort();
+    const LegendControl = L.Control.extend({
+      onAdd() {
+        const div = L.DomUtil.create('div');
+        div.style.cssText = 'background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.12);padding:7px 9px;border-radius:8px;font-size:10px;line-height:1.7;box-shadow:0 1px 4px rgba(0,0,0,0.12);backdrop-filter:blur(4px);';
+        div.innerHTML =
+          `<div style="font-weight:700;color:#354b23;margin-bottom:4px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Cultivo</div>` +
+          crops
+            .map((c) => `<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:${cropHex(c)};flex-shrink:0"></div><span style="color:#374151;text-transform:capitalize">${cropLabel(c)}</span></div>`)
+            .join('');
+        L.DomEvent.disableClickPropagation(div);
+        return div;
+      },
+    });
+    const control = new LegendControl({ position: 'bottomright' });
+    control.addTo(map);
+    return () => { control.remove(); };
+  }, [map, cropsKey]);
+  return null;
+}
+
 function AlertPulse({ parcel }: { parcel: Parcel }) {
   const center = getPolygonCenter(parcel.geometry);
   return (
@@ -211,16 +254,17 @@ function AlertPulse({ parcel }: { parcel: Parcel }) {
   );
 }
 
-function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink }: {
+function ParcelLayer({ parcel, isSelected, onParcelClick, showDetailLink, colorMode }: {
   parcel: Parcel;
   isSelected: boolean;
   onParcelClick?: (id: string) => void;
   showDetailLink?: boolean;
+  colorMode: 'estado' | 'cultivo';
 }) {
   // Usa los helpers normalizados para soportar AMBOS shapes (ndviHistory[]
   // del endpoint completo + ndvi directo del endpoint agregado).
   const currentNdvi = getLatestNdvi(parcel);
-  const color = getParcelColor(parcel);
+  const color = getParcelColor(parcel, colorMode);
   const hasAlert = hasAlertOnParcel(parcel);
   // latest solo se usa para popups detallados (date/min/max), no para
   // colorear. Si viene del shape agregado, latest será undefined y el
@@ -279,13 +323,15 @@ export default function ParcelMap({
   showDetailLink = false,
   showLegend = false,
   mapStyle = 'satellite',
+  colorMode = 'estado',
   children,
 }: ParcelMapProps) {
   const focusParcel = focusParcelId ? parcels.find((p) => p._id === focusParcelId) : undefined;
-  const alertParcels = parcels.filter((p) => {
-    const latest = p.ndviHistory?.[p.ndviHistory.length - 1];
-    return latest?.anomalyDetected || (latest && latest.mean < 0.3);
-  });
+  // Alertas conscientes del cultivo (misma lógica que el color del contorno y
+  // los puntos de la lista). En modo "cultivo" NO pintamos pulsos: el foco es
+  // ver el cultivo, no las alertas. Antes usaba un umbral fijo mean<0.3 que
+  // marcaba en rojo un cereal cosechado normal (0.22–0.27).
+  const alertParcels = colorMode === 'estado' ? parcels.filter((p) => hasAlertOnParcel(p)) : [];
 
   return (
     <MapContainer
@@ -320,7 +366,7 @@ export default function ParcelMap({
       <FitBounds parcels={parcels} />
       <FitAllButton parcels={parcels} />
       <FlyToParcel parcel={focusParcel} />
-      {showLegend && (
+      {showLegend && colorMode === 'estado' && (
         <NdviLegend
           cropType={
             parcels.length > 0 && parcels.every((p) => p.cropType === parcels[0].cropType)
@@ -329,6 +375,7 @@ export default function ParcelMap({
           }
         />
       )}
+      {showLegend && colorMode === 'cultivo' && <CropLegend parcels={parcels} />}
 
       {parcels.map((parcel) => (
         <ParcelLayer
@@ -337,6 +384,7 @@ export default function ParcelMap({
           isSelected={selectedParcelId === parcel._id}
           onParcelClick={onParcelClick}
           showDetailLink={showDetailLink}
+          colorMode={colorMode}
         />
       ))}
 

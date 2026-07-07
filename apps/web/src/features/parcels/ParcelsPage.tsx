@@ -62,6 +62,8 @@ function cap(s: string): string {
 export default function ParcelsPage() {
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [cropFilter, setCropFilter] = useState<string | null>(null);
+  const [colorMode, setColorMode] = useState<'estado' | 'cultivo'>('estado');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -87,6 +89,9 @@ export default function ParcelsPage() {
     }
     return [...m.entries()].sort((a, b) => b[1].count - a[1].count);
   }, [parcels]);
+
+  // Parcelas mostradas (lista + mapa) según el filtro de cultivo activo.
+  const shownParcels = cropFilter ? parcels.filter((p) => p.cropType === cropFilter) : parcels;
 
   const selectedParcel = parcels.find((p) => p._id === selectedParcelId);
   const parcelToDelete = parcels.find((p) => p._id === confirmDeleteId);
@@ -153,15 +158,33 @@ export default function ParcelsPage() {
 
         {/* Map — sticky en lg (izquierda); en móvil altura fija menor y encima. */}
         <div className="lg:col-span-3 lg:sticky lg:top-6">
-          <div className="rounded-xl overflow-hidden border border-gray-200 h-72 lg:h-[calc(100vh-180px)]">
+          <div className="relative rounded-xl overflow-hidden border border-gray-200 h-72 lg:h-[calc(100vh-180px)]">
+            {/* Toggle de color del mapa: Estado (salud NDVI) / Cultivo. */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] flex rounded-full bg-white/95 shadow border border-gray-200 overflow-hidden text-[11px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setColorMode('estado')}
+                className={`px-3 py-1 transition-colors ${colorMode === 'estado' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                Estado
+              </button>
+              <button
+                type="button"
+                onClick={() => setColorMode('cultivo')}
+                className={`px-3 py-1 transition-colors ${colorMode === 'cultivo' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                Cultivo
+              </button>
+            </div>
             <ParcelMap
-              parcels={parcels}
+              parcels={shownParcels}
               selectedParcelId={selectedParcelId || undefined}
               focusParcelId={selectedParcelId || undefined}
               onParcelClick={setSelectedParcelId}
               height="100%"
               showDetailLink
               showLegend
+              colorMode={colorMode}
             />
           </div>
         </div>
@@ -169,20 +192,38 @@ export default function ParcelsPage() {
         {/* Right panel: en lg tiene su propio scroll interno; en móvil fluye. */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col lg:overflow-hidden lg:max-h-[calc(100vh-180px)]">
 
-          {/* List header */}
+          {/* List header — los chips de cultivo son FILTROS clicables. */}
           <div className="px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{parcels.length} parcelas</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              {cropFilter ? `${shownParcels.length} de ${parcels.length} parcelas` : `${parcels.length} parcelas`}
+            </p>
             {cropSummary.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {cropSummary.map(([crop, s]) => (
-                  <span
-                    key={crop}
-                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cropChipClass(crop)}`}
-                    title={`${s.count} parcela${s.count > 1 ? 's' : ''} de ${cropLabel(crop)} declarado · ${s.ha.toFixed(2)} ha`}
+                {cropSummary.map(([crop, s]) => {
+                  const active = cropFilter === crop;
+                  return (
+                    <button
+                      key={crop}
+                      type="button"
+                      onClick={() => setCropFilter(active ? null : crop)}
+                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded transition ${cropChipClass(crop)} ${
+                        active ? 'ring-2 ring-brand-500 ring-offset-1' : cropFilter ? 'opacity-40 hover:opacity-100' : 'hover:brightness-95'
+                      }`}
+                      title={`Filtrar: ${s.count} parcela${s.count > 1 ? 's' : ''} de ${cropLabel(crop)} declarado · ${s.ha.toFixed(2)} ha`}
+                    >
+                      {cap(cropLabel(crop))} {s.count} · {s.ha.toFixed(1)} ha
+                    </button>
+                  );
+                })}
+                {cropFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setCropFilter(null)}
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
                   >
-                    {cap(cropLabel(crop))} {s.count} · {s.ha.toFixed(1)} ha
-                  </span>
-                ))}
+                    ✕ Todas
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -203,7 +244,7 @@ export default function ParcelsPage() {
               </button>
             </div>
           ) : (
-            parcels.map((parcel) => {
+            shownParcels.map((parcel) => {
               const latestNdvi = parcel.ndviHistory?.[parcel.ndviHistory.length - 1];
               const isSelected = parcel._id === selectedParcelId;
               const hasAlert = latestNdvi?.anomalyDetected || ndviLowForCrop(latestNdvi?.mean, parcel.cropType);
