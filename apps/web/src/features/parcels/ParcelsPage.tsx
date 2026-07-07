@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { cropLabel } from '@fitolink/shared';
@@ -63,7 +63,21 @@ export default function ParcelsPage() {
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [cropFilter, setCropFilter] = useState<string | null>(null);
-  const [colorMode, setColorMode] = useState<'estado' | 'cultivo'>('estado');
+  // Modo de color del mapa, recordado por navegador (Estado / Cultivo).
+  const [colorMode, setColorMode] = useState<'estado' | 'cultivo'>(() => {
+    try {
+      return localStorage.getItem('parcels.colorMode') === 'cultivo' ? 'cultivo' : 'estado';
+    } catch {
+      return 'estado';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('parcels.colorMode', colorMode);
+    } catch {
+      /* almacenamiento no disponible (modo privado) — no pasa nada */
+    }
+  }, [colorMode]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
