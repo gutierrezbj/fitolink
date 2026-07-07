@@ -36,7 +36,7 @@ function getHealthColor(ndvi: number | undefined) {
 // Chip de color por cultivo DECLARADO (el que dijo el agricultor en SIGPAC, no
 // detección por satélite). Sirve para localizar de un vistazo, p.ej. el maíz.
 const CROP_CHIP: Record<string, string> = {
-  maiz: 'bg-amber-100 text-amber-800',
+  maiz: 'bg-orange-100 text-orange-800',
   cereal: 'bg-yellow-100 text-yellow-800',
   olivo: 'bg-green-100 text-green-800',
   leguminosa: 'bg-teal-100 text-teal-800',

@@ -72,8 +72,8 @@ function hasAlertOnParcel(parcel: Parcel): boolean {
 // Color por CULTIVO para el modo "Cultivo" del mapa. Familia coherente con los
 // chips de la lista; tono -600 para buen contraste sobre satélite.
 const CROP_HEX: Record<string, string> = {
-  maiz: '#d97706', cereal: '#ca8a04', olivo: '#16a34a', leguminosa: '#0d9488',
-  girasol: '#f59e0b', citrico: '#ea580c', frutal: '#e11d48', vinedo: '#9333ea',
+  maiz: '#ea580c', cereal: '#facc15', olivo: '#16a34a', leguminosa: '#0d9488',
+  girasol: '#f59e0b', citrico: '#f97316', frutal: '#e11d48', vinedo: '#9333ea',
   pistacho: '#059669', almendro: '#db2777', hortaliza: '#4f46e5', arroz: '#0284c7',
   remolacha: '#c026d3', patata: '#a16207', algodon: '#475569',
 };
