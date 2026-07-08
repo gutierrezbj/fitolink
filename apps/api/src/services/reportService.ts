@@ -553,12 +553,26 @@ export interface JobReportInput {
   applicationMethod?: string;
 }
 
-// Total en unidad legible: g→kg y mL→L cuando el acumulado es grande.
+// Total en la unidad más legible. Escala hacia ARRIBA (g→kg, mL→L) cuando el
+// acumulado es grande, y hacia ABAJO (→g, →mL) cuando es pequeño, para que una
+// parcela chica no muestre "0 L" por redondeo (p.ej. 2 L/ha × 0,02 ha = 40 mL,
+// no "0 L"). `total` viene expresado en la unidad del numerador de `unitPerHa`.
 function fmtJobTotal(total: number, unitPerHa: string): string {
-  const base = unitPerHa.split('/')[0];
-  if (base === 'g' && total >= 1000) return `${(total / 1000).toLocaleString('es-ES', { maximumFractionDigits: 2 })} kg`;
-  if (base === 'mL' && total >= 1000) return `${(total / 1000).toLocaleString('es-ES', { maximumFractionDigits: 2 })} L`;
-  return `${total.toLocaleString('es-ES', { maximumFractionDigits: 1 })} ${base}`;
+  const base = unitPerHa.split('/')[0]; // g | kg | mL | L | …
+  const fmt = (n: number, d: number) => n.toLocaleString('es-ES', { maximumFractionDigits: d });
+  // Familia masa (g / kg) — normalizamos a gramos y elegimos unidad.
+  if (base === 'g' || base === 'kg') {
+    const grams = base === 'kg' ? total * 1000 : total;
+    if (grams >= 1000) return `${fmt(grams / 1000, 2)} kg`;
+    return `${fmt(grams, grams < 10 ? 1 : 0)} g`;
+  }
+  // Familia volumen (mL / L) — normalizamos a mililitros y elegimos unidad.
+  if (base === 'mL' || base === 'L') {
+    const ml = base === 'L' ? total * 1000 : total;
+    if (ml >= 1000) return `${fmt(ml / 1000, 2)} L`;
+    return `${fmt(ml, ml < 10 ? 1 : 0)} mL`;
+  }
+  return `${fmt(total, 1)} ${base}`;
 }
 
 export function generateJobReportPdf(input: JobReportInput): Readable {
