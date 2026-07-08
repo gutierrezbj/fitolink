@@ -104,6 +104,10 @@ const DEV_LOGIN_DENYLIST = new Set<string>(['john-pistacho-real']);
 // Cuentas demo servibles que NO siguen el prefijo 'demo-' (excepciones).
 const DEV_LOGIN_EXTRA_ALLOW = new Set<string>([
   'jesus-vivar-edu', // Aula Jaén Jesús (pedagógica sintética)
+  'john-jawer-agrom', // John Jawer · piloto socio de AgroM (opera bajo Drovinci).
+                      // Sin datos privados de terceros (solo la cartera demo PAC
+                      // que ya es servible). Le da sesión de piloto para ver sus
+                      // Asignaciones y completar operaciones con datos reales.
 ]);
 
 function isServableDemoAccount(user: IUser): boolean {

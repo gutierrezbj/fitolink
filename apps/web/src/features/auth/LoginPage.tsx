@@ -9,13 +9,15 @@ const SHOW_DEMO = import.meta.env.DEV
   || import.meta.env.VITE_SHOW_DEMO === 'true'
   || new URLSearchParams(window.location.search).has('demo');
 
-// Demo accounts shown publicly on the login page. Kept to the 4 archetypes
-// the product covers — pilots are intentionally not surfaced here (they
-// log in with their corporate account in real life). Outreach-specific
-// users (Sergio, John) still exist in MongoDB and can be entered via the
-// email field below — just removed from the chip row to reduce noise.
+// Demo accounts shown publicly on the login page. Los arquetipos de cliente
+// (agricultor / aseguradora / cooperativa / regantes) + la sesión de PILOTO de
+// John Jawer (socio AgroM, opera bajo Drovinci), añadida 08-jul-2026 para poder
+// entrar a su bandeja de Asignaciones y completar operaciones con datos reales.
+// Solo visibles con la consola demo (DEV o ?demo). Cuentas con datos reales
+// privados (john-pistacho-real, fondo) siguen fuera del chip-row a propósito.
 const DEMO_ACCOUNTS = [
   { label: 'Agricultor',  googleId: 'demo-farmer-001',      icon: '/farmer.svg',                 color: 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100' },
+  { label: 'Piloto (John)', googleId: 'john-jawer-agrom',   icon: '/drone-pilot.svg',            color: 'bg-slate-50 border-slate-300 text-slate-800 hover:bg-slate-100' },
   { label: 'Aseguradora', googleId: 'demo-insurer-001',     icon: '/insurance2.svg',             color: 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100' },
   { label: 'Cooperativa', googleId: 'demo-cooperative-001', icon: '/provider-cooperative.svg',   color: 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' },
   // Comunidad de Regantes · Sprint Regantes 05-jun-2026.
