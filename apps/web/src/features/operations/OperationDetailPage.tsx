@@ -200,27 +200,32 @@ export default function OperationDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-        {/* Parcela — con foto satélite del recinto */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {op.parcelId?.geometry && (
-            <div className="h-40 border-b border-gray-100">
-              <ParcelMap parcels={[op.parcelId]} height="100%" mapStyle="satellite" colorMode="cultivo" />
-            </div>
-          )}
-          <div className="p-4">
-            <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Parcela</h2>
-            <dl className="space-y-1.5 text-sm">
-              <Row k="Cultivo" v={cropLabel(op.parcelId?.cropType)} />
-              <Row k="Provincia" v={op.parcelId?.province || '—'} />
-              {op.parcelId?.sigpacRef && <Row k="SIGPAC" v={op.parcelId.sigpacRef} mono />}
-              {op.parcelId?.areaHa != null && <Row k="Superficie" v={`${op.parcelId.areaHa.toFixed(2)} ha`} />}
-            </dl>
+      {/* Foto satélite del recinto — franja ancha, ancla visual de la ficha */}
+      {op.parcelId?.geometry && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+          <div className="h-48 sm:h-56">
+            <ParcelMap parcels={[op.parcelId]} height="100%" mapStyle="satellite" colorMode="cultivo" />
           </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+        {/* Parcela */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+          <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Parcela</h2>
+          <dl className="space-y-1.5 text-sm">
+            <Row k="Cultivo" v={cropLabel(op.parcelId?.cropType)} />
+            <Row k="Provincia" v={op.parcelId?.province || '—'} />
+            {op.parcelId?.sigpacRef && <Row k="SIGPAC" v={op.parcelId.sigpacRef} mono />}
+            {op.parcelId?.areaHa != null && <Row k="Superficie" v={`${op.parcelId.areaHa.toFixed(2)} ha`} />}
+          </dl>
+          <p className="mt-auto pt-3 text-[11px] leading-relaxed text-gray-400">
+            Recinto georreferenciado con SIGPAC catastral oficial (MAPA).
+          </p>
         </div>
 
         {/* Operador (vista farmer) / Agricultor (vista pilot) */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
           <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
             {isPilot ? 'Agricultor' : 'Operador'}
           </h2>
@@ -231,7 +236,7 @@ export default function OperationDetailPage() {
               {op.farmerId.phone && <Row k="Teléfono" v={op.farmerId.phone} />}
             </dl>
           ) : isFarmer && op.pilotId ? (
-            <div>
+            <div className="flex flex-col flex-1">
               {op.pilotId.company && (
                 <div className="flex items-center gap-2.5 mb-3 p-2.5 bg-earth-50 rounded-lg border border-earth-200/60">
                   <img src="/drone-pilot.svg" alt="" className="w-8 h-8 flex-shrink-0" />
@@ -245,7 +250,7 @@ export default function OperationDetailPage() {
                 <Row k="Piloto al mando" v={op.pilotId.name} />
                 <Row k="Email" v={op.pilotId.email} />
               </dl>
-              <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+              <p className="mt-auto pt-3 text-[11px] leading-relaxed text-gray-400">
                 AgroM coordina el tratamiento; la aplicación con dron la ejecuta el operador certificado y su piloto.
               </p>
             </div>
@@ -256,7 +261,7 @@ export default function OperationDetailPage() {
 
         {/* Aplicación (completada) — productos + condiciones + vuelo */}
         {op.status === 'completed' && op.flightLog && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
             <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Aplicación</h2>
             {appliedProducts.length > 0 && (
               <div className="mb-2.5">
@@ -284,7 +289,7 @@ export default function OperationDetailPage() {
 
         {/* Alerta vinculada */}
         {op.alertId && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
             <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Alerta vinculada</h2>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between items-center">

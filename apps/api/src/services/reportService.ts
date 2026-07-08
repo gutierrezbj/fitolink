@@ -282,6 +282,83 @@ export interface ApplicationReportInput {
   applicationMethod?: string;
   weather?: { temp: number; windKmh: number; humidity: number } | null;
   prescription?: { ref: string; signedBy: string } | null;
+  // Foto satélite del recinto (Esri) + bbox + anillo del polígono, para pintar
+  // el contorno encima en el informe premium. Se obtiene con fetchParcelSatellite().
+  satellite?: { image: Buffer; bbox: [number, number, number, number]; ring: number[][] } | null;
+}
+
+/**
+ * Descarga una foto satélite del recinto (Esri World Imagery · sin token) para
+ * incrustarla como "hero" en el informe premium. Ajusta el bbox al aspect del
+ * recuadro para que Esri no deforme la imagen y el contorno del recinto se
+ * pueda dibujar encima con un mapeo lineal. Best-effort: devuelve null ante
+ * cualquier fallo y el informe se genera igual (sin la foto).
+ *
+ * @param ring anillo exterior del polígono [[lon,lat], …] (SIGPAC)
+ * @param boxW ancho del recuadro en el PDF (pt) — debe coincidir con el render
+ * @param boxH alto del recuadro en el PDF (pt)  — debe coincidir con el render
+ */
+export async function fetchParcelSatellite(
+  ring: number[][] | undefined | null,
+  boxW: number,
+  boxH: number,
+): Promise<{ image: Buffer; bbox: [number, number, number, number] } | null> {
+  try {
+    if (!ring || ring.length < 3) return null;
+    const lons = ring.map((c) => c[0]);
+    const lats = ring.map((c) => c[1]);
+    let minLon = Math.min(...lons);
+    let maxLon = Math.max(...lons);
+    let minLat = Math.min(...lats);
+    let maxLat = Math.max(...lats);
+    if (![minLon, maxLon, minLat, maxLat].every(Number.isFinite)) return null;
+    // Aire alrededor del recinto (35 %).
+    const padLon = (maxLon - minLon) * 0.35 || 0.0008;
+    const padLat = (maxLat - minLat) * 0.35 || 0.0008;
+    minLon -= padLon;
+    maxLon += padLon;
+    minLat -= padLat;
+    maxLat += padLat;
+    // Ajuste del bbox al aspect del recuadro (centrado) para no deformar.
+    const aspect = boxW / boxH;
+    const cLon = (minLon + maxLon) / 2;
+    const cLat = (minLat + maxLat) / 2;
+    let dLon = maxLon - minLon;
+    let dLat = maxLat - minLat;
+    if (dLon / dLat < aspect) {
+      dLon = dLat * aspect;
+      minLon = cLon - dLon / 2;
+      maxLon = cLon + dLon / 2;
+    } else {
+      dLat = dLon / aspect;
+      minLat = cLat - dLat / 2;
+      maxLat = cLat + dLat / 2;
+    }
+    const pxW = Math.min(1600, Math.max(600, Math.round(boxW * 2.4)));
+    const pxH = Math.round(pxW / aspect);
+    const url =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export' +
+      `?bbox=${minLon},${minLat},${maxLon},${maxLat}&bboxSR=4326&imageSR=4326` +
+      `&size=${pxW},${pxH}&format=jpg&f=image`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    let buf: Buffer;
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) {
+        console.warn(`[reportService] Esri export ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        return null;
+      }
+      buf = Buffer.from(await res.arrayBuffer());
+    } finally {
+      clearTimeout(timer);
+    }
+    if (buf.length < 1000) return null;
+    return { image: buf, bbox: [minLon, minLat, maxLon, maxLat] };
+  } catch (err) {
+    console.warn('[reportService] fetchParcelSatellite falló:', (err as Error).message);
+    return null;
+  }
 }
 
 /**
@@ -329,6 +406,53 @@ export function generateApplicationPdf(input: ApplicationReportInput): Readable 
   const fecha = input.completedAt ?? input.generatedAt;
   doc.font('Helvetica').fontSize(10).fillColor(MUTED).text(`Fecha de la aplicación: ${formatDateEs(fecha)}`);
 
+  // ── Foto satélite del recinto (hero premium) ──
+  if (input.satellite) {
+    doc.moveDown(1);
+    const ix = 50;
+    const iw = 495;
+    const ih = 182;
+    const iy = doc.y;
+    const [minLon, minLat, maxLon, maxLat] = input.satellite.bbox;
+    const ring = input.satellite.ring;
+    const toX = (lon: number) => ix + ((lon - minLon) / (maxLon - minLon)) * iw;
+    const toY = (lat: number) => iy + ((maxLat - lat) / (maxLat - minLat)) * ih;
+    const trace = () => {
+      ring.forEach((c, i) => {
+        const x = toX(c[0]);
+        const y = toY(c[1]);
+        if (i === 0) doc.moveTo(x, y);
+        else doc.lineTo(x, y);
+      });
+      doc.closePath();
+    };
+
+    doc.save();
+    doc.roundedRect(ix, iy, iw, ih, 8).clip();
+    doc.image(input.satellite.image, ix, iy, { width: iw, height: ih });
+    // Contorno del recinto: relleno translúcido + halo blanco + trazo terra.
+    trace();
+    doc.fillColor(TERRA_500).fillOpacity(0.14).fill();
+    trace();
+    doc.lineWidth(3).strokeColor('#ffffff').strokeOpacity(0.85).stroke();
+    trace();
+    doc.lineWidth(1.4).strokeColor(TERRA_500).strokeOpacity(1).stroke();
+    doc.restore();
+
+    // Marco fino + crédito sobre la imagen.
+    doc.fillOpacity(1).strokeOpacity(1);
+    doc.roundedRect(ix, iy, iw, ih, 8).lineWidth(0.8).strokeColor(RULE).stroke();
+    doc
+      .font('Helvetica')
+      .fontSize(6.5)
+      .fillColor('#ffffff')
+      .text('Imagen: Esri World Imagery · Contorno: SIGPAC (MAPA)', ix + 10, iy + ih - 13, {
+        width: iw - 20,
+        align: 'right',
+      });
+    doc.y = iy + ih + 10;
+  }
+
   // ── Parcela ──
   section('§ PARCELA TRATADA');
   kv('Parcela', input.parcel.name);
@@ -353,8 +477,7 @@ export function generateApplicationPdf(input: ApplicationReportInput): Readable 
       doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(p.name, 50, ry, { width: 285 });
       doc.font('Helvetica').fontSize(11).fillColor(INK).text(`${p.dose} ${p.unit}`, 340, ry);
       if (areaTratada != null) {
-        const totalUnit = p.unit.split('/')[0];
-        doc.fillColor(MUTED).text(`${(p.dose * areaTratada).toLocaleString('es-ES', { maximumFractionDigits: 1 })} ${totalUnit}`, 445, ry);
+        doc.fillColor(MUTED).text(fmtJobTotal(p.dose * areaTratada, p.unit), 445, ry);
       }
       let dy = 18;
       if (p.note) {
@@ -395,8 +518,8 @@ export function generateApplicationPdf(input: ApplicationReportInput): Readable 
   );
 
   // ── Footer ──
-  doc.moveDown(2);
-  if (doc.y < 720) doc.y = 720;
+  doc.moveDown(1.2);
+  if (doc.y < 702) doc.y = 702;
   doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor(RULE).lineWidth(0.5).stroke();
   doc.moveDown(0.5);
   doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(

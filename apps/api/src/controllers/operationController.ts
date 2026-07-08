@@ -5,6 +5,7 @@ import { AppError } from '../utils/AppError.js';
 import {
   generateApplicationPdf,
   generateJobReportPdf,
+  fetchParcelSatellite,
   type ApplicationReportInput,
   type JobReportInput,
 } from '../services/reportService.js';
@@ -93,6 +94,15 @@ export async function downloadReport(req: AuthRequest, res: Response, next: Next
           ? [{ name: op.product.name, dose: op.product.doseLPerHa, unit: 'L/ha', note: op.product.activeSubstance }]
           : [];
 
+    // Foto satélite del recinto (Esri) para el informe premium — best-effort:
+    // si la geometría no está o Esri no responde, el informe se genera sin ella.
+    const ring = op.parcelId?.geometry?.coordinates?.[0];
+    let satellite: ApplicationReportInput['satellite'] = null;
+    if (ring && ring.length >= 3) {
+      const sat = await fetchParcelSatellite(ring, 495, 200);
+      if (sat) satellite = { image: sat.image, bbox: sat.bbox, ring };
+    }
+
     const input: ApplicationReportInput = {
       generatedAt: new Date(),
       clientName: op.farmerId?.name ?? 'Cliente',
@@ -110,6 +120,7 @@ export async function downloadReport(req: AuthRequest, res: Response, next: Next
       applicationMethod: op.applicationMethod,
       weather: op.weatherConditions ?? null,
       prescription: op.prescription ?? null,
+      satellite,
     };
 
     const slug = (op.parcelId?.name ?? 'parcela').normalize('NFD').replace(/[^0-9A-Za-z]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'parcela';

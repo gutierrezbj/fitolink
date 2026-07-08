@@ -103,7 +103,14 @@ export interface OperationReportData {
   applicationMethod?: string;
   weatherConditions?: { temp: number; windKmh: number; humidity: number };
   prescription?: { ref: string; signedBy: string };
-  parcelId?: { name: string; cropType: string; province?: string; sigpacRef?: string; areaHa?: number };
+  parcelId?: {
+    name: string;
+    cropType: string;
+    province?: string;
+    sigpacRef?: string;
+    areaHa?: number;
+    geometry?: { type: string; coordinates: number[][][] };
+  };
   farmerId?: { name: string };
   pilotId?: { name: string; company?: string };
 }
@@ -118,7 +125,7 @@ export async function getOperationForReport(
   isAdmin: boolean,
 ): Promise<OperationReportData> {
   const operation = await Operation.findById(operationId)
-    .populate('parcelId', 'name cropType province areaHa sigpacRef')
+    .populate('parcelId', 'name cropType province areaHa sigpacRef geometry')
     .populate('farmerId', 'name')
     .populate('pilotId', 'name company')
     .lean();
