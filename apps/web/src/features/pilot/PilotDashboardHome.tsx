@@ -144,7 +144,7 @@ export default function PilotDashboardHome() {
 
           {pending.length === 0 && inProgress.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-              <div className="text-5xl mb-4">🚁</div>
+              <img src="/drone-pilot.svg" alt="" className="w-12 h-12 mb-4 opacity-70" />
               <p className="text-gray-600 font-semibold">Todo al día</p>
               <p className="text-gray-400 text-sm mt-2 max-w-xs">Cuando un agricultor solicite un servicio aparecerá aquí para que lo aceptes.</p>
             </div>

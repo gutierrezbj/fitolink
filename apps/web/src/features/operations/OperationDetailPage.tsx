@@ -4,8 +4,10 @@ import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import { formatDate } from '@/lib/utils.js';
 import { toast } from '@/stores/toastStore.js';
+import { cropLabel } from '@fitolink/shared';
 import { useState } from 'react';
 import CompleteOperationForm from '@/features/pilot/CompleteOperationForm.js';
+import ParcelMap from '@/features/parcels/ParcelMap.js';
 
 const STATUS_COLORS: Record<string, string> = {
   requested: 'bg-yellow-100 text-yellow-800',
@@ -25,9 +27,32 @@ const STATUS_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   phytosanitary: 'Fitosanitario',
-  inspection: 'Inspeccion',
-  diagnosis: 'Diagnostico',
+  inspection: 'Inspección',
+  diagnosis: 'Diagnóstico',
+  herbicide: 'Herbicida',
+  fertilization: 'Fertilización',
+  seeding: 'Siembra',
 };
+
+// Iconos del set unificado line-icon de AgroM (public/service-*.svg), NO emojis.
+const TYPE_ICON: Record<string, string> = {
+  phytosanitary: '/service-phytosanitary.svg',
+  inspection: '/service-diagnosis.svg',
+  diagnosis: '/service-diagnosis.svg',
+  herbicide: '/service-herbicide.svg',
+  fertilization: '/service-fertilization.svg',
+  seeding: '/service-seeding.svg',
+};
+
+// Fila etiqueta/valor compacta, reutilizada en las tarjetas de la ficha.
+function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <dt className="text-gray-500 flex-shrink-0">{k}</dt>
+      <dd className={`font-medium text-gray-900 text-right truncate ${mono ? 'font-mono text-xs' : ''}`}>{v}</dd>
+    </div>
+  );
+}
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'bg-red-100 text-red-800',
@@ -131,7 +156,7 @@ export default function OperationDetailPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-5xl">
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
@@ -140,24 +165,23 @@ export default function OperationDetailPage() {
         &larr; Volver
       </button>
 
-      {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[op.status] || 'bg-gray-100'}`}>
+      {/* Header — compacto */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[op.status] || 'bg-gray-100'}`}>
                 {STATUS_LABELS[op.status] || op.status}
               </span>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {TYPE_ICON[op.type] && <img src={TYPE_ICON[op.type]} alt="" className="w-3.5 h-3.5" />}
                 {TYPE_LABELS[op.type] || op.type}
               </span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">
-              Operacion: {op.parcelId?.name || 'Parcela'}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-xl font-bold text-gray-900 truncate">{op.parcelId?.name || 'Parcela'}</h1>
+            <p className="text-xs text-gray-500 mt-0.5">
               Creada el {formatDate(op.createdAt)}
-              {op.completedAt && ` · Completada el ${formatDate(op.completedAt)}`}
+              {op.completedAt && ` · Aplicada el ${formatDate(op.completedAt)}`}
             </p>
           </div>
           {op.status === 'completed' && (
@@ -176,163 +200,99 @@ export default function OperationDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Parcel info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Parcela</h2>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Nombre</span>
-              <span className="text-sm font-medium text-gray-900">{op.parcelId?.name || '-'}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+        {/* Parcela — con foto satélite del recinto */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {op.parcelId?.geometry && (
+            <div className="h-40 border-b border-gray-100">
+              <ParcelMap parcels={[op.parcelId]} height="100%" mapStyle="satellite" colorMode="cultivo" />
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Cultivo</span>
-              <span className="text-sm font-medium text-gray-900">{op.parcelId?.cropType || '-'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Provincia</span>
-              <span className="text-sm font-medium text-gray-900">{op.parcelId?.province || '-'}</span>
-            </div>
-            {op.parcelId?.areaHa && (
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Superficie</span>
-                <span className="text-sm font-medium text-gray-900">{op.parcelId.areaHa.toFixed(1)} ha</span>
-              </div>
-            )}
+          )}
+          <div className="p-4">
+            <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Parcela</h2>
+            <dl className="space-y-1.5 text-sm">
+              <Row k="Cultivo" v={cropLabel(op.parcelId?.cropType)} />
+              <Row k="Provincia" v={op.parcelId?.province || '—'} />
+              {op.parcelId?.sigpacRef && <Row k="SIGPAC" v={op.parcelId.sigpacRef} mono />}
+              {op.parcelId?.areaHa != null && <Row k="Superficie" v={`${op.parcelId.areaHa.toFixed(2)} ha`} />}
+            </dl>
           </div>
         </div>
 
-        {/* People */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {isPilot ? 'Agricultor' : 'Piloto'}
+        {/* Operador (vista farmer) / Agricultor (vista pilot) */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            {isPilot ? 'Agricultor' : 'Operador'}
           </h2>
           {isPilot && op.farmerId ? (
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Nombre</span>
-                <span className="text-sm font-medium text-gray-900">{op.farmerId.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Email</span>
-                <span className="text-sm font-medium text-gray-900">{op.farmerId.email}</span>
-              </div>
-              {op.farmerId.phone && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Telefono</span>
-                  <span className="text-sm font-medium text-gray-900">{op.farmerId.phone}</span>
-                </div>
-              )}
-            </div>
+            <dl className="space-y-1.5 text-sm">
+              <Row k="Nombre" v={op.farmerId.name} />
+              <Row k="Email" v={op.farmerId.email} />
+              {op.farmerId.phone && <Row k="Teléfono" v={op.farmerId.phone} />}
+            </dl>
           ) : isFarmer && op.pilotId ? (
-            <div className="space-y-2">
+            <div>
               {op.pilotId.company && (
-                <div className="flex items-center gap-2 mb-3 p-2.5 bg-blue-50 rounded-lg border border-blue-100">
-                  <span className="text-lg">🚁</span>
-                  <div>
-                    <p className="text-sm font-bold text-blue-800">{op.pilotId.company}</p>
-                    <p className="text-xs text-blue-500">Empresa certificada por AgroM</p>
+                <div className="flex items-center gap-2.5 mb-3 p-2.5 bg-earth-50 rounded-lg border border-earth-200/60">
+                  <img src="/drone-pilot.svg" alt="" className="w-8 h-8 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-brand-800 truncate">{op.pilotId.company}</p>
+                    <p className="text-[11px] text-gray-500">Operador de drones certificado · AESA</p>
                   </div>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Piloto</span>
-                <span className="text-sm font-medium text-gray-900">{op.pilotId.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Email</span>
-                <span className="text-sm font-medium text-gray-900">{op.pilotId.email}</span>
-              </div>
-              {op.pilotId.rating > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Valoracion</span>
-                  <span className="text-sm font-medium text-gray-900">{op.pilotId.rating.toFixed(1)} / 5</span>
-                </div>
-              )}
+              <dl className="space-y-1.5 text-sm">
+                <Row k="Piloto al mando" v={op.pilotId.name} />
+                <Row k="Email" v={op.pilotId.email} />
+              </dl>
+              <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+                AgroM coordina el tratamiento; la aplicación con dron la ejecuta el operador certificado y su piloto.
+              </p>
             </div>
           ) : (
             <p className="text-sm text-gray-400">Sin asignar</p>
           )}
         </div>
 
-        {/* Alert info */}
-        {op.alertId && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Alerta Vinculada</h2>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Severidad</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLORS[op.alertId.severity] || 'bg-gray-100'}`}>
-                  {op.alertId.severity}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">NDVI</span>
-                <span className="text-sm font-bold text-red-600">{op.alertId.ndviValue?.toFixed(2)}</span>
-              </div>
-              {op.alertId.ndviDelta != null && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Variacion</span>
-                  <span className="text-sm font-medium text-red-500">
-                    {op.alertId.ndviDelta > 0 ? '+' : ''}{op.alertId.ndviDelta.toFixed(2)}
-                  </span>
+        {/* Aplicación (completada) — productos + condiciones + vuelo */}
+        {op.status === 'completed' && op.flightLog && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Aplicación</h2>
+            {appliedProducts.length > 0 && (
+              <div className="mb-2.5">
+                <p className="text-[11px] text-gray-400 mb-1">Productos aplicados</p>
+                <div className="space-y-1">
+                  {appliedProducts.map((p, i) => (
+                    <div key={i} className="flex justify-between gap-2 text-sm">
+                      <span className="font-medium text-gray-900 truncate">{p.name}</span>
+                      <span className="font-semibold text-brand-700 flex-shrink-0">{p.dose} {p.unit}</span>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            )}
+            <dl className="space-y-1.5 text-sm border-t border-gray-100 pt-2.5">
+              {op.flightLog.areaHa != null && <Row k="Área tratada" v={`${op.flightLog.areaHa} ha`} />}
+              {op.weatherConditions && (
+                <Row k="Meteo" v={`${op.weatherConditions.temp}°C · ${op.weatherConditions.windKmh} km/h · ${op.weatherConditions.humidity}%`} />
               )}
-            </div>
+              {op.applicationMethod && <Row k="Método" v={op.applicationMethod} />}
+              {op.flightLog.startTime && <Row k="Vuelo" v={formatDate(op.flightLog.startTime)} />}
+            </dl>
           </div>
         )}
 
-        {/* Flight log (completed) */}
-        {op.status === 'completed' && op.flightLog && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Datos de Vuelo</h2>
-            <div className="space-y-2">
-              {op.flightLog.startTime && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Inicio</span>
-                  <span className="text-sm font-medium text-gray-900">{formatDate(op.flightLog.startTime)}</span>
-                </div>
-              )}
-              {op.flightLog.endTime && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Fin</span>
-                  <span className="text-sm font-medium text-gray-900">{formatDate(op.flightLog.endTime)}</span>
-                </div>
-              )}
-              {op.flightLog.areaHa && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Area tratada</span>
-                  <span className="text-sm font-medium text-gray-900">{op.flightLog.areaHa} ha</span>
-                </div>
-              )}
-              {appliedProducts.length > 0 && (
-                <div className="pt-1">
-                  <span className="text-sm text-gray-500">Productos aplicados</span>
-                  <div className="mt-1 space-y-1">
-                    {appliedProducts.map((p, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span className="text-sm font-medium text-gray-900">{p.name}</span>
-                        <span className="text-sm font-medium text-brand-700">{p.dose} {p.unit}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {op.weatherConditions && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Meteorologia</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {op.weatherConditions.temp}°C · {op.weatherConditions.windKmh} km/h · {op.weatherConditions.humidity}%
-                  </span>
-                </div>
-              )}
-              {op.applicationMethod && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Metodo</span>
-                  <span className="text-sm font-medium text-gray-900">{op.applicationMethod}</span>
-                </div>
-              )}
-            </div>
+        {/* Alerta vinculada */}
+        {op.alertId && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Alerta vinculada</h2>
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex justify-between items-center">
+                <dt className="text-gray-500">Severidad</dt>
+                <dd className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLORS[op.alertId.severity] || 'bg-gray-100'}`}>{op.alertId.severity}</dd>
+              </div>
+              {op.alertId.ndviValue != null && <Row k="NDVI" v={op.alertId.ndviValue.toFixed(2)} />}
+            </dl>
           </div>
         )}
       </div>
