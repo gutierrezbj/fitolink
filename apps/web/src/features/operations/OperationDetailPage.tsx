@@ -4,10 +4,11 @@ import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import { formatDate } from '@/lib/utils.js';
 import { toast } from '@/stores/toastStore.js';
-import { cropLabel } from '@fitolink/shared';
+import { cropLabel, findCatalogProduct, labelRangeText } from '@fitolink/shared';
 import { useState } from 'react';
 import CompleteOperationForm from '@/features/pilot/CompleteOperationForm.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
+import DoseCalculatorCard from '@/features/operations/DoseCalculatorCard.js';
 
 const STATUS_COLORS: Record<string, string> = {
   requested: 'bg-yellow-100 text-yellow-800',
@@ -266,13 +267,29 @@ export default function OperationDetailPage() {
             {appliedProducts.length > 0 && (
               <div className="mb-2.5">
                 <p className="text-[11px] text-gray-400 mb-1">Productos aplicados</p>
-                <div className="space-y-1">
-                  {appliedProducts.map((p, i) => (
-                    <div key={i} className="flex justify-between gap-2 text-sm">
-                      <span className="font-medium text-gray-900 truncate">{p.name}</span>
-                      <span className="font-semibold text-brand-700 flex-shrink-0">{p.dose} {p.unit}</span>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  {appliedProducts.map((p, i) => {
+                    // Dosis registrada vs rango de ETIQUETA del catálogo (si el
+                    // producto está catalogado y la unidad coincide con la vía dron).
+                    const spec = findCatalogProduct(p.name);
+                    const label = spec?.methods.dron && spec.methods.dron.dose.unit === p.unit
+                      ? spec.methods.dron.dose
+                      : undefined;
+                    const inLabel = label ? p.dose >= label.min && p.dose <= label.max : undefined;
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between gap-2 text-sm">
+                          <span className="font-medium text-gray-900 truncate">{p.name}</span>
+                          <span className="font-semibold text-brand-700 flex-shrink-0">{p.dose} {p.unit}</span>
+                        </div>
+                        {label && (
+                          <p className={`text-[10px] ${inLabel ? 'text-gray-400' : 'text-amber-700 font-medium'}`}>
+                            Etiqueta (dron): {labelRangeText(label)} · {inLabel ? 'dentro de etiqueta' : 'FUERA de etiqueta'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -301,6 +318,15 @@ export default function OperationDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Mezcla según etiqueta — solo mientras la operación está pendiente de
+          volar (assigned/in_progress): producto + ha → totales para cargar el
+          dron sin sacar números a ojo. En completadas ya se muestra lo aplicado. */}
+      {(op.status === 'assigned' || op.status === 'in_progress') && (
+        <div className="mt-4">
+          <DoseCalculatorCard defaultAreaHa={op.parcelId?.areaHa} />
+        </div>
+      )}
 
       {/* Action buttons */}
       {isPilot && op.status === 'assigned' && (

@@ -2,6 +2,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import * as operationService from '../services/operationService.js';
 import { AppError } from '../utils/AppError.js';
+import { findCatalogProduct, labelRangeText } from '@fitolink/shared';
 import {
   generateApplicationPdf,
   generateJobReportPdf,
@@ -87,12 +88,22 @@ export async function downloadReport(req: AuthRequest, res: Response, next: Next
 
     // Preferimos la mezcla `products`; si solo hay el producto legacy, lo
     // adaptamos a la forma con unidad (L/ha) para no perder el dato.
-    const products =
+    const rawProducts =
       op.products && op.products.length > 0
         ? op.products
         : op.product
           ? [{ name: op.product.name, dose: op.product.doseLPerHa, unit: 'L/ha', note: op.product.activeSubstance }]
           : [];
+
+    // Productos catalogados (productCatalog.ts): añadimos a la nota el rango de
+    // ETIQUETA del fabricante — el informe muestra que la dosis tiene fuente.
+    const products = rawProducts.map((p) => {
+      const spec = findCatalogProduct(p.name);
+      const label = spec?.methods.dron && spec.methods.dron.dose.unit === p.unit ? spec.methods.dron.dose : undefined;
+      if (!label) return p;
+      const labelNote = `Etiqueta (dron): ${labelRangeText(label)} · agua ${spec!.methods.dron!.waterLPerHa.min}–${spec!.methods.dron!.waterLPerHa.max} L/ha`;
+      return { ...p, note: p.note ? `${p.note} · ${labelNote}` : labelNote };
+    });
 
     // Foto satélite del recinto (Esri) para el informe premium — best-effort:
     // si la geometría no está o Esri no responde, el informe se genera sin ella.

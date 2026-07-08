@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { APPLICATION_UNITS } from '@fitolink/shared';
+import { APPLICATION_UNITS, PRODUCT_CATALOG, findCatalogProduct, labelRangeText } from '@fitolink/shared';
 import { api } from '@/lib/api.js';
 import { toast } from '@/stores/toastStore.js';
 
@@ -136,56 +136,86 @@ export default function CompleteOperationForm({ operationId, parcelName, areaHa,
               + Añadir producto
             </button>
           </div>
+          {/* Autocompletado desde el catálogo de etiqueta (productCatalog.ts) */}
+          <datalist id="product-catalog-names">
+            {PRODUCT_CATALOG.map((cp) => (
+              <option key={cp.id} value={cp.name} />
+            ))}
+          </datalist>
           <div className="space-y-3">
-            {products.map((p, i) => (
-              <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                <div className="md:col-span-6">
-                  <label className="block text-sm text-gray-600 mb-1">Producto</label>
-                  <input
-                    type="text"
-                    value={p.name}
-                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
-                    placeholder="Ej: Love Green Plus"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="block text-sm text-gray-600 mb-1">Dosis / ha</label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={p.dose}
-                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, dose: e.target.value } : x)))}
-                    placeholder="Ej: 750"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm text-gray-600 mb-1">Unidad</label>
-                  <select
-                    value={p.unit}
-                    onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))}
-                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                  >
-                    {APPLICATION_UNITS.map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-1 flex justify-end">
-                  {products.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setProducts((ps) => ps.filter((_, j) => j !== i))}
-                      title="Quitar producto"
-                      className="text-gray-400 hover:text-red-600 py-2 px-2 text-lg leading-none"
-                    >
-                      ✕
-                    </button>
+            {products.map((p, i) => {
+              // Dosis tecleada vs rango de ETIQUETA (vía dron) si el producto
+              // está catalogado y la unidad coincide. Aviso, no bloqueo: la
+              // decisión final es del técnico.
+              const spec = findCatalogProduct(p.name);
+              const label = spec?.methods.dron && spec.methods.dron.dose.unit === p.unit
+                ? spec.methods.dron.dose
+                : undefined;
+              const doseNum = parseFloat(p.dose);
+              const outOfLabel = label && Number.isFinite(doseNum) && doseNum > 0
+                ? doseNum < label.min || doseNum > label.max
+                : false;
+              return (
+                <div key={i}>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div className="md:col-span-6">
+                      <label className="block text-sm text-gray-600 mb-1">Producto</label>
+                      <input
+                        type="text"
+                        list="product-catalog-names"
+                        value={p.name}
+                        onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                        placeholder="Ej: Love Green · LG-MINER"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-sm text-gray-600 mb-1">Dosis / ha</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={p.dose}
+                        onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, dose: e.target.value } : x)))}
+                        placeholder={label ? labelRangeText(label) : 'Ej: 750'}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
+                          outOfLabel ? 'border-amber-400 bg-amber-50' : 'border-gray-300'
+                        }`}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm text-gray-600 mb-1">Unidad</label>
+                      <select
+                        value={p.unit}
+                        onChange={(e) => setProducts((ps) => ps.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))}
+                        className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                      >
+                        {APPLICATION_UNITS.map((u) => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="md:col-span-1 flex justify-end">
+                      {products.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setProducts((ps) => ps.filter((_, j) => j !== i))}
+                          title="Quitar producto"
+                          className="text-gray-400 hover:text-red-600 py-2 px-2 text-lg leading-none"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {label && (
+                    <p className={`mt-1 text-xs ${outOfLabel ? 'text-amber-700 font-medium' : 'text-gray-400'}`}>
+                      Etiqueta (dron): {labelRangeText(label)} · agua {spec!.methods.dron!.waterLPerHa.min}–{spec!.methods.dron!.waterLPerHa.max} L/ha
+                      {outOfLabel ? ' · dosis FUERA de etiqueta — consulte a su técnico' : ''}
+                    </p>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-4">
             <label className="block text-sm text-gray-600 mb-1">Metodo de aplicacion</label>

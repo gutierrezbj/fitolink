@@ -4,6 +4,7 @@ import { api } from '@/lib/api.js';
 import { useAuthStore } from '@/features/auth/authStore.js';
 import { toast } from '@/stores/toastStore.js';
 import OperationKanban from '@/components/OperationKanban.js';
+import DoseCalculatorCard from '@/features/operations/DoseCalculatorCard.js';
 
 type Op = { _id: string; status: string; parcelId?: { name?: string } };
 
@@ -126,6 +127,12 @@ export default function OperationsPage() {
           </div>
         </div>
       )}
+
+      {/* Planificador de mezcla según etiqueta del fabricante — para preparar
+          el próximo vuelo con cantidades con fuente, no a ojo. */}
+      <div className="mb-6">
+        <DoseCalculatorCard />
+      </div>
 
       <OperationKanban
         operations={operations}

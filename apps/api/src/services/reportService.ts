@@ -481,8 +481,12 @@ export function generateApplicationPdf(input: ApplicationReportInput): Readable 
       }
       let dy = 18;
       if (p.note) {
-        doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED).text(p.note, 50, ry + 14, { width: 285 });
-        dy = 28;
+        // Altura real de la nota (p.ej. sustancia activa + rango de etiqueta
+        // puede ocupar 2 líneas) para que la siguiente fila no se solape.
+        doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED);
+        const noteH = doc.heightOfString(p.note, { width: 285 });
+        doc.text(p.note, 50, ry + 14, { width: 285 });
+        dy = 18 + noteH + 4;
       }
       ry += dy;
     });
