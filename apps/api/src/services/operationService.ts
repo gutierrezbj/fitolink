@@ -153,7 +153,7 @@ export async function getOperationsForJobReport(
   isAdmin: boolean,
 ): Promise<OperationReportData[]> {
   const ops = await Operation.find({ _id: { $in: operationIds } })
-    .populate('parcelId', 'name cropType province areaHa sigpacRef')
+    .populate('parcelId', 'name cropType province areaHa sigpacRef geometry')
     .populate('farmerId', 'name')
     .populate('pilotId', 'name company')
     .lean();

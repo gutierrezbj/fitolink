@@ -545,7 +545,14 @@ export interface JobReportInput {
   cropType?: string;
   dateFrom?: Date;
   dateTo?: Date;
-  parcels: Array<{ name: string; sigpacRef?: string; areaHa: number; date?: Date }>;
+  parcels: Array<{
+    name: string;
+    sigpacRef?: string;
+    areaHa: number;
+    date?: Date;
+    // Miniatura satélite del recinto (Esri) + contorno, para el anexo de mapas.
+    satellite?: { image: Buffer; bbox: [number, number, number, number]; ring: number[][] } | null;
+  }>;
   totalAreaHa: number;
   // Productos agregados del trabajo: dosis/ha (si es la misma en todos los
   // recintos) + total acumulado sobre la superficie tratada.
@@ -677,6 +684,74 @@ export function generateJobReportPdf(input: JobReportInput): Readable {
     'Trabajo de aplicación aérea ejecutado por el operador de drones indicado, en el marco de la normativa AESA de operaciones con aeronaves no tripuladas (UAS). AgroM · FitoLink coordina el trabajo y aporta la inteligencia satelital de decisión; la ejecución con dron corre a cargo del operador certificado.',
     50, doc.y, { width: 495, align: 'left' },
   );
+
+  // ── Anexo: mapa de los recintos (para que el cliente VEA sus parcelas) ──
+  // Cuadrícula de miniaturas satélite (Esri) con el contorno SIGPAC de cada
+  // recinto encima. Mismo número que la tabla de "Recintos tratados".
+  if (input.parcels.some((p) => p.satellite)) {
+    doc.addPage();
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED).text('§ MAPA DE LOS RECINTOS', 50, 50, { characterSpacing: 1.5 });
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED)
+      .text('Cada recinto tratado, con su contorno SIGPAC sobre imagen de satélite.', 50, doc.y, { width: 495 });
+    doc.moveDown(0.7);
+
+    const cols = 3;
+    const gap = 18;
+    const cw = (495 - gap * (cols - 1)) / cols; // ≈153
+    const ch = 88;
+    const labelH = 24;
+    const rowGap = 12;
+    const maxY = 792 - 70; // reserva para el footer
+    let colStartY = doc.y;
+
+    input.parcels.forEach((p, i) => {
+      const col = i % cols;
+      if (i > 0 && col === 0) colStartY += ch + labelH + rowGap; // nueva fila
+      if (col === 0 && colStartY + ch + labelH > maxY) {
+        doc.addPage();
+        colStartY = 50;
+      }
+      const x = 50 + col * (cw + gap);
+      const y = colStartY;
+
+      if (p.satellite) {
+        const [minLon, minLat, maxLon, maxLat] = p.satellite.bbox;
+        const ring = p.satellite.ring;
+        const toX = (lon: number) => x + ((lon - minLon) / (maxLon - minLon)) * cw;
+        const toY = (lat: number) => y + ((maxLat - lat) / (maxLat - minLat)) * ch;
+        const trace = () => {
+          ring.forEach((c, k) => {
+            const px = toX(c[0]);
+            const py = toY(c[1]);
+            if (k === 0) doc.moveTo(px, py);
+            else doc.lineTo(px, py);
+          });
+          doc.closePath();
+        };
+        doc.save();
+        doc.roundedRect(x, y, cw, ch, 6).clip();
+        doc.image(p.satellite.image, x, y, { width: cw, height: ch });
+        trace(); doc.fillColor(TERRA_500).fillOpacity(0.14).fill();
+        trace(); doc.lineWidth(2.2).strokeColor('#ffffff').strokeOpacity(0.85).stroke();
+        trace(); doc.lineWidth(1).strokeColor(TERRA_500).strokeOpacity(1).stroke();
+        doc.restore();
+        doc.fillOpacity(1).strokeOpacity(1);
+        doc.roundedRect(x, y, cw, ch, 6).lineWidth(0.7).strokeColor(RULE).stroke();
+      } else {
+        doc.roundedRect(x, y, cw, ch, 6).fillColor('#E8DDC9').fill();
+        doc.fillColor(MUTED).font('Helvetica-Oblique').fontSize(7).text('sin imagen', x, y + ch / 2 - 4, { width: cw, align: 'center' });
+      }
+
+      // Etiqueta bajo la miniatura (mismo nº que la tabla).
+      doc.fillOpacity(1);
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(INK)
+        .text(`${String(i + 1).padStart(2, '0')} · ${p.name}`, x, y + ch + 4, { width: cw, ellipsis: true, lineBreak: false });
+      doc.font('Helvetica').fontSize(6.5).fillColor(MUTED)
+        .text(`${p.areaHa.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ha${p.sigpacRef ? ' · ' + p.sigpacRef : ''}`, x, y + ch + 14, { width: cw, ellipsis: true, lineBreak: false });
+    });
+    doc.y = colStartY + ch + labelH + rowGap;
+  }
 
   // Footer
   doc.moveDown(2);

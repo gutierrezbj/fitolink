@@ -146,11 +146,19 @@ export async function downloadJobReport(req: AuthRequest, res: Response, next: N
     const ops = all.filter((o) => o.status === 'completed');
     if (ops.length === 0) throw AppError.badRequest('Ninguna de las operaciones seleccionadas está completada.');
 
-    const parcels = ops.map((o) => ({
-      name: o.parcelId?.name ?? 'Parcela',
-      sigpacRef: o.parcelId?.sigpacRef,
-      areaHa: o.flightLog?.areaHa ?? o.parcelId?.areaHa ?? 0,
-      date: o.completedAt,
+    // Miniatura satélite por recinto (Esri) para el anexo de mapas — en paralelo,
+    // best-effort: si falta geometría o Esri no responde, ese recinto va sin foto.
+    const parcels = await Promise.all(ops.map(async (o) => {
+      const base = {
+        name: o.parcelId?.name ?? 'Parcela',
+        sigpacRef: o.parcelId?.sigpacRef,
+        areaHa: o.flightLog?.areaHa ?? o.parcelId?.areaHa ?? 0,
+        date: o.completedAt,
+      };
+      const ring = o.parcelId?.geometry?.coordinates?.[0];
+      if (!ring || ring.length < 3) return { ...base, satellite: null };
+      const sat = await fetchParcelSatellite(ring, 153, 88);
+      return { ...base, satellite: sat ? { image: sat.image, bbox: sat.bbox, ring } : null };
     }));
     const totalAreaHa = parcels.reduce((s, p) => s + p.areaHa, 0);
 
