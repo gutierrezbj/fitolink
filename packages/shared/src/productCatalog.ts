@@ -38,7 +38,17 @@ export interface ProductSpec {
       /** "Aplicar de 1 a 5 veces en función del ciclo de cultivo". */
       applicationsPerCycle?: { min: number; max: number };
     };
+    /** Tratamiento foliar dosificado por CONCENTRACIÓN (% del caldo), no por ha. */
+    foliar?: {
+      concentrationPct: { min: number; max: number };
+    };
+    /** Fertirrigación: volumen de PRODUCTO por hectárea. */
+    riego?: {
+      dose: LabelDoseRange;
+    };
   };
+  /** Pautas de aplicación de la etiqueta (nº de pasadas, momentos, cultivos). */
+  applicationNotes?: string[];
   composition?: Array<{ component: string; value: string }>;
   density?: string;
   ph?: string;
@@ -96,8 +106,57 @@ export const PRODUCT_CATALOG: ProductSpec[] = [
     ],
     source: 'Etiqueta del fabricante (foto del envase, 08-jul-2026)',
   },
-  // Microbiota Proenzime: usado en el primer trabajo (2 L/ha) pero SIN etiqueta
-  // fotografiada todavía → no se cataloga hasta tener la fuente. (no inventar)
+  {
+    id: 'microbiota-108-biol',
+    name: 'Microbiota 108 · BIOL (LG-Microb)',
+    kind: 'Biol · bioestimulante vegetal y potenciador de la microbiota del suelo (fermentado de extractos de algas, húmicos y aminoácidos)',
+    // OJO: aliases SIN el genérico 'microbiota' a propósito — el primer trabajo
+    // se registró como "Microbiota Proenzime" y hasta que JuanCho confirme que
+    // es ESTE producto no lo matcheamos (no inventar equivalencias).
+    aliases: ['microbiota 108', 'lg-microb', 'lg microb', 'biol 108'],
+    methods: {
+      // La etiqueta NO trae dosis específica de dron: solo foliar (1–3 % del
+      // caldo) y riego. En dron la dosis la fija el técnico.
+      foliar: {
+        concentrationPct: { min: 1, max: 3 },
+      },
+      riego: {
+        dose: { min: 100, max: 300, unit: 'L/ha' },
+      },
+    },
+    applicationNotes: [
+      'Realizar 3 aplicaciones en pre y post floración',
+      'Recomendado en frutales de hueso y pepita, ornamentales, viticultura, horticultura y cultivos en general',
+    ],
+    composition: [
+      { component: 'Materia orgánica', value: '2,17%' },
+      { component: 'Nitrógeno total (N)', value: '0,35%' },
+      { component: 'Nitrógeno orgánico', value: '0,33%' },
+      { component: 'Potasio (K)', value: '0,36%' },
+      { component: 'Hierro (Fe)', value: '0,017%' },
+      { component: 'Cobre (Cu)', value: '< 2,00 mg/kg' },
+      { component: 'Aminoácidos', value: '0,4%' },
+      { component: 'Ácido algínico', value: '0,36%' },
+      { component: 'Manitol', value: '0,05%' },
+      { component: 'CE', value: '13,4' },
+    ],
+    density: '1,03 g/L',
+    ph: '4,4',
+    formats: ['25 L', '1000 L'],
+    certifications: [
+      'CAAE · apto para agricultura ecológica (Reglamento UE)',
+      'Permitido según el estándar Demeter/Biodinámico',
+    ],
+    manufacturer: 'Fabricado por CIF B56039407 · Love Green Project',
+    distributor: 'OEA Quality Certificaciones y Servicios SL · Madrid',
+    precautions: [
+      'Agitar antes de usar · almacenar ventilado entre 0 y 30 °C',
+      'NO mezclar con productos con cobre, ni con aceites minerales o azufres',
+      'Utilizar equipo de protección adecuado al manipular',
+      'Consulte a su técnico',
+    ],
+    source: 'Etiqueta del envase (fotos 09-jul-2026) · el valor de fósforo no se transcribe (ilegible en la foto)',
+  },
 ];
 
 /** Normaliza para matching: minúsculas, sin acentos, solo alfanumérico+espacio. */
