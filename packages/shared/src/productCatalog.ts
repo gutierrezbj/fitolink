@@ -159,6 +159,52 @@ export const PRODUCT_CATALOG: ProductSpec[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────
+// Mezclas de tanque: productos que se preparan JUNTOS en la misma cuba, en
+// un orden concreto. El orden y las dosis de referencia son práctica del
+// aplicador (documentada por trabajo real); los rangos siguen siendo los de
+// cada etiqueta.
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface TankMixSpec {
+  id: string;
+  name: string;
+  /** Componentes en ORDEN de incorporación a la cuba (el agua va siempre primero). */
+  components: Array<{
+    productId: string;
+    /** Unidad de dosificación por ha con la que se maneja este componente en la mezcla. */
+    unit: ApplicationUnit;
+    /** Instrucción de carga de este paso. */
+    stepNote: string;
+  }>;
+  notes?: string[];
+  source: string;
+}
+
+export const TANK_MIXES: TankMixSpec[] = [
+  {
+    id: 'love-green-mas-microbiota',
+    name: 'Love Green + Microbiota 108 (foliar)',
+    components: [
+      {
+        productId: 'love-green-lg-miner',
+        unit: 'g/ha',
+        stepNote: 'Añadir de inicio en el agua de la cuba y disolver bien (etiqueta: regular el pH y evitar espuma)',
+      },
+      {
+        productId: 'microbiota-108-biol',
+        unit: 'L/ha',
+        stepNote: 'Incorporar con el Love Green ya disuelto en el caldo',
+      },
+    ],
+    notes: [
+      'Etiqueta Love Green: al combinar con otro producto, ejecutar una prueba antes de la aplicación general',
+      'Etiqueta Microbiota 108: no mezclar con productos con cobre, aceites minerales o azufres',
+    ],
+    source: 'Orden de preparación: práctica del aplicador (primer trabajo 07-jul-2026) + etiqueta Love Green («añadir de inicio en el agua»)',
+  },
+];
+
 /** Normaliza para matching: minúsculas, sin acentos, solo alfanumérico+espacio. */
 function norm(s: string): string {
   return s
