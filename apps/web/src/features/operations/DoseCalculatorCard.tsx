@@ -269,6 +269,15 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
   const outOfLabel = hasDose ? (perHa ? dose < perHa.min || dose > perHa.max : pct ? dose < pct.min || dose > pct.max : false) : false;
   const foliarProductPerHa = activeVia === 'foliar' && hasDose && hasCaldo ? (caldo * dose) / 100 : null;
 
+  // Agua: en dron y foliar el técnico elige el CALDO (L/ha) → agua exacta en cuba
+  // (no un rango). La etiqueta de dron da el rango válido (waterLPerHa) para el
+  // medidor. En caldo fuera del rango de etiqueta se avisa.
+  const dronWater = product.methods.dron?.waterLPerHa;
+  const showCaldoInput = activeVia === 'foliar' || (activeVia === 'dron' && !!dronWater);
+  const showWater = activeVia === 'dron' || activeVia === 'foliar';
+  const caldoOut = activeVia === 'dron' && dronWater && hasCaldo ? caldo < dronWater.min || caldo > dronWater.max : false;
+  const aguaTotal = hasArea && hasCaldo ? caldo * area : null;
+
   return (
     <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.05fr]">
       <div className="grid grid-cols-2 gap-x-4 gap-y-5 content-start">
@@ -285,33 +294,35 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
           {perHa && <Gauge min={perHa.min} max={perHa.max} value={hasDose ? dose : null} unit={perHa.unit} />}
           {pct && <Gauge min={pct.min} max={pct.max} value={hasDose ? dose : null} unit="%" />}
         </Field>
-        {activeVia === 'foliar' && (
-          <Field label="Caldo (L/ha)">
-            <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder="p.ej. 100" className={inputCls()} />
+        {showCaldoInput && (
+          <Field label="Caldo · agua (L/ha)">
+            <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder={activeVia === 'dron' && dronWater ? `${dronWater.min}–${dronWater.max}` : 'p.ej. 100'} className={inputCls(caldoOut)} />
+            {activeVia === 'dron' && dronWater && <Gauge min={dronWater.min} max={dronWater.max} value={hasCaldo ? caldo : null} unit="L/ha" />}
           </Field>
         )}
       </div>
 
       <div className="flex flex-col gap-3">
-        <ResultPanel eyebrow={hasArea ? `Cargar para ${fmtEs(area)} ha` : 'Cargar'}>
-          <div className="flex flex-wrap gap-x-10 gap-y-4">
+        <ResultPanel eyebrow={hasArea ? `Cargar en la cuba · ${fmtEs(area)} ha` : 'Cargar en la cuba'}>
+          <div className="flex flex-wrap items-start gap-x-7 gap-y-4">
+            {/* PRODUCTO — la dosis total a echar */}
             {activeVia === 'foliar' ? (
               foliarProductPerHa != null && hasArea
-                ? (() => { const t = fmtTotal(foliarProductPerHa * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; })()
-                : <HeroStat n="—" u="" label="producto" tone="ink" />
+                ? (() => { const t = fmtTotal(foliarProductPerHa * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="producto a echar" tone={outOfLabel ? 'terra' : 'brand'} />; })()
+                : <HeroStat n="—" u="" label="producto a echar" tone="ink" />
             ) : (
               hasDose && hasArea && perHa
-                ? (() => { const t = fmtTotal(dose * area, perHa.unit); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; })()
-                : <HeroStat n="—" u="" label="producto" tone="ink" />
+                ? (() => { const t = fmtTotal(dose * area, perHa.unit); return <HeroStat n={t.n} u={t.u} label="producto a echar" tone={outOfLabel ? 'terra' : 'brand'} />; })()
+                : <HeroStat n="—" u="" label="producto a echar" tone="ink" />
             )}
-            {activeVia === 'dron' && product.methods.dron && hasArea && (
-              <HeroStat
-                n={`${fmtTotal(product.methods.dron.waterLPerHa.min * area, 'L/ha').n}–${fmtTotal(product.methods.dron.waterLPerHa.max * area, 'L/ha').n}`}
-                u="L" label="agua" tone="ink"
-              />
-            )}
-            {activeVia === 'foliar' && hasCaldo && hasArea && (
-              (() => { const t = fmtTotal(caldo * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="caldo" tone="ink" />; })()
+            {/* AGUA — un solo número para llenar, según el caldo elegido */}
+            {showWater && (
+              <>
+                <span className="self-center pt-1 font-display text-3xl text-earth-400">+</span>
+                {aguaTotal != null
+                  ? (() => { const t = fmtTotal(aguaTotal, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="agua en cuba" tone={caldoOut ? 'terra' : 'ink'} />; })()
+                  : <HeroStat n="—" u="L" label={activeVia === 'dron' ? 'agua · elige caldo' : 'agua · pon el caldo'} tone="ink" />}
+              </>
             )}
           </div>
 
@@ -320,6 +331,12 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
               <dt className="text-gray-500">Etiqueta · {VIA_LABEL[activeVia].toLowerCase()}</dt>
               <dd className="font-medium text-[#0F2A22]">{rangeText || '—'}</dd>
             </div>
+            {activeVia === 'dron' && dronWater && (
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Caldo de etiqueta</dt>
+                <dd className="font-medium text-[#0F2A22]">{dronWater.min}–{dronWater.max} L/ha</dd>
+              </div>
+            )}
             {activeVia === 'foliar' && foliarProductPerHa != null && (
               <div className="flex justify-between gap-2">
                 <dt className="text-gray-500">Producto por ha ({dose}% de {fmtEs(caldo)} L)</dt>
@@ -334,9 +351,11 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
             )}
           </dl>
 
-          {outOfLabel && (
+          {(outOfLabel || caldoOut) && (
             <p className="mt-3 rounded-lg border border-terra-200 bg-terra-50 px-3 py-2 text-xs font-medium text-terra-700">
-              {activeVia === 'foliar' ? 'Concentración' : 'Dosis'} fuera del rango de etiqueta ({rangeText}). Consulte a su técnico.
+              {outOfLabel ? `${activeVia === 'foliar' ? 'Concentración' : 'Dosis'} fuera del rango de etiqueta (${rangeText}). ` : ''}
+              {caldoOut ? `Caldo fuera del rango de etiqueta (${dronWater!.min}–${dronWater!.max} L/ha). ` : ''}
+              Consulte a su técnico.
             </p>
           )}
         </ResultPanel>
