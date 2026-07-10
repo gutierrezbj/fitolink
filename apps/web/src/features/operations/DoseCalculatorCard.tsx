@@ -2,9 +2,11 @@ import { useState } from 'react';
 import {
   PRODUCT_CATALOG,
   TANK_MIXES,
+  APPLICATION_UNITS,
   labelRangeText,
   type ProductSpec,
   type TankMixSpec,
+  type ApplicationUnit,
 } from '@fitolink/shared';
 
 /**
@@ -369,6 +371,60 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
   );
 }
 
+// ── Modo PRODUCTO SIN ETIQUETA CARGADA ───────────────────────────────────────
+// Dosis libre (a criterio del técnico) — no inventamos rango. Solo el total.
+function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSpec; areaStr: string; setAreaStr: (v: string) => void }) {
+  const [doseStr, setDoseStr] = useState('');
+  const [unit, setUnit] = useState<ApplicationUnit>('L/ha');
+  const dose = parseFloat(doseStr);
+  const area = parseFloat(areaStr);
+  const hasDose = Number.isFinite(dose) && dose > 0;
+  const hasArea = Number.isFinite(area) && area > 0;
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 content-start">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Dosis / ha</label>
+          <input type="number" step="any" min="0" value={doseStr} onChange={(e) => setDoseStr(e.target.value)} className={inputCls(false)} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Unidad</label>
+          <select value={unit} onChange={(e) => setUnit(e.target.value as ApplicationUnit)} className={selectCls}>
+            {APPLICATION_UNITS.map((u) => (<option key={u} value={u}>{u}</option>))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Superficie (ha)</label>
+          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls(false)} />
+        </div>
+      </div>
+      <div className="bg-earth-50/70 border border-earth-200/60 rounded-lg p-4">
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
+          Totales{hasArea ? ` · ${fmtEs(area)} ha` : ''}
+        </p>
+        <dl className="space-y-1.5 text-sm">
+          <div className="flex justify-between gap-2">
+            <dt className="text-gray-500">Etiqueta</dt>
+            <dd className="font-medium text-gray-500">pendiente de cargar</dd>
+          </div>
+          {hasDose && hasArea && (
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-500">Producto total</dt>
+              <dd className="font-bold text-brand-800">{fmtTotal(dose * area, unit)}</dd>
+            </div>
+          )}
+        </dl>
+        <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+          Etiqueta aún no cargada — sin rango de referencia; la dosis la fija el técnico.
+        </p>
+      </div>
+      <p className="lg:col-span-2 text-[11px] leading-relaxed text-gray-400">
+        {product.source}{product.manufacturer ? ` · ${product.manufacturer}` : ''}
+      </p>
+    </div>
+  );
+}
+
 export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
   // Por defecto la MEZCLA (es lo que se aplica en el campo); productos sueltos detrás.
   const [selection, setSelection] = useState(TANK_MIXES[0] ? `mix:${TANK_MIXES[0].id}` : `prod:${PRODUCT_CATALOG[0]?.id}`);
@@ -405,7 +461,8 @@ export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
       </div>
 
       {mix && <TankMixMode key={mix.id} mix={mix} areaStr={areaStr} setAreaStr={setAreaStr} />}
-      {product && <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
+      {product && product.labelPending && <LabelPendingMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
+      {product && !product.labelPending && <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
     </div>
   );
 }

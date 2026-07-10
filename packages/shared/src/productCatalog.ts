@@ -49,6 +49,12 @@ export interface ProductSpec {
   };
   /** Pautas de aplicación de la etiqueta (nº de pasadas, momentos, cultivos). */
   applicationNotes?: string[];
+  /**
+   * true = producto conocido pero SIN etiqueta fotografiada todavía: no hay
+   * rangos de dosis (la calculadora deja la dosis libre, a criterio del
+   * técnico) y el informe no le atribuye ninguna referencia de etiqueta.
+   */
+  labelPending?: boolean;
   composition?: Array<{ component: string; value: string }>;
   density?: string;
   ph?: string;
@@ -157,6 +163,20 @@ export const PRODUCT_CATALOG: ProductSpec[] = [
     ],
     source: 'Etiqueta del envase (fotos 09-jul-2026) · el valor de fósforo no se transcribe (ilegible en la foto)',
   },
+  {
+    id: 'proenzime-108-biol',
+    name: 'Proenzime 108 · Biol',
+    kind: 'Biol · bioestimulante vegetal (gama 108)',
+    aliases: ['proenzime', 'pro-enzime', 'pro enzime', 'proenzime 108'],
+    // Producto REAL aplicado en el primer trabajo (07-jul-2026, bidón blanco),
+    // distinto del Microbiota 108 (bidón azul). Etiqueta NO fotografiada aún →
+    // sin dosis de referencia (no inventar). Cuando llegue la foto: cargar
+    // vías/dosis como en los demás.
+    labelPending: true,
+    methods: {},
+    manufacturer: 'Sintropía 108 SL · Fuente Palmera (Córdoba)',
+    source: 'Producto aplicado en el primer trabajo (07-jul-2026, bidón blanco). Etiqueta pendiente de fotografiar → dosis a criterio del técnico. Marca OEPM "Pro-enzime 108 Biol" (exp. N-0424947, Sintropía 108 SL).',
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -183,8 +203,8 @@ export interface TankMixSpec {
 
 export const TANK_MIXES: TankMixSpec[] = [
   {
-    id: 'love-green-mas-microbiota',
-    name: 'Love Green + Microbiota 108 (foliar)',
+    id: 'love-green-mas-proenzime',
+    name: 'Love Green + Proenzime 108',
     components: [
       {
         productId: 'love-green-lg-miner',
@@ -192,16 +212,16 @@ export const TANK_MIXES: TankMixSpec[] = [
         stepNote: 'Añadir de inicio en el agua de la cuba y disolver bien (etiqueta: regular el pH y evitar espuma)',
       },
       {
-        productId: 'microbiota-108-biol',
+        productId: 'proenzime-108-biol',
         unit: 'L/ha',
         stepNote: 'Incorporar con el Love Green ya disuelto en el caldo',
       },
     ],
     notes: [
       'Etiqueta Love Green: al combinar con otro producto, ejecutar una prueba antes de la aplicación general',
-      'Etiqueta Microbiota 108: no mezclar con productos con cobre, aceites minerales o azufres',
+      'Proenzime 108: sin etiqueta cargada aún → dosis a criterio del técnico',
     ],
-    source: 'Orden de preparación: práctica del aplicador (primer trabajo 07-jul-2026) + etiqueta Love Green («añadir de inicio en el agua»)',
+    source: 'Mezcla del primer trabajo (07-jul-2026): Love Green 750 g/ha + Proenzime 108 2 L/ha. Orden de carga: práctica del aplicador + etiqueta Love Green («añadir de inicio en el agua»)',
   },
 ];
 
