@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   PRODUCT_CATALOG,
   TANK_MIXES,
@@ -10,16 +10,15 @@ import {
 } from '@fitolink/shared';
 
 /**
- * Calculadora de mezcla según ETIQUETA del fabricante · 08-jul-2026.
- * 09-jul: vías foliar-% y riego (Microbiota 108).
- * 10-jul: MEZCLA DE TANQUE (receta de carga en orden) + rediseño editorial
- *         AgroM: barra mín–máx de etiqueta con el marcador de la dosis
- *         (espejo de la tabla DOSIS MÍN./MÁX. del envase), receta en panel
- *         pergamino, numeración en círculos brand (line-icon language).
+ * Calculadora de mezcla · "Ficha de carga" (rediseño editorial 10-jul-2026).
  *
- * Los rangos salen de packages/shared/productCatalog.ts (transcripción literal
- * de cada etiqueta); fuera de rango se marca en terra — la decisión es del
- * técnico. Solo DATO: sin narrativa (regla producto ≠ speech).
+ * Dirección de diseño: la calculadora se lee como la propia ETIQUETA del envase
+ * (la tabla DOSIS MÍN./MÁX. hecha instrumento) cruzada con una hoja de campo.
+ * La RESPUESTA es el protagonista — el técnico abre y ve, en serif grande,
+ * cuánto producto y cuánta agua cargar. Marco cálido (paleta earth/paper),
+ * medidor de dosis con marca deslizante, eyebrows mono, identidad en Instrument
+ * Serif. Solo DATO, cero narrativa. Rangos = transcripción literal de etiqueta
+ * (productCatalog.ts); fuera de rango se marca en terra — decide el técnico.
  */
 
 type Via = 'dron' | 'pulverizador' | 'foliar' | 'riego';
@@ -31,73 +30,124 @@ const VIA_LABEL: Record<Via, string> = {
   riego: 'Riego (fertirrigación)',
 };
 
-function availableVias(p: ProductSpec): Via[] {
-  return (Object.keys(VIA_LABEL) as Via[]).filter((v) => p.methods[v]);
-}
+const availableVias = (p: ProductSpec): Via[] =>
+  (Object.keys(VIA_LABEL) as Via[]).filter((v) => p.methods[v]);
 
 // Total legible: g→kg y mL→L cuando el acumulado pasa de 1000.
-function fmtTotal(total: number, unitPerHa: string): string {
+function fmtTotal(total: number, unitPerHa: string): { n: string; u: string } {
   const base = unitPerHa.split('/')[0];
   const f = (n: number, d: number) => n.toLocaleString('es-ES', { maximumFractionDigits: d });
-  if (base === 'g') return total >= 1000 ? `${f(total / 1000, 2)} kg` : `${f(total, 1)} g`;
-  if (base === 'mL') return total >= 1000 ? `${f(total / 1000, 2)} L` : `${f(total, 1)} mL`;
-  return `${f(total, 2)} ${base}`;
+  if (base === 'g') return total >= 1000 ? { n: f(total / 1000, 2), u: 'kg' } : { n: f(total, 1), u: 'g' };
+  if (base === 'mL') return total >= 1000 ? { n: f(total / 1000, 2), u: 'L' } : { n: f(total, 1), u: 'mL' };
+  return { n: f(total, 2), u: base };
 }
-
 const fmtEs = (n: number, d = 2) => n.toLocaleString('es-ES', { maximumFractionDigits: d });
 
-const inputCls = (warn: boolean) =>
-  `w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
-    warn ? 'border-terra-400 bg-terra-50 text-terra-800' : 'border-earth-200'
+// ── Átomos visuales ──────────────────────────────────────────────────────────
+
+const Eyebrow = ({ children }: { children: ReactNode }) => (
+  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-earth-700/70">{children}</p>
+);
+
+const Stamp = ({ children }: { children: ReactNode }) => (
+  <span className="inline-flex items-center rounded-full border border-earth-400/50 bg-earth-50 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-earth-700">
+    {children}
+  </span>
+);
+
+const Field = ({ label, children }: { label: string; children: ReactNode }) => (
+  <label className="block">
+    <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-gray-400">{label}</span>
+    {children}
+  </label>
+);
+
+const inputCls = (warn = false) =>
+  `w-full rounded-lg border px-3 py-2 font-display text-lg tabular-nums transition-colors focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 ${
+    warn ? 'border-terra-400 bg-terra-50 text-terra-700' : 'border-earth-300/70 bg-white text-[#0F2A22]'
   }`;
 
 const selectCls =
-  'w-full border border-earth-200 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500';
+  'w-full rounded-lg border border-earth-300/70 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500';
 
-/**
- * Barra mín–máx de etiqueta con el marcador de la dosis elegida — la tabla
- * "DOSIS MÍN./HA · DOSIS MÁX./HA" del envase hecha visual. Marcador brand
- * dentro de rango, terra fuera (clavado al borde).
- */
-function RangeBar({ min, max, value, unit }: { min: number; max: number; value?: number | null; unit: string }) {
+/** Medidor de dosis — la tabla DOSIS MÍN./MÁX. del envase hecha instrumento. */
+function Gauge({ min, max, value, unit }: { min: number; max: number; value?: number | null; unit: string }) {
   const has = value != null && Number.isFinite(value) && value > 0;
   const raw = has ? (value! - min) / (max - min) : null;
   const pos = raw != null ? Math.max(0, Math.min(1, raw)) : null;
   const out = raw != null && (raw < 0 || raw > 1);
   return (
-    <div className="mt-1.5 px-0.5">
-      <div className="relative h-1 rounded-full bg-earth-100">
-        <div className="absolute inset-y-0 left-0 rounded-full bg-brand-200" style={{ width: pos != null && !out ? `${pos * 100}%` : 0 }} />
+    <div className="pt-6">
+      <div className="relative">
         {pos != null && (
           <span
-            className={`absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${out ? 'bg-terra-500' : 'bg-brand-600'}`}
-            style={{ left: `calc(${pos * 100}% - 5px)` }}
-          />
+            className={`absolute -top-5 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] font-semibold ${out ? 'text-terra-600' : 'text-brand-700'}`}
+            style={{ left: `${pos * 100}%` }}
+          >
+            {fmtEs(value!)}
+          </span>
+        )}
+        <div className="relative h-2 overflow-hidden rounded-full bg-earth-100 shadow-[inset_0_1px_2px_rgba(83,59,22,0.18)]">
+          <div className={`absolute inset-y-0 left-0 ${out ? 'bg-terra-300' : 'bg-brand-300'}`} style={{ width: pos != null ? `${pos * 100}%` : 0 }} />
+          {[0.25, 0.5, 0.75].map((t) => (
+            <span key={t} className="absolute top-1/2 h-1.5 w-px -translate-y-1/2 bg-earth-300" style={{ left: `${t * 100}%` }} />
+          ))}
+        </div>
+        {pos != null && (
+          <span className={`absolute -top-0.5 h-3 w-[3px] -translate-x-1/2 rounded-full ${out ? 'bg-terra-600' : 'bg-brand-700'}`} style={{ left: `${pos * 100}%` }} />
         )}
       </div>
-      <div className="flex justify-between mt-1 text-[10px] leading-none text-gray-400">
-        <span>mín {fmtEs(min)} {unit}</span>
-        <span>máx {fmtEs(max)} {unit}</span>
+      <div className="mt-1.5 flex justify-between font-mono text-[9px] uppercase tracking-wide text-gray-400">
+        <span>mín {fmtEs(min)}</span>
+        <span className="text-earth-700/60">{unit}</span>
+        <span>máx {fmtEs(max)}</span>
       </div>
     </div>
   );
 }
 
-/** Círculo numerado del paso de carga — mismo lenguaje que el set line-icon. */
-function StepBadge({ n }: { n: number }) {
+/** Cifra-héroe: el número que el técnico va a cargar, en serif editorial. */
+function HeroStat({ n, u, label, tone = 'brand' }: { n: string; u: string; label: string; tone?: 'brand' | 'terra' | 'ink' }) {
+  const color = tone === 'terra' ? 'text-terra-600' : tone === 'ink' ? 'text-[#0F2A22]' : 'text-brand-800';
   return (
-    <span className="w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-      {n}
-    </span>
+    <div>
+      <p className={`font-display leading-none tabular-nums ${color}`}>
+        <span className="text-[2.1rem] sm:text-[2.5rem]">{n}</span>
+        <span className="ml-1 text-lg text-gray-400">{u}</span>
+      </p>
+      <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-gray-400">{label}</p>
+    </div>
   );
 }
 
+/** Panel cálido de resultado — el "sello" de la ficha. */
+const ResultPanel = ({ eyebrow, children }: { eyebrow: string; children: ReactNode }) => (
+  <div className="rounded-xl border-l-2 border-terra-500 bg-earth-100/50 p-4 sm:p-5">
+    <Eyebrow>{eyebrow}</Eyebrow>
+    <div className="mt-3">{children}</div>
+  </div>
+);
+
+const StepBadge = ({ n }: { n: number }) => (
+  <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 font-mono text-[11px] font-bold text-white">
+    {n}
+  </span>
+);
+
+const NoteList = ({ notes, source }: { notes?: string[]; source?: string }) => (
+  <div className="space-y-1 border-t border-earth-300/40 pt-3">
+    {notes?.map((n) => (
+      <p key={n} className="text-[11px] leading-relaxed text-gray-500">· {n}</p>
+    ))}
+    {source && <p className="pt-1 text-[11px] leading-relaxed text-gray-400">{source}</p>}
+  </div>
+);
+
 interface Props {
-  /** Hectáreas iniciales (área de la parcela / del trabajo). */
   defaultAreaHa?: number;
 }
 
-// ── Modo MEZCLA DE TANQUE ────────────────────────────────────────────────────
+// ── Modo MEZCLA DE TANQUE — receta de carga en orden ─────────────────────────
 function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: string; setAreaStr: (v: string) => void }) {
   const [caldoStr, setCaldoStr] = useState('');
   const [doseStrs, setDoseStrs] = useState<Record<string, string>>({});
@@ -125,104 +175,71 @@ function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: 
         : pct && pctEquiv != null ? pctEquiv < pct.min || pctEquiv > pct.max
         : false
       : false;
-    const rangeText = perHa ? labelRangeText(perHa) : pct ? `${pct.min}–${pct.max} % del caldo` : '';
-    const shortName = c.spec.name.split('·')[0].trim();
-    return { ...c, dose, hasDose, out, rangeText, pctEquiv, pctRange: pct, perHa, shortName };
+    return { ...c, dose, hasDose, out, perHa, pctRange: pct, pctEquiv, shortName: c.spec.name.split('·')[0].trim() };
   });
-
   const anyOut = rows.some((r) => r.out) || caldoOut;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-      {/* Entradas — cada dosis con su barra mín–máx de etiqueta */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-4 content-start">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Superficie (ha)</label>
-          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls(false)} />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Caldo (agua · L/ha)</label>
-          <input
-            type="number" step="any" min="0" value={caldoStr}
-            onChange={(e) => setCaldoStr(e.target.value)}
-            placeholder={waterRange ? `${waterRange.min}–${waterRange.max}` : ''}
-            className={inputCls(caldoOut)}
-          />
-          {waterRange && <RangeBar min={waterRange.min} max={waterRange.max} value={hasCaldo ? caldo : null} unit="L/ha" />}
-        </div>
+    <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.05fr]">
+      {/* Entradas + medidores */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 content-start">
+        <Field label="Superficie (ha)">
+          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls()} />
+        </Field>
+        <Field label="Caldo · agua (L/ha)">
+          <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder={waterRange ? `${waterRange.min}–${waterRange.max}` : ''} className={inputCls(caldoOut)} />
+          {waterRange && <Gauge min={waterRange.min} max={waterRange.max} value={hasCaldo ? caldo : null} unit="L/ha" />}
+        </Field>
         {rows.map((r) => (
-          <div key={r.productId}>
-            <label className="block text-xs text-gray-500 mb-1 truncate" title={r.spec.name}>
-              {r.shortName} ({r.unit})
-            </label>
-            <input
-              type="number" step="any" min="0" value={doseStrs[r.productId] ?? ''}
-              onChange={(e) => setDoseStrs((m) => ({ ...m, [r.productId]: e.target.value }))}
-              placeholder={r.rangeText}
-              className={inputCls(r.out)}
-            />
-            {r.perHa && <RangeBar min={r.perHa.min} max={r.perHa.max} value={r.hasDose ? r.dose : null} unit={r.perHa.unit} />}
-            {!r.perHa && r.pctRange && (
-              <RangeBar min={r.pctRange.min} max={r.pctRange.max} value={r.pctEquiv} unit="% del caldo" />
-            )}
-          </div>
+          <Field key={r.productId} label={`${r.shortName} (${r.unit})`}>
+            <input type="number" step="any" min="0" value={doseStrs[r.productId] ?? ''} onChange={(e) => setDoseStrs((m) => ({ ...m, [r.productId]: e.target.value }))} placeholder={r.perHa ? labelRangeText(r.perHa) : ''} className={inputCls(r.out)} />
+            {r.perHa && <Gauge min={r.perHa.min} max={r.perHa.max} value={r.hasDose ? r.dose : null} unit={r.perHa.unit} />}
+            {!r.perHa && r.pctRange && <Gauge min={r.pctRange.min} max={r.pctRange.max} value={r.pctEquiv} unit="% caldo" />}
+          </Field>
         ))}
       </div>
 
-      {/* Receta de carga — panel pergamino, en orden de incorporación */}
-      <div className="bg-earth-50/70 border border-earth-200/60 rounded-lg p-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
-          Receta de carga{hasArea ? ` · ${fmtEs(area)} ha` : ''}
-        </p>
-        <ol className="space-y-2.5">
-          <li className="flex gap-2.5">
-            <StepBadge n={1} />
-            <div className="flex-1 flex justify-between gap-2">
-              <span className="text-sm text-gray-700">Agua</span>
-              <span className={`text-sm font-bold ${caldoOut ? 'text-terra-600' : 'text-brand-800'}`}>
-                {hasArea && hasCaldo ? fmtTotal(caldo * area, 'L/ha') : '—'}
-              </span>
-            </div>
-          </li>
-          {rows.map((r, i) => (
-            <li key={r.productId} className="flex gap-2.5">
-              <StepBadge n={i + 2} />
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between gap-2">
-                  <span className="text-sm text-gray-700">
-                    {r.shortName}
-                    {r.pctEquiv != null && r.pctRange && (
-                      <span className={`ml-1 text-[11px] ${r.out ? 'text-terra-600 font-medium' : 'text-gray-400'}`}>
-                        ≈{fmtEs(r.pctEquiv, 1)}% del caldo
-                      </span>
-                    )}
-                  </span>
-                  <span className={`text-sm font-bold ${r.out ? 'text-terra-600' : 'text-brand-800'}`}>
-                    {hasArea && r.hasDose ? fmtTotal(r.dose * area, r.unit) : '—'}
-                  </span>
-                </div>
-                <p className="text-[11px] leading-snug text-gray-500 mt-0.5">{r.stepNote}</p>
+      {/* Receta de carga — el resultado, en orden de incorporación */}
+      <div className="flex flex-col gap-3">
+        <ResultPanel eyebrow={`Receta de carga${hasArea ? ` · ${fmtEs(area)} ha` : ''}`}>
+          <ol className="space-y-3">
+            <li className="flex items-start gap-3">
+              <StepBadge n={1} />
+              <div className="flex flex-1 items-baseline justify-between gap-2">
+                <span className="text-sm text-gray-600">Agua</span>
+                {hasArea && hasCaldo
+                  ? (() => { const r = fmtTotal(caldo * area, 'L/ha'); return <span className={`font-display text-2xl leading-none tabular-nums ${caldoOut ? 'text-terra-600' : 'text-brand-800'}`}>{r.n}<span className="ml-1 text-sm text-gray-400">{r.u}</span></span>; })()
+                  : <span className="font-display text-2xl text-gray-300">—</span>}
               </div>
             </li>
-          ))}
-        </ol>
-
-        {anyOut && (
-          <p className="mt-3 text-xs font-medium text-terra-700 bg-terra-50 border border-terra-200 rounded-lg px-3 py-2">
-            Hay valores fuera del rango de etiqueta. Consulte a su técnico.
-          </p>
-        )}
-
-        {mix.notes && mix.notes.length > 0 && (
-          <div className="mt-3 pt-2.5 border-t border-earth-200/60 space-y-1">
-            {mix.notes.map((n) => (
-              <p key={n} className="text-[11px] leading-relaxed text-gray-500">· {n}</p>
+            {rows.map((r, i) => (
+              <li key={r.productId} className="flex items-start gap-3">
+                <StepBadge n={i + 2} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm text-gray-600">{r.shortName}</span>
+                    {hasArea && r.hasDose
+                      ? (() => { const t = fmtTotal(r.dose * area, r.unit); return <span className={`font-display text-2xl leading-none tabular-nums ${r.out ? 'text-terra-600' : 'text-brand-800'}`}>{t.n}<span className="ml-1 text-sm text-gray-400">{t.u}</span></span>; })()
+                      : <span className="font-display text-2xl text-gray-300">—</span>}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
+                    {r.stepNote}
+                    {r.pctEquiv != null && r.pctRange && (
+                      <span className={r.out ? 'text-terra-600 font-medium' : 'text-gray-400'}> · ≈{fmtEs(r.pctEquiv, 1)}% del caldo</span>
+                    )}
+                  </p>
+                </div>
+              </li>
             ))}
-          </div>
-        )}
+          </ol>
+          {anyOut && (
+            <p className="mt-3 rounded-lg border border-terra-200 bg-terra-50 px-3 py-2 text-xs font-medium text-terra-700">
+              Hay valores fuera del rango de etiqueta. Consulte a su técnico.
+            </p>
+          )}
+        </ResultPanel>
+        <NoteList notes={mix.notes} source={mix.source} />
       </div>
-
-      <p className="lg:col-span-2 text-[11px] leading-relaxed text-gray-400">{mix.source}</p>
     </div>
   );
 }
@@ -249,130 +266,87 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
     : undefined;
   const pct = activeVia === 'foliar' ? product.methods.foliar?.concentrationPct : undefined;
   const rangeText = perHa ? labelRangeText(perHa) : pct ? `${pct.min}–${pct.max} %` : '';
-  const outOfLabel = hasDose
-    ? perHa ? dose < perHa.min || dose > perHa.max
-      : pct ? dose < pct.min || dose > pct.max
-      : false
-    : false;
-
+  const outOfLabel = hasDose ? (perHa ? dose < perHa.min || dose > perHa.max : pct ? dose < pct.min || dose > pct.max : false) : false;
   const foliarProductPerHa = activeVia === 'foliar' && hasDose && hasCaldo ? (caldo * dose) / 100 : null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-      {/* Entradas */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-4 content-start">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Vía</label>
-          <select
-            value={activeVia}
-            onChange={(e) => { setVia(e.target.value as Via); setDoseStr(''); setCaldoStr(''); }}
-            className={selectCls}
-          >
-            {vias.map((v) => (
-              <option key={v} value={v}>{VIA_LABEL[v]}</option>
-            ))}
+    <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.05fr]">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 content-start">
+        <Field label="Vía">
+          <select value={activeVia} onChange={(e) => { setVia(e.target.value as Via); setDoseStr(''); setCaldoStr(''); }} className={selectCls}>
+            {vias.map((v) => <option key={v} value={v}>{VIA_LABEL[v]}</option>)}
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Superficie (ha)</label>
-          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls(false)} />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">
-            {activeVia === 'foliar' ? 'Concentración (%)' : `Dosis ${perHa ? `(${perHa.unit})` : ''}`}
-          </label>
+        </Field>
+        <Field label="Superficie (ha)">
+          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls()} />
+        </Field>
+        <Field label={activeVia === 'foliar' ? 'Concentración (%)' : `Dosis ${perHa ? `(${perHa.unit})` : ''}`}>
           <input type="number" step="any" min="0" value={doseStr} onChange={(e) => setDoseStr(e.target.value)} placeholder={rangeText} className={inputCls(outOfLabel)} />
-          {perHa && <RangeBar min={perHa.min} max={perHa.max} value={hasDose ? dose : null} unit={perHa.unit} />}
-          {pct && <RangeBar min={pct.min} max={pct.max} value={hasDose ? dose : null} unit="%" />}
-        </div>
+          {perHa && <Gauge min={perHa.min} max={perHa.max} value={hasDose ? dose : null} unit={perHa.unit} />}
+          {pct && <Gauge min={pct.min} max={pct.max} value={hasDose ? dose : null} unit="%" />}
+        </Field>
         {activeVia === 'foliar' && (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Caldo (L/ha)</label>
-            <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder="p.ej. 100" className={inputCls(false)} />
-          </div>
-        )}
-        {activeVia === 'dron' && product.methods.dron && (
-          <div className="col-span-2 text-[11px] text-gray-500">
-            Caldo (agua) de etiqueta: {product.methods.dron.waterLPerHa.min}–{product.methods.dron.waterLPerHa.max} L/ha
-          </div>
+          <Field label="Caldo (L/ha)">
+            <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder="p.ej. 100" className={inputCls()} />
+          </Field>
         )}
       </div>
 
-      {/* Totales — panel pergamino */}
-      <div className="bg-earth-50/70 border border-earth-200/60 rounded-lg p-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
-          Totales{hasArea ? ` · ${fmtEs(area)} ha` : ''}
-        </p>
-        <dl className="space-y-1.5 text-sm">
-          <div className="flex justify-between gap-2">
-            <dt className="text-gray-500">Etiqueta ({VIA_LABEL[activeVia].toLowerCase()})</dt>
-            <dd className="font-medium text-gray-900">{rangeText || '—'}</dd>
+      <div className="flex flex-col gap-3">
+        <ResultPanel eyebrow={hasArea ? `Cargar para ${fmtEs(area)} ha` : 'Cargar'}>
+          <div className="flex flex-wrap gap-x-10 gap-y-4">
+            {activeVia === 'foliar' ? (
+              foliarProductPerHa != null && hasArea
+                ? (() => { const t = fmtTotal(foliarProductPerHa * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; })()
+                : <HeroStat n="—" u="" label="producto" tone="ink" />
+            ) : (
+              hasDose && hasArea && perHa
+                ? (() => { const t = fmtTotal(dose * area, perHa.unit); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; })()
+                : <HeroStat n="—" u="" label="producto" tone="ink" />
+            )}
+            {activeVia === 'dron' && product.methods.dron && hasArea && (
+              <HeroStat
+                n={`${fmtTotal(product.methods.dron.waterLPerHa.min * area, 'L/ha').n}–${fmtTotal(product.methods.dron.waterLPerHa.max * area, 'L/ha').n}`}
+                u="L" label="agua" tone="ink"
+              />
+            )}
+            {activeVia === 'foliar' && hasCaldo && hasArea && (
+              (() => { const t = fmtTotal(caldo * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="caldo" tone="ink" />; })()
+            )}
           </div>
-          {activeVia === 'pulverizador' && product.methods.pulverizador?.applicationsPerCycle && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Aplicaciones por ciclo</dt>
-              <dd className="font-medium text-gray-900">
-                {product.methods.pulverizador.applicationsPerCycle.min}–{product.methods.pulverizador.applicationsPerCycle.max} según cultivo
-              </dd>
-            </div>
-          )}
-          {foliarProductPerHa != null && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Producto por ha ({dose}% de {fmtEs(caldo)} L)</dt>
-              <dd className="font-medium text-gray-900">{fmtEs(foliarProductPerHa)} L/ha</dd>
-            </div>
-          )}
-          {hasArea && (activeVia === 'foliar' ? foliarProductPerHa != null : hasDose && perHa) && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Producto total</dt>
-              <dd className={`font-bold ${outOfLabel ? 'text-terra-600' : 'text-brand-800'}`}>
-                {activeVia === 'foliar'
-                  ? `${fmtEs(foliarProductPerHa! * area)} L`
-                  : fmtTotal(dose * area, perHa!.unit)}
-              </dd>
-            </div>
-          )}
-          {hasArea && activeVia === 'dron' && product.methods.dron && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Agua total</dt>
-              <dd className="font-medium text-gray-900">
-                {fmtTotal(product.methods.dron.waterLPerHa.min * area, 'L/ha')} – {fmtTotal(product.methods.dron.waterLPerHa.max * area, 'L/ha')}
-              </dd>
-            </div>
-          )}
-          {hasArea && hasCaldo && activeVia === 'foliar' && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Caldo total</dt>
-              <dd className="font-medium text-gray-900">{fmtTotal(caldo * area, 'L/ha')}</dd>
-            </div>
-          )}
-        </dl>
 
-        {outOfLabel && (
-          <p className="mt-3 text-xs font-medium text-terra-700 bg-terra-50 border border-terra-200 rounded-lg px-3 py-2">
-            {activeVia === 'foliar' ? 'Concentración' : 'Dosis'} fuera del rango de etiqueta ({rangeText}). Consulte a su técnico.
-          </p>
-        )}
+          <dl className="mt-4 space-y-1 border-t border-earth-300/40 pt-3 text-sm">
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-500">Etiqueta · {VIA_LABEL[activeVia].toLowerCase()}</dt>
+              <dd className="font-medium text-[#0F2A22]">{rangeText || '—'}</dd>
+            </div>
+            {activeVia === 'foliar' && foliarProductPerHa != null && (
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Producto por ha ({dose}% de {fmtEs(caldo)} L)</dt>
+                <dd className="font-medium text-[#0F2A22]">{fmtEs(foliarProductPerHa)} L/ha</dd>
+              </div>
+            )}
+            {activeVia === 'pulverizador' && product.methods.pulverizador?.applicationsPerCycle && (
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-500">Aplicaciones por ciclo</dt>
+                <dd className="font-medium text-[#0F2A22]">{product.methods.pulverizador.applicationsPerCycle.min}–{product.methods.pulverizador.applicationsPerCycle.max}</dd>
+              </div>
+            )}
+          </dl>
 
-        {product.applicationNotes && product.applicationNotes.length > 0 && (
-          <div className="mt-3 pt-2.5 border-t border-earth-200/60 space-y-1">
-            {product.applicationNotes.map((n) => (
-              <p key={n} className="text-[11px] leading-relaxed text-gray-500">· {n}</p>
-            ))}
-          </div>
-        )}
+          {outOfLabel && (
+            <p className="mt-3 rounded-lg border border-terra-200 bg-terra-50 px-3 py-2 text-xs font-medium text-terra-700">
+              {activeVia === 'foliar' ? 'Concentración' : 'Dosis'} fuera del rango de etiqueta ({rangeText}). Consulte a su técnico.
+            </p>
+          )}
+        </ResultPanel>
+        <NoteList notes={product.applicationNotes} source={product.source} />
       </div>
-
-      <p className="lg:col-span-2 text-[11px] leading-relaxed text-gray-400">
-        {product.source} · {product.kind}
-        {product.certifications?.length ? ` · ${product.certifications[0]}` : ''}
-      </p>
     </div>
   );
 }
 
-// ── Modo PRODUCTO SIN ETIQUETA CARGADA ───────────────────────────────────────
-// Dosis libre (a criterio del técnico) — no inventamos rango. Solo el total.
+// ── Modo PRODUCTO SIN ETIQUETA (dosis libre, sin inventar rango) ─────────────
 function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSpec; areaStr: string; setAreaStr: (v: string) => void }) {
   const [doseStr, setDoseStr] = useState('');
   const [unit, setUnit] = useState<ApplicationUnit>('L/ha');
@@ -381,52 +355,47 @@ function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSp
   const hasDose = Number.isFinite(dose) && dose > 0;
   const hasArea = Number.isFinite(area) && area > 0;
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-4 content-start">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Dosis / ha</label>
-          <input type="number" step="any" min="0" value={doseStr} onChange={(e) => setDoseStr(e.target.value)} className={inputCls(false)} />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Unidad</label>
+    <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.05fr]">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 content-start">
+        <Field label="Dosis / ha">
+          <input type="number" step="any" min="0" value={doseStr} onChange={(e) => setDoseStr(e.target.value)} className={inputCls()} />
+        </Field>
+        <Field label="Unidad">
           <select value={unit} onChange={(e) => setUnit(e.target.value as ApplicationUnit)} className={selectCls}>
-            {APPLICATION_UNITS.map((u) => (<option key={u} value={u}>{u}</option>))}
+            {APPLICATION_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Superficie (ha)</label>
-          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls(false)} />
-        </div>
+        </Field>
+        <Field label="Superficie (ha)">
+          <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls()} />
+        </Field>
       </div>
-      <div className="bg-earth-50/70 border border-earth-200/60 rounded-lg p-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
-          Totales{hasArea ? ` · ${fmtEs(area)} ha` : ''}
-        </p>
-        <dl className="space-y-1.5 text-sm">
-          <div className="flex justify-between gap-2">
-            <dt className="text-gray-500">Etiqueta</dt>
-            <dd className="font-medium text-gray-500">pendiente de cargar</dd>
-          </div>
-          {hasDose && hasArea && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Producto total</dt>
-              <dd className="font-bold text-brand-800">{fmtTotal(dose * area, unit)}</dd>
-            </div>
-          )}
-        </dl>
-        <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
-          Etiqueta aún no cargada — sin rango de referencia; la dosis la fija el técnico.
-        </p>
+      <div className="flex flex-col gap-3">
+        <ResultPanel eyebrow={hasArea ? `Cargar para ${fmtEs(area)} ha` : 'Cargar'}>
+          {hasDose && hasArea
+            ? (() => { const t = fmtTotal(dose * area, unit); return <HeroStat n={t.n} u={t.u} label="producto" />; })()
+            : <HeroStat n="—" u="" label="producto" tone="ink" />}
+          <p className="mt-3 border-t border-earth-300/40 pt-3 text-[11px] leading-relaxed text-gray-500">
+            Etiqueta aún no cargada — sin rango de referencia; la dosis la fija el técnico.
+          </p>
+        </ResultPanel>
+        <NoteList source={product.source + (product.manufacturer ? ` · ${product.manufacturer}` : '')} />
       </div>
-      <p className="lg:col-span-2 text-[11px] leading-relaxed text-gray-400">
-        {product.source}{product.manufacturer ? ` · ${product.manufacturer}` : ''}
-      </p>
+    </div>
+  );
+}
+
+// ── Identidad del producto / mezcla ──────────────────────────────────────────
+function Identity({ title, kind, stamps }: { title: string; kind?: string; stamps?: string[] }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h3 className="font-display text-2xl leading-tight text-[#0F2A22]">{title}</h3>
+      {stamps?.map((s) => <Stamp key={s}>{s}</Stamp>)}
+      {kind && <p className="w-full text-[11px] leading-snug text-gray-500">{kind}</p>}
     </div>
   );
 }
 
 export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
-  // Por defecto la MEZCLA (es lo que se aplica en el campo); productos sueltos detrás.
   const [selection, setSelection] = useState(TANK_MIXES[0] ? `mix:${TANK_MIXES[0].id}` : `prod:${PRODUCT_CATALOG[0]?.id}`);
   const [areaStr, setAreaStr] = useState(defaultAreaHa ? String(defaultAreaHa) : '');
 
@@ -434,35 +403,48 @@ export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
   const product = selection.startsWith('prod:') ? PRODUCT_CATALOG.find((p) => `prod:${p.id}` === selection) : undefined;
 
   return (
-    <div className="bg-white rounded-xl border border-earth-300/40 p-4 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+    <div className="overflow-hidden rounded-2xl border border-earth-300/50 bg-[#FBF8F2] shadow-sm">
+      {/* Cabecera */}
+      <div className="flex flex-col gap-3 border-b border-earth-300/40 bg-white/40 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div className="flex items-center gap-2.5">
-          <img src="/service-fertilization.svg" alt="" className="w-8 h-8 flex-shrink-0" />
-          <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-            Mezcla · dosis de etiqueta
-          </h2>
+          <img src="/service-fertilization.svg" alt="" className="h-8 w-8 flex-shrink-0" />
+          <Eyebrow>Ficha de carga · dosis de etiqueta</Eyebrow>
         </div>
         <div className="w-full sm:w-80">
           <select value={selection} onChange={(e) => setSelection(e.target.value)} className={selectCls} aria-label="Qué preparas">
             {TANK_MIXES.length > 0 && (
               <optgroup label="Mezclas de tanque">
-                {TANK_MIXES.map((m) => (
-                  <option key={m.id} value={`mix:${m.id}`}>{m.name}</option>
-                ))}
+                {TANK_MIXES.map((m) => <option key={m.id} value={`mix:${m.id}`}>{m.name}</option>)}
               </optgroup>
             )}
             <optgroup label="Productos sueltos">
-              {PRODUCT_CATALOG.map((p) => (
-                <option key={p.id} value={`prod:${p.id}`}>{p.name}</option>
-              ))}
+              {PRODUCT_CATALOG.map((p) => <option key={p.id} value={`prod:${p.id}`}>{p.name}</option>)}
             </optgroup>
           </select>
         </div>
       </div>
 
-      {mix && <TankMixMode key={mix.id} mix={mix} areaStr={areaStr} setAreaStr={setAreaStr} />}
-      {product && product.labelPending && <LabelPendingMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
-      {product && !product.labelPending && <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
+      {/* Cuerpo */}
+      <div className="px-4 py-4 sm:px-5 sm:py-5">
+        {mix && (
+          <>
+            <Identity title={mix.name} kind="Mezcla de tanque · orden de carga en la cuba" />
+            <TankMixMode key={mix.id} mix={mix} areaStr={areaStr} setAreaStr={setAreaStr} />
+          </>
+        )}
+        {product && (
+          <>
+            <Identity
+              title={product.name}
+              kind={product.kind}
+              stamps={product.labelPending ? ['etiqueta pendiente'] : product.certifications?.slice(0, 1).map((c) => c.split('·')[0].trim())}
+            />
+            {product.labelPending
+              ? <LabelPendingMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />
+              : <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
+          </>
+        )}
+      </div>
     </div>
   );
 }
