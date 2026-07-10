@@ -87,50 +87,50 @@ export default function OperationsPage() {
         </p>
       </div>
 
-      {completedOps.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-900">Informe del trabajo</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Un solo PDF con los recintos tratados y el total de producto aplicado.
-              </p>
+      {/* Dos herramientas lado a lado: informe del trabajo + calculadora de
+          mezcla. En móvil se apilan; en lg comparten fila (aprovecha el ancho). */}
+      <div className={`mb-6 grid items-start gap-4 ${completedOps.length > 0 ? 'lg:grid-cols-2' : 'lg:max-w-xl'}`}>
+        {completedOps.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Informe del trabajo</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Un solo PDF con los recintos tratados y el total de producto aplicado.
+                </p>
+              </div>
+              <button
+                onClick={downloadJobReport}
+                disabled={downloadingJob || selectedOps.length === 0}
+                className="inline-flex items-center gap-1.5 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                {downloadingJob ? 'Generando…' : `Descargar informe (${selectedOps.length})`}
+              </button>
             </div>
-            <button
-              onClick={downloadJobReport}
-              disabled={downloadingJob || selectedOps.length === 0}
-              className="inline-flex items-center gap-1.5 bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              {downloadingJob ? 'Generando…' : `Descargar informe (${selectedOps.length})`}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {completedOps.map((op) => {
+                const on = !deselected.has(op._id);
+                return (
+                  <button
+                    key={op._id}
+                    type="button"
+                    onClick={() => toggleOp(op._id)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      on ? 'bg-brand-50 border-brand-300 text-brand-800' : 'bg-white border-gray-200 text-gray-400'
+                    }`}
+                  >
+                    {on ? '✓ ' : ''}
+                    {op.parcelId?.name || 'Parcela'}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {completedOps.map((op) => {
-              const on = !deselected.has(op._id);
-              return (
-                <button
-                  key={op._id}
-                  type="button"
-                  onClick={() => toggleOp(op._id)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    on ? 'bg-brand-50 border-brand-300 text-brand-800' : 'bg-white border-gray-200 text-gray-400'
-                  }`}
-                >
-                  {on ? '✓ ' : ''}
-                  {op.parcelId?.name || 'Parcela'}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Planificador de mezcla según etiqueta del fabricante — para preparar
-          el próximo vuelo con cantidades con fuente, no a ojo. */}
-      <div className="mb-6">
         <DoseCalculatorCard />
       </div>
 
