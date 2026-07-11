@@ -169,8 +169,7 @@ export default function CalcLgpPage() {
       <style>{CSS}</style>
       <div className="lgp">
         <div className="topbar">
-          <Link to="/">&larr; AgroM · FitoLink</Link>
-          <Link to="/login">Acceder</Link>
+          <Link to="/" aria-label="Volver a la página principal">&larr; Volver a AgroM · FitoLink</Link>
         </div>
 
         <header>

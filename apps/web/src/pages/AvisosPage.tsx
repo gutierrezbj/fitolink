@@ -104,10 +104,16 @@ export default function AvisosPage() {
       {/* Header */}
       <header className="border-b border-earth-300/40 bg-white">
         <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link to="/" className="font-display text-xl font-bold text-brand-700">
-            Agro<span className="text-terra-500">M</span>
-            <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-earth-400 align-middle">FitoLink</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" aria-label="Volver a la página principal" className="flex items-center gap-1 text-sm text-earth-500 hover:text-brand-700 transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              <span className="hidden sm:inline">Volver</span>
+            </Link>
+            <Link to="/" className="font-display text-xl font-bold text-brand-700">
+              Agro<span className="text-terra-500">M</span>
+              <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-earth-400 align-middle">FitoLink</span>
+            </Link>
+          </div>
           <Link
             to="/login"
             className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-colors"

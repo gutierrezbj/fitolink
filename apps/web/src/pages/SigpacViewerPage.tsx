@@ -315,12 +315,18 @@ export default function SigpacViewerPage() {
       {/* Navbar */}
       <nav className="bg-white border-b border-earth-300/30">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex flex-col items-start leading-none gap-1">
-            <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-6 w-auto" />
-            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-gray-500 ml-px">
-              FitoLink &middot; del pixel al tratamiento
-            </span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" aria-label="Volver a la página principal" className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-700 transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              <span className="hidden sm:inline">Volver</span>
+            </Link>
+            <Link to="/" className="flex flex-col items-start leading-none gap-1">
+              <img src="/brand/agrom-wordmark.svg" alt="AgroM" className="h-6 w-auto" />
+              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-gray-500 ml-px">
+                FitoLink &middot; del pixel al tratamiento
+              </span>
+            </Link>
+          </div>
           <Link
             to="/login"
             className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-all"
