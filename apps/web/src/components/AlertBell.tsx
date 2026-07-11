@@ -162,14 +162,21 @@ export default function AlertBell() {
                       <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">
                         {alert.parcelId?.name || 'Parcela'}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        NDVI <b className="tabular-nums">{alert.ndviValue.toFixed(2)}</b>
-                        {alert.ndviDelta !== 0 && (
-                          <> · Δ <span className={alert.ndviDelta < 0 ? 'text-red-600' : 'text-green-600'}>
-                            {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(2)}
-                          </span></>
-                        )}
-                      </p>
+                      {/* pest/fire no vienen de la serie satelital — "NDVI 0.00" sería falso */}
+                      {alert.type === 'pest_advisory' ? (
+                        <p className="text-xs text-gray-500">Aviso fitosanitario oficial en su comarca</p>
+                      ) : alert.type === 'fire_proximity' ? (
+                        <p className="text-xs text-gray-500">Foco térmico detectado cerca de la parcela</p>
+                      ) : (
+                        <p className="text-xs text-gray-500">
+                          NDVI <b className="tabular-nums">{alert.ndviValue.toFixed(2)}</b>
+                          {alert.ndviDelta !== 0 && (
+                            <> · Δ <span className={alert.ndviDelta < 0 ? 'text-red-600' : 'text-green-600'}>
+                              {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(2)}
+                            </span></>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </button>
                   );

@@ -24,6 +24,8 @@ const TYPE_LABELS: Record<string, string> = {
   ndvi_drop: 'Caida NDVI',
   stress_pattern: 'Patron de Estres',
   ndre_anomaly: 'Anomalia NDRE',
+  fire_proximity: 'Foco Termico',
+  pest_advisory: 'Aviso Fitosanitario',
 };
 
 type Alert = {
@@ -131,20 +133,24 @@ export default function B2BAlertsPage() {
               </p>
             </div>
 
-            {/* NDVI values */}
-            <div className="text-right flex-shrink-0">
-              <p className="text-xl font-bold text-gray-900">{alert.ndviValue?.toFixed(3)}</p>
-              {alert.ndviDelta !== undefined && (
-                <p className={`text-xs font-semibold ${alert.ndviDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(3)}
-                </p>
-              )}
-              <p className="text-[11px] text-gray-400">NDVI</p>
-            </div>
+            {/* NDVI values — pest/fire no vienen de la serie satelital */}
+            {alert.type !== 'pest_advisory' && alert.type !== 'fire_proximity' && (
+              <div className="text-right flex-shrink-0">
+                <p className="text-xl font-bold text-gray-900">{alert.ndviValue?.toFixed(3)}</p>
+                {alert.ndviDelta !== undefined && (
+                  <p className={`text-xs font-semibold ${alert.ndviDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(3)}
+                  </p>
+                )}
+                <p className="text-[11px] text-gray-400">NDVI</p>
+              </div>
+            )}
           </div>
 
-          {/* AI confidence */}
-          {alert.aiConfidence !== undefined && (
+          {/* AI confidence — para pest, nota de fuente oficial en su lugar */}
+          {alert.type === 'pest_advisory' ? (
+            <p className="mt-3 text-[11px] text-gray-500">Boletín oficial · dato del organismo</p>
+          ) : alert.aiConfidence !== undefined && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] text-gray-500">Confianza IA</span>
@@ -158,8 +164,8 @@ export default function B2BAlertsPage() {
             <div className="mt-3 pt-3 border-t border-gray-200">
               <p className="text-[11px] text-gray-600 font-medium">
                 {alert.severity === 'critical'
-                  ? '⚠ Considerar apertura de expediente de siniestro'
-                  : '📋 Programar inspeccion de campo'}
+                  ? 'Considerar apertura de expediente de siniestro'
+                  : 'Programar inspeccion de campo'}
               </p>
             </div>
           )}

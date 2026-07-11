@@ -43,6 +43,7 @@ interface AlertTypeBreakdown {
   ndre_anomaly: number;
   stress_pattern: number;
   fire_proximity: number;
+  pest_advisory: number;
 }
 
 interface AdvOverview {
@@ -232,9 +233,9 @@ export default function AdvDashboardHome() {
                   {m.alertCount > 0 && (
                     m.alertTypes ? (
                       <div className="flex items-center gap-1 flex-wrap justify-end">
-                        {(['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                        {(['stress_pattern','fire_proximity','pest_advisory','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
                           const count = m.alertTypes![t];
-                          if (count === 0) return null;
+                          if (!count) return null;
                           const meta = getAlertTypeMetadata(t);
                           return (
                             <span

@@ -9,15 +9,17 @@
  * monocromáticos (color heredado del parent via currentColor) coherentes
  * con la design-philosophy Botanical Cartography (no emojis decorativos).
  *
- * Cubre los 4 tipos de Alert que el sistema sabe emitir hoy:
+ * Cubre los 5 tipos de Alert que el sistema sabe emitir hoy:
  *   - 'ndvi_drop'      → 🍂 hoja seca · caída de vegetación
  *   - 'ndre_anomaly'   → ✦ destello · anomalía foliar
  *   - 'stress_pattern' → 💧 gota · estrés hídrico
  *   - 'fire_proximity' → 🔥 llama · foco térmico cercano
+ *   - 'pest_advisory'  → 🐛 bicho · aviso fitosanitario oficial en comarca
+ *                        (Sprint Notificación de Plagas · 12-jul-2026 ·
+ *                        emitido por el fan-out de pestAdvisoryService)
  *
- * Próximas iteraciones añadirán tipos: pest_alert (plaga · cuando el digest
- * matutino emita Alert ⚠️ por advisory crítica en comarca), heat_extreme,
- * disease_pattern (rule-based futuro).
+ * Próximas iteraciones añadirán tipos: heat_extreme, disease_pattern
+ * (rule-based futuro).
  */
 
 import type { ReactNode } from 'react';
@@ -72,6 +74,24 @@ function LeafIcon() {
   );
 }
 
+function BugIcon() {
+  return (
+    <svg {...COMMON_PROPS}>
+      <path d="M8 2l1.88 1.88" />
+      <path d="M14.12 3.88L16 2" />
+      <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+      <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" />
+      <path d="M12 20v-9" />
+      <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
+      <path d="M6 13H2" />
+      <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
+      <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
+      <path d="M22 13h-4" />
+      <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
+    </svg>
+  );
+}
+
 function SparkleIcon() {
   return (
     <svg {...COMMON_PROPS}>
@@ -88,6 +108,12 @@ function SparkleIcon() {
  */
 export function getAlertTypeMetadata(type: AlertType | undefined): AlertTypeMetadata {
   switch (type) {
+    case 'pest_advisory':
+      return {
+        icon: <BugIcon />,
+        label: 'Aviso fitosanitario',
+        shortLabel: 'Plaga',
+      };
     case 'fire_proximity':
       return {
         icon: <FlameIcon />,

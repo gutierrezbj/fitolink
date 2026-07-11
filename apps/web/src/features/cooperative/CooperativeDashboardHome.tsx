@@ -21,6 +21,7 @@ interface AlertTypeBreakdown {
   ndre_anomaly: number;
   stress_pattern: number;
   fire_proximity: number;
+  pest_advisory: number;
 }
 
 interface MemberSummary {
@@ -248,9 +249,9 @@ export default function CooperativeDashboardHome() {
                          (despliegue parcial · BD vieja sin field type), pintamos
                          un único pill genérico con el count total. */}
                       {m.alertTypes ? (
-                        (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                        (['stress_pattern','fire_proximity','pest_advisory','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
                           const count = m.alertTypes![t];
-                          if (count === 0) return null;
+                          if (!count) return null;
                           const meta = getAlertTypeMetadata(t);
                           return (
                             <span

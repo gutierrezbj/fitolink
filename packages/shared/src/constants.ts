@@ -37,7 +37,10 @@ export type ApplicationUnit = (typeof APPLICATION_UNITS)[number];
 // Alert types
 // Sprint FIRMS · 04-jun-2026: añadido 'fire_proximity' — foco térmico
 // detectado por NASA FIRMS (VIIRS 375m) dentro del radio de la parcela.
-export const ALERT_TYPES = ['ndvi_drop', 'ndre_anomaly', 'stress_pattern', 'fire_proximity'] as const;
+// Sprint Notificación de Plagas · 12-jul-2026: añadido 'pest_advisory' —
+// aviso fitosanitario oficial (PestAdvisory) que matchea cultivo + radio
+// de la parcela; lo crea el fan-out de pestAdvisoryService.
+export const ALERT_TYPES = ['ndvi_drop', 'ndre_anomaly', 'stress_pattern', 'fire_proximity', 'pest_advisory'] as const;
 export type AlertType = (typeof ALERT_TYPES)[number];
 
 // Alert severities

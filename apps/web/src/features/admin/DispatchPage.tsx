@@ -157,7 +157,7 @@ function DispatchCard({ op, onAssign, onCancel, onReassign }: {
       </p>
 
       {/* NDVI pill */}
-      {op.alertId?.ndviValue != null && (
+      {!!op.alertId?.ndviValue && (
         <div className="mt-2 inline-flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1">
           <span className="text-xs font-bold text-red-600">{op.alertId.ndviValue.toFixed(2)}</span>
           <span className="text-[10px] text-red-400">

@@ -60,9 +60,12 @@ function AlertCard({ alert }: { alert: Alert }) {
             <span>{typeMeta.shortLabel}</span>
           </span>
         </div>
-        <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
-          {alert.ndviValue.toFixed(2)}
-        </span>
+        {/* Plaga: sin cifra NDVI (no aplica — sería un dato falso) */}
+        {alert.type !== 'pest_advisory' && (
+          <span className={`text-xs font-bold tabular-nums ${alert.ndviValue < 0.3 ? 'text-red-600' : 'text-orange-500'}`}>
+            {alert.ndviValue.toFixed(2)}
+          </span>
+        )}
       </div>
       <p className="text-[11px] font-semibold text-gray-900 leading-tight truncate">
         {alert.parcelId?.name || 'Parcela'}

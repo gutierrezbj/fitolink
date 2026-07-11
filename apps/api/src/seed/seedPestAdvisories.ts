@@ -34,6 +34,26 @@ async function seed() {
     process.exit(1);
   }
 
+  // Guard · 12-jul-2026 · el scraper RAIF (dist/ingest/ingestRaif.js) ya
+  // puede haber ingerido un informe MÁS NUEVO que el oct-2025 de este seed.
+  // Si es así, NO tocamos nada: el seed nunca debe pisar una ingesta más
+  // fresca (los fingerprints difieren por mes y convivirían duplicados).
+  // $gte (no $gt): una ingesta del MISMO informe oct-2025 es igual de fresca
+  // que este seed y usa fingerprint distinto para Sevilla (`-Sevilla-` vs
+  // `-informe-oficial-`) — sembrar encima duplicaría Sevilla en el tablón.
+  const praysNewer = await PestAdvisory.findOne({
+    fingerprint: { $regex: /^polilla-olivo-RAIF-/ },
+    detectedAt: { $gte: new Date('2025-10-01') },
+  }).select('detectedAt');
+  if (praysNewer) {
+    logger.info(
+      { newestInDb: praysNewer.detectedAt.toISOString().slice(0, 10) },
+      'seed skip: la BD tiene un informe Prays más nuevo (ingesta RAIF) — no se siembra oct-2025',
+    );
+    await mongoose.disconnect();
+    process.exit(0);
+  }
+
   // Cleanup · 09-jun-2026 · eliminamos el advisory Polilla con sourceRef
   // inventado ("Boletín 19/2026") para sustituirlo por la versión con datos
   // LITERALES del portal RAIF oficial (informe Estado Prays oleae oct 2025).
@@ -60,6 +80,9 @@ async function seed() {
       'polilla-olivo-RAIF-Cordoba-2025-10',
       'polilla-olivo-RAIF-Cadiz-2025-10',
       'polilla-olivo-RAIF-Granada-2025-10',
+      // Defensa para BDs que quedaron con la Sevilla de la ingesta ('-Sevilla-')
+      // conviviendo con la del seed ('-informe-oficial-') antes del guard $gte.
+      'polilla-olivo-RAIF-Sevilla-2025-10',
     ] },
   });
   if (cleanupPraysProvincias.deletedCount > 0) {

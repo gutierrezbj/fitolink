@@ -20,6 +20,7 @@ interface AlertTypeBreakdown {
   ndre_anomaly: number;
   stress_pattern: number;
   fire_proximity: number;
+  pest_advisory: number;
 }
 
 interface MemberSummary {
@@ -143,7 +144,7 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
       ndviAvg: null,
       alertCount: 0,
       criticalAlertCount: 0,
-      alertTypes: { ndvi_drop: 0, ndre_anomaly: 0, stress_pattern: 0, fire_proximity: 0 },
+      alertTypes: { ndvi_drop: 0, ndre_anomaly: 0, stress_pattern: 0, fire_proximity: 0, pest_advisory: 0 },
       worstParcel: null,
     });
   }
@@ -180,6 +181,7 @@ export async function getOverview(cooperativeUserId: string): Promise<Cooperativ
     for (const a of parcelAlerts) {
       const t = (a as { type?: string }).type ?? 'ndvi_drop';
       if (t === 'fire_proximity') summary.alertTypes.fire_proximity += 1;
+      else if (t === 'pest_advisory') summary.alertTypes.pest_advisory += 1;
       else if (t === 'stress_pattern') summary.alertTypes.stress_pattern += 1;
       else if (t === 'ndre_anomaly') summary.alertTypes.ndre_anomaly += 1;
       else summary.alertTypes.ndvi_drop += 1;

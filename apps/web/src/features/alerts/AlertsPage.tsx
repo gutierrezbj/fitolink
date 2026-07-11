@@ -100,27 +100,46 @@ export default function AlertsPage() {
         {alert.parcelId?.cropType} · {alert.parcelId?.province}
       </p>
 
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className={`text-lg font-bold ${dimmed ? 'text-gray-500' : 'text-red-600'}`}>
-          {alert.ndviValue.toFixed(2)}
-        </span>
-        <span className="text-sm text-gray-400">NDVI</span>
-        <span className="text-xs text-red-400 ml-auto">
-          {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(2)}
-        </span>
-      </div>
+      {/* Cuerpo condicional por tipo: una alerta de plaga NO viene de la
+          serie satelital — mostrar "NDVI 0.00" sería un dato falso. */}
+      {alert.type === 'pest_advisory' ? (
+        <>
+          <div className="mt-3">
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Aviso fitosanitario oficial vigente en la comarca de esta parcela.
+              Detalle y fuente en la sección <span className="font-medium">Comarca</span> de esta página.
+            </p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[11px] text-gray-400">Boletín oficial · dato del organismo</span>
+            <span className="text-xs text-brand-600 font-medium">Analizar parcela →</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className={`text-lg font-bold ${dimmed ? 'text-gray-500' : 'text-red-600'}`}>
+              {alert.ndviValue.toFixed(2)}
+            </span>
+            <span className="text-sm text-gray-400">NDVI</span>
+            <span className="text-xs text-red-400 ml-auto">
+              {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(2)}
+            </span>
+          </div>
 
-      <div className="mt-1 w-full bg-gray-100 rounded-full h-1.5">
-        <div
-          className={`h-1.5 rounded-full ${alert.ndviValue < 0.3 ? 'bg-red-500' : alert.ndviValue < 0.5 ? 'bg-orange-400' : 'bg-green-500'}`}
-          style={{ width: `${Math.max(5, alert.ndviValue * 100)}%` }}
-        />
-      </div>
+          <div className="mt-1 w-full bg-gray-100 rounded-full h-1.5">
+            <div
+              className={`h-1.5 rounded-full ${alert.ndviValue < 0.3 ? 'bg-red-500' : alert.ndviValue < 0.5 ? 'bg-orange-400' : 'bg-green-500'}`}
+              style={{ width: `${Math.max(5, alert.ndviValue * 100)}%` }}
+            />
+          </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-[11px] text-gray-400">IA: {Math.round(alert.aiConfidence * 100)}% confianza</span>
-        <span className="text-xs text-brand-600 font-medium">Analizar parcela →</span>
-      </div>
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[11px] text-gray-400">IA: {Math.round(alert.aiConfidence * 100)}% confianza</span>
+            <span className="text-xs text-brand-600 font-medium">Analizar parcela →</span>
+          </div>
+        </>
+      )}
     </button>
     );
   };
@@ -140,9 +159,9 @@ export default function AlertsPage() {
         </p>
       </div>
 
-      {/* ── Sección 1 · anomalías satelitales sobre SUS parcelas ── */}
+      {/* ── Sección 1 · alertas sobre SUS parcelas (satélite + fuego + plaga) ── */}
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-        Satélite — anomalías en sus parcelas
+        Alertas en sus parcelas
       </h2>
       {alerts.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center mb-8">

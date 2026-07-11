@@ -70,7 +70,7 @@ export async function getOperationsByPilot(pilotId: string): Promise<IOperation[
     .sort({ createdAt: -1 })
     .populate('parcelId', 'name cropType province areaHa')
     .populate('farmerId', 'name email phone')
-    .populate('alertId', 'severity ndviValue ndviDelta')
+    .populate('alertId', 'type severity ndviValue ndviDelta')
     .lean<IOperation[]>();
 }
 

@@ -93,7 +93,7 @@ export default function AdminDashboardHome() {
     refetchInterval: 60_000,
   });
 
-  type Alert = { _id: string; severity: string; ndviValue: number; detectedAt: string; parcelId?: { name: string } };
+  type Alert = { _id: string; type?: string; severity: string; ndviValue: number; detectedAt: string; parcelId?: { name: string } };
 
   const pending = kpis?.operations.opsByStatus.requested ?? 0;
   const critCount = kpis?.operations.alertsCritical ?? 0;
@@ -265,7 +265,10 @@ export default function AdminDashboardHome() {
                       <p className="text-xs font-medium text-gray-800 truncate">{alert.parcelId?.name ?? 'Parcela'}</p>
                       <p className="text-[10px] text-gray-400">{formatDate(alert.detectedAt)}</p>
                     </div>
-                    <span className="text-sm font-bold text-gray-700 flex-shrink-0 ml-2">{alert.ndviValue?.toFixed(2)}</span>
+                    {/* pest/fire: sin cifra NDVI (0.00 sería un dato falso) */}
+                    {alert.type !== 'pest_advisory' && alert.type !== 'fire_proximity' && (
+                      <span className="text-sm font-bold text-gray-700 flex-shrink-0 ml-2">{alert.ndviValue?.toFixed(2)}</span>
+                    )}
                   </div>
                 ))}
                 {alerts.length === 0 && (

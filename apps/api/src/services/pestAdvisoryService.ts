@@ -2,8 +2,10 @@ import { createHash } from 'crypto';
 import mongoose from 'mongoose';
 import { PestAdvisory, type IPestAdvisory, type PestSource, type PestSeverity } from '../models/PestAdvisory.js';
 import { Parcel } from '../models/Parcel.js';
+import { Alert } from '../models/Alert.js';
 import { AppError } from '../utils/AppError.js';
 import { polygonCentroid } from '../utils/geo.js';
+import { logger } from '../utils/logger.js';
 import type { CropType } from '@fitolink/shared';
 
 /**
@@ -153,7 +155,116 @@ export async function createAdvisory(
     isActive: true,
   });
 
+  // Sprint Notificación de Plagas · 12-jul-2026: fan-out a alertas
+  // persistentes fire-and-forget — un fallo del fan-out no debe tumbar
+  // el alta del aviso (queda logueado y el paso es re-ejecutable por su
+  // idempotencia de dedupe).
+  void fanOutAdvisoryAlerts(advisory).catch((err) => {
+    logger.error({ advisoryId: advisory._id.toString(), err: (err as Error).message }, 'pest_alert_fanout_failed');
+  });
+
   return advisory;
+}
+
+// ── Fan-out advisory → Alert (Sprint Notificación de Plagas · 12-jul-2026) ─
+
+export interface FanOutResult {
+  advisoryId: string;
+  parcelsMatched: number;
+  alertsCreated: number;
+  alertsSkipped: number;
+}
+
+/**
+ * Crea una Alert persistente tipo 'pest_advisory' por cada parcela activa
+ * que matchee el aviso (cultivo + haversine dentro del radio de alguna
+ * affectedArea — la query espejo de getAdvisoriesForParcel, misma fórmula
+ * y mismos radios).
+ *
+ * Idempotente: dedupe por (parcelId + type + advisoryFingerprint) SIN
+ * filtro de status — un fingerprint = una alerta por parcela, para
+ * siempre. Así un --force accidental en el crontab no re-crea cada semana
+ * alertas que el agricultor ya resolvió; la re-notificación legítima llega
+ * con el informe NUEVO del portal (fingerprint nuevo por mes). La clave
+ * usa el FINGERPRINT y no el _id porque la ingesta reemplaza advisories
+ * con delete+reinsert (los _id cambian, el fingerprint es estable — bug
+ * cazado en la prueba E2E 12-jul-2026). Refuerzo anti-carrera: índice
+ * único parcial en el modelo Alert.
+ *
+ * aiConfidence = 1: es un dato oficial curado/parseado del boletín del
+ * organismo, no una inferencia del modelo.
+ */
+export async function fanOutAdvisoryAlerts(advisory: IPestAdvisory): Promise<FanOutResult> {
+  const parcels = await Parcel.find({
+    isActive: true,
+    cropType: { $in: advisory.cropTypes },
+  })
+    .select('_id name cropType geometry')
+    .lean();
+
+  // Matching geo en memoria (mismos radios y fórmula que getAdvisoriesForParcel)
+  const matched = parcels.filter((parcel) => {
+    const centroid = polygonCentroid(parcel.geometry as { type: 'Polygon'; coordinates: number[][][] });
+    return advisory.affectedAreas.some((area) => {
+      const [aLng, aLat] = area.centroid.coordinates as [number, number];
+      return haversineKm(centroid, [aLng, aLat]) <= area.radiusKm;
+    });
+  });
+
+  // Dedupe en UNA query (antes: findOne por parcela — 2N round-trips)
+  const covered = new Set(
+    (
+      await Alert.find({
+        parcelId: { $in: matched.map((p) => p._id) },
+        type: 'pest_advisory',
+        advisoryFingerprint: advisory.fingerprint,
+      })
+        .select('parcelId')
+        .lean()
+    ).map((a) => String(a.parcelId)),
+  );
+
+  const toCreate = matched.filter((p) => !covered.has(String(p._id)));
+  let created = 0;
+  if (toCreate.length > 0) {
+    try {
+      const docs = await Alert.insertMany(
+        toCreate.map((parcel) => ({
+          parcelId: parcel._id,
+          type: 'pest_advisory' as const,
+          // PestAdvisory usa 3 niveles (low/medium/high) ⊂ ALERT_SEVERITIES —
+          // pass-through directo, nunca escalamos a 'critical' por nuestra cuenta.
+          severity: advisory.severity,
+          ndviValue: 0,
+          ndviDelta: 0,
+          detectedAt: new Date(),
+          aiConfidence: 1,
+          advisoryId: advisory._id,
+          advisoryFingerprint: advisory.fingerprint,
+        })),
+        { ordered: false },
+      );
+      created = docs.length;
+    } catch (err) {
+      // Carrera con otro proceso: el índice único rebota duplicados;
+      // ordered:false inserta el resto. Contamos lo que sí entró.
+      const bulk = err as { insertedDocs?: unknown[]; message?: string };
+      created = bulk.insertedDocs?.length ?? 0;
+      logger.warn(
+        { advisoryId: advisory._id.toString(), created, err: bulk.message },
+        'pest_alert_fanout_partial_insert',
+      );
+    }
+  }
+
+  const result: FanOutResult = {
+    advisoryId: advisory._id.toString(),
+    parcelsMatched: matched.length,
+    alertsCreated: created,
+    alertsSkipped: matched.length - toCreate.length,
+  };
+  logger.info({ ...result, pest: advisory.pestName }, 'pest_alert_fanout_completed');
+  return result;
 }
 
 export async function listAdvisories(options: {

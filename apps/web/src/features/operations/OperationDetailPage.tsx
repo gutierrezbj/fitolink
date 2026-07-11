@@ -312,7 +312,7 @@ export default function OperationDetailPage() {
                 <dt className="text-gray-500">Severidad</dt>
                 <dd className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLORS[op.alertId.severity] || 'bg-gray-100'}`}>{op.alertId.severity}</dd>
               </div>
-              {op.alertId.ndviValue != null && <Row k="NDVI" v={op.alertId.ndviValue.toFixed(2)} />}
+              {!!op.alertId.ndviValue && <Row k="NDVI" v={op.alertId.ndviValue.toFixed(2)} />}
             </dl>
           </div>
         )}

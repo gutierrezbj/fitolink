@@ -33,6 +33,7 @@ interface AlertTypeBreakdown {
   ndre_anomaly: number;
   stress_pattern: number;
   fire_proximity: number;
+  pest_advisory: number;
 }
 
 interface SocioRow {
@@ -256,9 +257,9 @@ export default function CooperativeMembersPage() {
                 {hasAlerts && (
                   <div className="flex items-center gap-1 flex-wrap">
                     {m.alertTypes ? (
-                      (['stress_pattern','fire_proximity','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
+                      (['stress_pattern','fire_proximity','pest_advisory','ndre_anomaly','ndvi_drop'] as AlertType[]).map((t) => {
                         const count = m.alertTypes![t];
-                        if (count === 0) return null;
+                        if (!count) return null;
                         const meta = getAlertTypeMetadata(t);
                         return (
                           <span

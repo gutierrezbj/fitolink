@@ -184,7 +184,7 @@ export default function PilotDashboardHome() {
                   <p className="text-xs text-gray-500 mt-0.5">
                     {op.parcelId?.cropType} · {op.parcelId?.province}{op.parcelId?.areaHa ? ` · ${op.parcelId.areaHa.toFixed(1)} ha` : ''}
                   </p>
-                  {op.alertId?.ndviValue != null && (
+                  {!!op.alertId?.ndviValue && (
                     <div className="mt-2 inline-flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
                       <span className="text-xs font-bold text-red-600">{op.alertId.ndviValue.toFixed(2)}</span>
                       <span className="text-[10px] text-gray-400">NDVI</span>

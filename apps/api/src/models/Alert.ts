@@ -57,6 +57,13 @@ export interface IAlert extends Document {
   // y un snapshot mínimo del foco que disparó la alerta.
   fireProximityKm?: number;
   fireSource?: 'VIIRS_SNPP_NRT' | 'VIIRS_NOAA20_NRT' | 'MODIS_NRT';
+  // Sprint Notificación de Plagas · 12-jul-2026. Datos específicos cuando
+  // type es 'pest_advisory': referencia al aviso oficial que disparó la
+  // alerta. El advisoryFingerprint es la clave de dedupe (el _id cambia en
+  // cada reingesta delete+reinsert; el fingerprint es estable) y evita que
+  // una alerta de Prays bloquee la de otra plaga en la misma parcela.
+  advisoryId?: mongoose.Types.ObjectId;
+  advisoryFingerprint?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +95,9 @@ const alertSchema = new Schema<IAlert>(
     // Sprint FIRMS — campos específicos para fire_proximity alerts
     fireProximityKm: { type: Number },
     fireSource: { type: String, enum: ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'MODIS_NRT'] },
+    // Sprint Notificación de Plagas — campos específicos para pest_advisory
+    advisoryId: { type: Schema.Types.ObjectId, ref: 'PestAdvisory' },
+    advisoryFingerprint: { type: String },
   },
   {
     timestamps: true,
@@ -97,5 +107,12 @@ const alertSchema = new Schema<IAlert>(
 alertSchema.index({ parcelId: 1, status: 1 });
 alertSchema.index({ severity: 1, status: 1 });
 alertSchema.index({ detectedAt: -1 });
+// Anti-carrera del fan-out de plagas: un fingerprint = una alerta por
+// parcela (el dedupe check-then-insert no es atómico; esto lo garantiza
+// a nivel de BD). Parcial: solo aplica a alertas pest_advisory.
+alertSchema.index(
+  { parcelId: 1, type: 1, advisoryFingerprint: 1 },
+  { unique: true, partialFilterExpression: { type: 'pest_advisory' } },
+);
 
 export const Alert = mongoose.model<IAlert>('Alert', alertSchema);

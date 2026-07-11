@@ -897,27 +897,38 @@ export default function ParcelDetailPage() {
                       <span className="text-xs text-gray-400 ml-auto">{formatDate(alert.detectedAt)}</span>
                     </div>
 
-                    <div className="flex items-baseline gap-3 mb-2">
-                      <span className="text-lg font-bold text-gray-900">{alert.ndviValue.toFixed(3)}</span>
-                      <span className={`text-sm font-medium ${alert.ndviDelta < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                        {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(3)}
-                      </span>
-                      <span className="text-xs text-gray-400">NDVI</span>
-                    </div>
+                    {/* Cuerpo condicional: una alerta de plaga no viene de la
+                        serie satelital — NDVI 0.000 y "% IA" serían datos falsos. */}
+                    {alert.type === 'pest_advisory' ? (
+                      <p className="text-xs text-gray-600 leading-relaxed mb-1">
+                        Aviso fitosanitario oficial vigente en la comarca — ver el
+                        detalle y la fuente en la card de avisos de esta parcela.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline gap-3 mb-2">
+                          <span className="text-lg font-bold text-gray-900">{alert.ndviValue.toFixed(3)}</span>
+                          <span className={`text-sm font-medium ${alert.ndviDelta < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                            {alert.ndviDelta > 0 ? '+' : ''}{alert.ndviDelta.toFixed(3)}
+                          </span>
+                          <span className="text-xs text-gray-400">NDVI</span>
+                        </div>
 
-                    {/* AI Confidence bar */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-gray-400 w-16 flex-shrink-0">IA confianza</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${alert.aiConfidence > 0.7 ? 'bg-red-500' : alert.aiConfidence > 0.4 ? 'bg-orange-400' : 'bg-yellow-400'}`}
-                          style={{ width: `${alert.aiConfidence * 100}%`, transition: 'width 0.6s ease' }}
-                        />
-                      </div>
-                      <span className="text-[11px] text-gray-500 font-medium w-8 text-right">
-                        {Math.round(alert.aiConfidence * 100)}%
-                      </span>
-                    </div>
+                        {/* AI Confidence bar */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-gray-400 w-16 flex-shrink-0">IA confianza</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full ${alert.aiConfidence > 0.7 ? 'bg-red-500' : alert.aiConfidence > 0.4 ? 'bg-orange-400' : 'bg-yellow-400'}`}
+                              style={{ width: `${alert.aiConfidence * 100}%`, transition: 'width 0.6s ease' }}
+                            />
+                          </div>
+                          <span className="text-[11px] text-gray-500 font-medium w-8 text-right">
+                            {Math.round(alert.aiConfidence * 100)}%
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {isActive && (
@@ -1020,7 +1031,7 @@ export default function ParcelDetailPage() {
                   <div className="text-xs text-gray-500 space-y-1 pl-7">
                     <p>Parcela: <span className="font-medium text-gray-700">{parcel.name} · {parcel.areaHa} ha</span></p>
                     <p>Alerta: <span className="font-medium text-gray-700">
-                      NDVI {serviceModal.alert.ndviValue.toFixed(2)} · {serviceModal.alert.severity === 'critical' ? 'Critica' : serviceModal.alert.severity === 'high' ? 'Alta' : 'Media'}
+                      {serviceModal.alert.type === 'pest_advisory' ? 'Aviso fitosanitario' : `NDVI ${serviceModal.alert.ndviValue.toFixed(2)}`} · {SEVERITY_LABELS[serviceModal.alert.severity]}
                     </span></p>
                   </div>
                 </div>
