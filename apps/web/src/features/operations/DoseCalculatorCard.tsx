@@ -10,14 +10,13 @@ import {
 } from '@fitolink/shared';
 
 /**
- * Calculadora de mezcla · "Ficha de carga" compacta (10-jul-2026).
+ * Calculadora de mezcla · "Ficha de carga" con marco de CUBA (11-jul-2026).
  *
- * Herramienta de campo, no banner: una sola columna, tipografía de marca a
- * escala de calculadora, y deslizadores ARRASTRABLES (ratón/táctil/flechas)
- * para tantear dosis y caldo. La respuesta es la receta del depósito
- * (producto + agua) en cifras claras. Rangos = transcripción literal de la
- * etiqueta (productCatalog.ts). Se coloca junto al panel de informes en
- * OperationsPage. Solo DATO, cero narrativa.
+ * La clave para el técnico: piensa por CUBA (el depósito del dron, p.ej. 300 L),
+ * no por total del trabajo. La calculadora dice QUÉ echar en cada llenado de la
+ * cuba y CUÁNTAS ha cubre esa cuba, y aparte el total del trabajo (nº de cubas).
+ * Deslizadores arrastrables para dosis y caldo; rangos = etiqueta literal
+ * (productCatalog.ts). Solo DATO, cero narrativa.
  */
 
 type Via = 'dron' | 'pulverizador' | 'foliar' | 'riego';
@@ -40,9 +39,9 @@ function fmtTotal(total: number, unitPerHa: string): { n: string; u: string } {
   if (base === 'mL') return total >= 1000 ? { n: f(total / 1000, 2), u: 'L' } : { n: f(total, 1), u: 'mL' };
   return { n: f(total, 2), u: base };
 }
+const fmtTotalStr = (t: number, u: string) => { const r = fmtTotal(t, u); return `${r.n} ${r.u}`; };
 const fmtEs = (n: number, d = 2) => n.toLocaleString('es-ES', { maximumFractionDigits: d });
 
-// Paso "bonito" (~100 pasos en el rango) para el deslizador.
 function niceStep(range: number): number {
   if (range <= 0) return 1;
   const rough = range / 100;
@@ -79,8 +78,7 @@ const inputCls = (warn = false) =>
 const selectCls =
   'w-full rounded-lg border border-earth-300/70 bg-white px-2 py-1.5 text-sm focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500';
 
-/** Deslizador de dosis — arrastrable con ratón/táctil/flechas. Espejo de la
- *  tabla DOSIS MÍN./MÁX. del envase, ahora como control. */
+/** Deslizador de dosis — arrastrable con ratón/táctil/flechas. */
 function Gauge({ min, max, value, unit, onChange }: { min: number; max: number; value?: number | null; unit: string; onChange?: (v: number) => void }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -160,29 +158,31 @@ function Gauge({ min, max, value, unit, onChange }: { min: number; max: number; 
   );
 }
 
-/** Cifra-héroe compacta: el número a cargar, en serif. */
-function HeroStat({ n, u, label, tone = 'brand' }: { n: string; u: string; label: string; tone?: 'brand' | 'terra' | 'ink' }) {
-  const color = tone === 'terra' ? 'text-terra-600' : tone === 'ink' ? 'text-[#0F2A22]' : 'text-brand-800';
+const StepBadge = ({ n }: { n: number }) => (
+  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 font-mono text-[10px] font-bold text-white">{n}</span>
+);
+
+/** Fila de la receta POR CUBA: nombre + cifra en serif. */
+function LoadRow({ n, name, value, unitPerHa, out, sub }: { n: number; name: string; value: number | null; unitPerHa: string; out?: boolean; sub?: string }) {
+  const t = value != null ? fmtTotal(value, unitPerHa) : null;
   return (
-    <div>
-      <p className={`font-display leading-none tabular-nums ${color}`}>
-        <span className="text-[1.6rem]">{n}</span>
-        <span className="ml-0.5 text-sm text-gray-400">{u}</span>
-      </p>
-      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-gray-400">{label}</p>
-    </div>
+    <li className="flex items-start gap-2.5">
+      <StepBadge n={n} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm text-gray-600">{name}</span>
+          {t
+            ? <span className={`font-display text-xl leading-none tabular-nums ${out ? 'text-terra-600' : 'text-brand-800'}`}>{t.n}<span className="ml-0.5 text-xs text-gray-400">{t.u}</span></span>
+            : <span className="font-display text-xl text-gray-300">—</span>}
+        </div>
+        {sub && <p className="mt-0.5 text-[10px] leading-snug text-gray-500">{sub}</p>}
+      </div>
+    </li>
   );
 }
 
-const ResultPanel = ({ eyebrow, children }: { eyebrow: string; children: ReactNode }) => (
-  <div className="rounded-lg border-l-2 border-terra-500 bg-earth-100/50 p-3">
-    <Eyebrow>{eyebrow}</Eyebrow>
-    <div className="mt-2">{children}</div>
-  </div>
-);
-
-const StepBadge = ({ n }: { n: number }) => (
-  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 font-mono text-[10px] font-bold text-white">{n}</span>
+const JobTotal = ({ children }: { children: ReactNode }) => (
+  <p className="mt-2.5 border-t border-earth-300/40 pt-2 font-mono text-[10px] uppercase leading-relaxed tracking-wide text-gray-500">{children}</p>
 );
 
 const NoteList = ({ notes, source }: { notes?: string[]; source?: string }) => (
@@ -192,12 +192,14 @@ const NoteList = ({ notes, source }: { notes?: string[]; source?: string }) => (
   </div>
 );
 
-interface Props {
-  defaultAreaHa?: number;
+interface ModeProps {
+  areaStr: string;
+  setAreaStr: (v: string) => void;
+  cubaL: number | null;
 }
 
-// ── Modo MEZCLA DE TANQUE — receta de carga en orden ─────────────────────────
-function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: string; setAreaStr: (v: string) => void }) {
+// ── Modo MEZCLA DE TANQUE — receta POR CUBA ──────────────────────────────────
+function TankMixMode({ mix, areaStr, setAreaStr, cubaL }: { mix: TankMixSpec } & ModeProps) {
   const [caldoStr, setCaldoStr] = useState('');
   const [doseStrs, setDoseStrs] = useState<Record<string, string>>({});
 
@@ -213,6 +215,10 @@ function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: 
   const waterRange = comps.map((c) => c.spec.methods.dron?.waterLPerHa).find(Boolean);
   const caldoOut = hasCaldo && waterRange ? caldo < waterRange.min || caldo > waterRange.max : false;
 
+  // ha que cubre una cuba, y nº de cubas para el trabajo.
+  const haPerTank = cubaL && hasCaldo ? cubaL / caldo : null;
+  const nTanks = haPerTank && hasArea ? Math.ceil(area / haPerTank) : null;
+
   const rows = comps.map((c) => {
     const dose = parseFloat(doseStrs[c.productId] ?? '');
     const hasDose = Number.isFinite(dose) && dose > 0;
@@ -220,7 +226,10 @@ function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: 
     const pct = c.spec.methods.foliar?.concentrationPct;
     const pctEquiv = hasDose && hasCaldo && c.unit === 'L/ha' ? (dose / caldo) * 100 : null;
     const out = hasDose ? (perHa ? dose < perHa.min || dose > perHa.max : pct && pctEquiv != null ? pctEquiv < pct.min || pctEquiv > pct.max : false) : false;
-    return { ...c, dose, hasDose, out, perHa, pctRange: pct, pctEquiv, shortName: c.spec.name.split('·')[0].trim() };
+    // por cuba: dosis/ha × ha por cuba
+    const perTank = hasDose && haPerTank != null ? dose * haPerTank : null;
+    const total = hasDose && hasArea ? dose * area : null;
+    return { ...c, dose, hasDose, out, pctEquiv, pctRange: pct, perTank, total, shortName: c.spec.name.split('·')[0].trim() };
   });
   const anyOut = rows.some((r) => r.out) || caldoOut;
 
@@ -236,51 +245,39 @@ function TankMixMode({ mix, areaStr, setAreaStr }: { mix: TankMixSpec; areaStr: 
         </Field>
         {rows.map((r) => (
           <Field key={r.productId} label={`${r.shortName} (${r.unit})`}>
-            <input type="number" step="any" min="0" value={doseStrs[r.productId] ?? ''} onChange={(e) => setDoseStrs((m) => ({ ...m, [r.productId]: e.target.value }))} placeholder={r.perHa ? labelRangeText(r.perHa) : ''} className={inputCls(r.out)} />
-            {r.perHa && <Gauge min={r.perHa.min} max={r.perHa.max} value={r.hasDose ? r.dose : null} unit={r.perHa.unit} onChange={(v) => setDoseStrs((m) => ({ ...m, [r.productId]: String(v) }))} />}
-            {!r.perHa && r.pctRange && <Gauge min={r.pctRange.min} max={r.pctRange.max} value={r.pctEquiv} unit="% caldo" />}
+            <input type="number" step="any" min="0" value={doseStrs[r.productId] ?? ''} onChange={(e) => setDoseStrs((m) => ({ ...m, [r.productId]: e.target.value }))} placeholder={r.spec.methods.dron?.dose ? labelRangeText(r.spec.methods.dron.dose) : ''} className={inputCls(r.out)} />
+            {r.spec.methods.dron?.dose.unit === r.unit && <Gauge min={r.spec.methods.dron.dose.min} max={r.spec.methods.dron.dose.max} value={r.hasDose ? r.dose : null} unit={r.unit} onChange={(v) => setDoseStrs((m) => ({ ...m, [r.productId]: String(v) }))} />}
+            {r.spec.methods.dron?.dose.unit !== r.unit && r.pctRange && <Gauge min={r.pctRange.min} max={r.pctRange.max} value={r.pctEquiv} unit="% caldo" />}
           </Field>
         ))}
       </div>
 
-      <ResultPanel eyebrow={`Receta de carga${hasArea ? ` · ${fmtEs(area)} ha` : ''}`}>
-        <ol className="space-y-2">
-          <li className="flex items-start gap-2.5">
-            <StepBadge n={1} />
-            <div className="flex flex-1 items-baseline justify-between gap-2">
-              <span className="text-xs text-gray-600">Agua</span>
-              {hasArea && hasCaldo
-                ? (() => { const r = fmtTotal(caldo * area, 'L/ha'); return <span className={`font-display text-xl leading-none tabular-nums ${caldoOut ? 'text-terra-600' : 'text-brand-800'}`}>{r.n}<span className="ml-0.5 text-xs text-gray-400">{r.u}</span></span>; })()
-                : <span className="font-display text-xl text-gray-300">—</span>}
-            </div>
-          </li>
+      {/* RECETA POR CUBA — lo que echas en cada llenado */}
+      <div className="rounded-lg border-l-2 border-terra-500 bg-earth-100/50 p-3">
+        <Eyebrow>Cada cuba · {cubaL ? `${fmtEs(cubaL, 0)} L` : '—'}{haPerTank != null ? ` → cubre ${fmtEs(haPerTank, haPerTank < 10 ? 1 : 0)} ha` : ''}</Eyebrow>
+        <ol className="mt-2 space-y-2">
+          <LoadRow n={1} name="Agua" value={cubaL} unitPerHa="L/ha" out={caldoOut} />
           {rows.map((r, i) => (
-            <li key={r.productId} className="flex items-start gap-2.5">
-              <StepBadge n={i + 2} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs text-gray-600">{r.shortName}</span>
-                  {hasArea && r.hasDose
-                    ? (() => { const t = fmtTotal(r.dose * area, r.unit); return <span className={`font-display text-xl leading-none tabular-nums ${r.out ? 'text-terra-600' : 'text-brand-800'}`}>{t.n}<span className="ml-0.5 text-xs text-gray-400">{t.u}</span></span>; })()
-                    : <span className="font-display text-xl text-gray-300">—</span>}
-                </div>
-                <p className="mt-0.5 text-[10px] leading-snug text-gray-500">
-                  {r.stepNote}
-                  {r.pctEquiv != null && r.pctRange && <span className={r.out ? 'text-terra-600 font-medium' : 'text-gray-400'}> · ≈{fmtEs(r.pctEquiv, 1)}% del caldo</span>}
-                </p>
-              </div>
-            </li>
+            <LoadRow key={r.productId} n={i + 2} name={r.shortName} value={r.perTank} unitPerHa={r.unit} out={r.out}
+              sub={r.pctEquiv != null && r.pctRange ? `≈${fmtEs(r.pctEquiv, 1)}% del caldo · ${r.stepNote}` : r.stepNote} />
           ))}
         </ol>
         {anyOut && <p className="mt-2 rounded-md border border-terra-200 bg-terra-50 px-2.5 py-1.5 text-[11px] font-medium text-terra-700">Valores fuera del rango de etiqueta. Consulte a su técnico.</p>}
-      </ResultPanel>
+        {hasArea && nTanks != null && (
+          <JobTotal>
+            Trabajo {fmtEs(area)} ha = <span className="text-brand-800 font-semibold">{nTanks} cuba{nTanks !== 1 ? 's' : ''}</span> · total{' '}
+            {rows.filter((r) => r.total != null).map((r) => `${r.shortName} ${fmtTotalStr(r.total!, r.unit)}`).join(' · ')}
+            {hasCaldo ? ` · agua ${fmtTotalStr(caldo * area, 'L/ha')}` : ''}
+          </JobTotal>
+        )}
+      </div>
       <NoteList notes={mix.notes} source={mix.source} />
     </div>
   );
 }
 
 // ── Modo PRODUCTO SUELTO ─────────────────────────────────────────────────────
-function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductSpec; areaStr: string; setAreaStr: (v: string) => void }) {
+function SingleProductMode({ product, areaStr, setAreaStr, cubaL }: { product: ProductSpec } & ModeProps) {
   const [via, setVia] = useState<Via>(availableVias(product)[0] ?? 'dron');
   const [doseStr, setDoseStr] = useState('');
   const [caldoStr, setCaldoStr] = useState('');
@@ -302,22 +299,21 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
   const pct = activeVia === 'foliar' ? product.methods.foliar?.concentrationPct : undefined;
   const rangeText = perHa ? labelRangeText(perHa) : pct ? `${pct.min}–${pct.max} %` : '';
   const outOfLabel = hasDose ? (perHa ? dose < perHa.min || dose > perHa.max : pct ? dose < pct.min || dose > pct.max : false) : false;
-  const foliarProductPerHa = activeVia === 'foliar' && hasDose && hasCaldo ? (caldo * dose) / 100 : null;
 
   const dronWater = product.methods.dron?.waterLPerHa;
-  const showCaldoInput = activeVia === 'foliar' || (activeVia === 'dron' && !!dronWater);
-  const showWater = activeVia === 'dron' || activeVia === 'foliar';
+  const usesCaldo = activeVia === 'dron' || activeVia === 'foliar';
   const caldoOut = activeVia === 'dron' && dronWater && hasCaldo ? caldo < dronWater.min || caldo > dronWater.max : false;
-  const aguaTotal = hasArea && hasCaldo ? caldo * area : null;
 
-  const productoStat = () => {
-    if (activeVia === 'foliar') {
-      if (foliarProductPerHa != null && hasArea) { const t = fmtTotal(foliarProductPerHa * area, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; }
-      return <HeroStat n="—" u="" label="producto" tone="ink" />;
-    }
-    if (hasDose && hasArea && perHa) { const t = fmtTotal(dose * area, perHa.unit); return <HeroStat n={t.n} u={t.u} label="producto" tone={outOfLabel ? 'terra' : 'brand'} />; }
-    return <HeroStat n="—" u="" label="producto" tone="ink" />;
-  };
+  // Marco de cuba (solo con caldo definido).
+  const haPerTank = cubaL && hasCaldo ? cubaL / caldo : null;
+  const nTanks = haPerTank && hasArea ? Math.ceil(area / haPerTank) : null;
+  // Producto por ha según vía.
+  const productPerHa = activeVia === 'foliar'
+    ? (hasCaldo && hasDose ? (caldo * dose) / 100 : null)   // L/ha
+    : (hasDose && perHa ? dose : null);                     // en la unidad de perHa
+  const productUnit = activeVia === 'foliar' ? 'L/ha' : (perHa?.unit ?? 'L/ha');
+  const perTankProduct = productPerHa != null && haPerTank != null ? productPerHa * haPerTank : null;
+  const totalProduct = productPerHa != null && hasArea ? productPerHa * area : null;
 
   return (
     <div className="mt-3 space-y-3">
@@ -335,7 +331,7 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
           {perHa && <Gauge min={perHa.min} max={perHa.max} value={hasDose ? dose : null} unit={perHa.unit} onChange={(v) => setDoseStr(String(v))} />}
           {pct && <Gauge min={pct.min} max={pct.max} value={hasDose ? dose : null} unit="%" onChange={(v) => setDoseStr(String(v))} />}
         </Field>
-        {showCaldoInput && (
+        {usesCaldo && (
           <Field label="Caldo · agua (L/ha)">
             <input type="number" step="any" min="0" value={caldoStr} onChange={(e) => setCaldoStr(e.target.value)} placeholder={activeVia === 'dron' && dronWater ? `${dronWater.min}–${dronWater.max}` : 'p.ej. 100'} className={inputCls(caldoOut)} />
             {activeVia === 'dron' && dronWater && <Gauge min={dronWater.min} max={dronWater.max} value={hasCaldo ? caldo : null} unit="L/ha" onChange={(v) => setCaldoStr(String(v))} />}
@@ -343,16 +339,35 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
         )}
       </div>
 
-      <ResultPanel eyebrow={hasArea ? `Cargar en la cuba · ${fmtEs(area)} ha` : 'Cargar en la cuba'}>
-        <div className="grid grid-cols-2 gap-3">
-          {productoStat()}
-          {showWater && (
-            aguaTotal != null
-              ? (() => { const t = fmtTotal(aguaTotal, 'L/ha'); return <HeroStat n={t.n} u={t.u} label="agua" tone={caldoOut ? 'terra' : 'ink'} />; })()
-              : <HeroStat n="—" u="L" label={activeVia === 'dron' ? 'agua · pon caldo' : 'agua · pon caldo'} tone="ink" />
-          )}
-        </div>
-        <div className="mt-2 border-t border-earth-300/40 pt-2 font-mono text-[10px] uppercase tracking-wide text-gray-400">
+      <div className="rounded-lg border-l-2 border-terra-500 bg-earth-100/50 p-3">
+        {usesCaldo ? (
+          <>
+            <Eyebrow>Cada cuba · {cubaL ? `${fmtEs(cubaL, 0)} L` : '—'}{haPerTank != null ? ` → cubre ${fmtEs(haPerTank, haPerTank < 10 ? 1 : 0)} ha` : ''}</Eyebrow>
+            <ol className="mt-2 space-y-2">
+              <LoadRow n={1} name="Agua" value={cubaL} unitPerHa="L/ha" out={caldoOut} />
+              <LoadRow n={2} name={product.name.split('·')[0].trim()} value={perTankProduct} unitPerHa={productUnit} out={outOfLabel} />
+            </ol>
+            {hasArea && nTanks != null && (
+              <JobTotal>
+                Trabajo {fmtEs(area)} ha = <span className="text-brand-800 font-semibold">{nTanks} cuba{nTanks !== 1 ? 's' : ''}</span>
+                {totalProduct != null ? ` · producto ${fmtTotalStr(totalProduct, productUnit)}` : ''}
+                {hasCaldo ? ` · agua ${fmtTotalStr(caldo * area, 'L/ha')}` : ''}
+              </JobTotal>
+            )}
+          </>
+        ) : (
+          // riego / pulverizador: no hay "cuba de dron"; total del trabajo.
+          <>
+            <Eyebrow>{hasArea ? `Total · ${fmtEs(area)} ha` : 'Total del trabajo'}</Eyebrow>
+            <div className="mt-2">
+              {totalProduct != null
+                ? (() => { const t = fmtTotal(totalProduct, productUnit); return <p className="font-display text-3xl leading-none tabular-nums text-brand-800">{t.n}<span className="ml-1 text-base text-gray-400">{t.u}</span></p>; })()
+                : <p className="font-display text-3xl text-gray-300">—</p>}
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-gray-400">producto</p>
+            </div>
+          </>
+        )}
+        <div className="mt-2.5 border-t border-earth-300/40 pt-2 font-mono text-[10px] uppercase tracking-wide text-gray-400">
           etiqueta {VIA_LABEL[activeVia].toLowerCase()} · {rangeText || '—'}
           {activeVia === 'dron' && dronWater ? ` · caldo ${dronWater.min}–${dronWater.max} L/ha` : ''}
         </div>
@@ -362,14 +377,14 @@ function SingleProductMode({ product, areaStr, setAreaStr }: { product: ProductS
             {caldoOut ? 'Caldo fuera de etiqueta. ' : ''}Consulte a su técnico.
           </p>
         )}
-      </ResultPanel>
+      </div>
       <NoteList notes={product.applicationNotes} source={product.source} />
     </div>
   );
 }
 
 // ── Modo PRODUCTO SIN ETIQUETA (dosis libre) ─────────────────────────────────
-function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSpec; areaStr: string; setAreaStr: (v: string) => void }) {
+function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSpec } & ModeProps) {
   const [doseStr, setDoseStr] = useState('');
   const [unit, setUnit] = useState<ApplicationUnit>('L/ha');
   const dose = parseFloat(doseStr);
@@ -391,12 +406,16 @@ function LabelPendingMode({ product, areaStr, setAreaStr }: { product: ProductSp
           <input type="number" step="any" min="0" value={areaStr} onChange={(e) => setAreaStr(e.target.value)} className={inputCls()} />
         </Field>
       </div>
-      <ResultPanel eyebrow={hasArea ? `Cargar · ${fmtEs(area)} ha` : 'Cargar'}>
-        {hasDose && hasArea
-          ? (() => { const t = fmtTotal(dose * area, unit); return <HeroStat n={t.n} u={t.u} label="producto" />; })()
-          : <HeroStat n="—" u="" label="producto" tone="ink" />}
+      <div className="rounded-lg border-l-2 border-terra-500 bg-earth-100/50 p-3">
+        <Eyebrow>{hasArea ? `Total · ${fmtEs(area)} ha` : 'Total'}</Eyebrow>
+        <div className="mt-2">
+          {hasDose && hasArea
+            ? (() => { const t = fmtTotal(dose * area, unit); return <p className="font-display text-3xl leading-none tabular-nums text-brand-800">{t.n}<span className="ml-1 text-base text-gray-400">{t.u}</span></p>; })()
+            : <p className="font-display text-3xl text-gray-300">—</p>}
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-gray-400">producto</p>
+        </div>
         <p className="mt-2 border-t border-earth-300/40 pt-2 text-[10px] leading-relaxed text-gray-500">Etiqueta pendiente — la dosis la fija el técnico.</p>
-      </ResultPanel>
+      </div>
       <NoteList source={product.source + (product.manufacturer ? ` · ${product.manufacturer}` : '')} />
     </div>
   );
@@ -409,18 +428,41 @@ const Identity = ({ title, stamps }: { title: string; stamps?: string[] }) => (
   </div>
 );
 
+interface Props {
+  defaultAreaHa?: number;
+}
+
 export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
   const [selection, setSelection] = useState(TANK_MIXES[0] ? `mix:${TANK_MIXES[0].id}` : `prod:${PRODUCT_CATALOG[0]?.id}`);
   const [areaStr, setAreaStr] = useState(defaultAreaHa ? String(defaultAreaHa) : '');
+  // Capacidad de la cuba del dron — se recuerda entre visitas (nuestra cuba = 300 L).
+  const [cubaStr, setCubaStr] = useState(() => {
+    try { return localStorage.getItem('fitolink.calc.cubaL') || '300'; } catch { return '300'; }
+  });
+  const setCuba = (v: string) => {
+    setCubaStr(v);
+    try { localStorage.setItem('fitolink.calc.cubaL', v); } catch { /* noop */ }
+  };
+  const cubaL = (() => { const n = parseFloat(cubaStr); return Number.isFinite(n) && n > 0 ? n : null; })();
 
   const mix = selection.startsWith('mix:') ? TANK_MIXES.find((m) => `mix:${m.id}` === selection) : undefined;
   const product = selection.startsWith('prod:') ? PRODUCT_CATALOG.find((p) => `prod:${p.id}` === selection) : undefined;
 
   return (
     <div className="h-full overflow-hidden rounded-xl border border-earth-300/50 bg-[#FBF8F2]">
-      <div className="flex items-center gap-2 border-b border-earth-300/40 bg-white/40 px-4 py-2.5">
-        <img src="/service-fertilization.svg" alt="" className="h-6 w-6 flex-shrink-0" />
-        <Eyebrow>Calculadora · dosis de etiqueta</Eyebrow>
+      <div className="flex items-center justify-between gap-2 border-b border-earth-300/40 bg-white/40 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <img src="/service-fertilization.svg" alt="" className="h-6 w-6 flex-shrink-0" />
+          <Eyebrow>Calculadora · dosis de etiqueta</Eyebrow>
+        </div>
+        <label className="flex items-center gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-gray-400">Cuba</span>
+          <span className="relative">
+            <input type="number" step="any" min="0" value={cubaStr} onChange={(e) => setCuba(e.target.value)}
+              className="w-20 rounded-lg border border-earth-300/70 bg-white py-1 pl-2.5 pr-6 font-display text-base tabular-nums text-[#0F2A22] focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40" />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-gray-400">L</span>
+          </span>
+        </label>
       </div>
       <div className="px-4 py-3.5">
         <select value={selection} onChange={(e) => setSelection(e.target.value)} className={`${selectCls} mb-3`} aria-label="Qué preparas">
@@ -437,15 +479,15 @@ export default function DoseCalculatorCard({ defaultAreaHa }: Props) {
         {mix && (
           <>
             <Identity title={mix.name} />
-            <TankMixMode key={mix.id} mix={mix} areaStr={areaStr} setAreaStr={setAreaStr} />
+            <TankMixMode key={mix.id} mix={mix} areaStr={areaStr} setAreaStr={setAreaStr} cubaL={cubaL} />
           </>
         )}
         {product && (
           <>
             <Identity title={product.name} stamps={product.labelPending ? ['etiqueta pendiente'] : product.certifications?.slice(0, 1).map((c) => c.split('·')[0].trim())} />
             {product.labelPending
-              ? <LabelPendingMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />
-              : <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} />}
+              ? <LabelPendingMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} cubaL={cubaL} />
+              : <SingleProductMode key={product.id} product={product} areaStr={areaStr} setAreaStr={setAreaStr} cubaL={cubaL} />}
           </>
         )}
       </div>
