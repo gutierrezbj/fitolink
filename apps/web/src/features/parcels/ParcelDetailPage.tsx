@@ -977,7 +977,7 @@ export default function ParcelDetailPage() {
                   className={`w-full text-left p-4 rounded-xl border-2 transition-all ${serviceType === 'inspection' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">🔍</span>
+                    <img src="/service-multispectral.svg" alt="" className="w-8 h-8 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Inspeccion multiespectral</p>
                       <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Dron con camara NDVI de alta resolucion. Mapea la parcela al centimetro y localiza el foco exacto del problema.</p>
@@ -991,7 +991,7 @@ export default function ParcelDetailPage() {
                   className={`w-full text-left p-4 rounded-xl border-2 transition-all ${serviceType === 'phytosanitary' ? 'border-terra-500 bg-terra-50' : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">💊</span>
+                    <img src="/service-phytosanitary.svg" alt="" className="w-8 h-8 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Tratamiento fitosanitario</p>
                       <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Dron aplicador con producto fitosanitario. Tratamiento de precision zona a zona segun el mapa de estres.</p>
@@ -1012,7 +1012,7 @@ export default function ParcelDetailPage() {
               <div className="p-6">
                 <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{serviceType === 'inspection' ? '🔍' : '💊'}</span>
+                    <img src={serviceType === 'inspection' ? '/service-multispectral.svg' : '/service-phytosanitary.svg'} alt="" className="w-6 h-6 flex-shrink-0" />
                     <span className="text-sm font-semibold text-gray-900">
                       {serviceType === 'inspection' ? 'Inspeccion multiespectral' : 'Tratamiento fitosanitario'}
                     </span>

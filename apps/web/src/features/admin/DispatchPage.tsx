@@ -168,13 +168,15 @@ function DispatchCard({ op, onAssign, onCancel, onReassign }: {
 
       {/* People */}
       <div className="mt-2.5 space-y-1">
-        <p className="text-[11px] text-gray-500">
-          👤 <span className="font-medium text-gray-700">{op.farmerId?.name}</span>
+        <p className="flex items-center gap-1.5 text-[11px] text-gray-500">
+          <img src="/farmer.svg" alt="" className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="font-medium text-gray-700">{op.farmerId?.name}</span>
           {op.farmerId?.phone && <span className="text-gray-400"> · {op.farmerId.phone}</span>}
         </p>
         {op.pilotId ? (
-          <p className="text-[11px] text-blue-600">
-            🚁 <span className="font-medium">{op.pilotId.name}</span>
+          <p className="flex items-center gap-1.5 text-[11px] text-blue-600">
+            <img src="/drone-pilot.svg" alt="" className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="font-medium">{op.pilotId.name}</span>
             {op.pilotId.company && <span className="ml-1 text-[10px] font-bold bg-blue-50 px-1.5 py-0.5 rounded-full">{op.pilotId.company}</span>}
           </p>
         ) : (

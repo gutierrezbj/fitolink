@@ -58,11 +58,12 @@ const URGENCY_STYLES: Record<Urgency, { wrapper: string; eyebrow: string; pulseD
   },
 };
 
-const URGENCY_ICON: Record<Urgency, string> = {
-  urgent: '🔴',
-  soon: '🟠',
-  monitor: '🟡',
-  sufficient: '🟢',
+// Punto de estado en color (CSS), NO emoji. urgente→rojo … suficiente→verde.
+const URGENCY_DOT: Record<Urgency, string> = {
+  urgent: 'bg-red-500',
+  soon: 'bg-orange-500',
+  monitor: 'bg-amber-400',
+  sufficient: 'bg-green-500',
 };
 
 interface Props {
@@ -136,7 +137,7 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
             § DECISIÓN DE RIEGO {ownerName ? `· ${ownerName.toUpperCase()}` : ''}
           </p>
           <h2 className="font-display text-xl text-brand-900 leading-tight mt-1.5 flex items-center gap-2">
-            <span className="text-2xl leading-none">{URGENCY_ICON[data.urgency]}</span>
+            <span className={`h-3 w-3 flex-shrink-0 rounded-full ${URGENCY_DOT[data.urgency]}`} />
             {data.recommendedAction}
           </h2>
         </div>

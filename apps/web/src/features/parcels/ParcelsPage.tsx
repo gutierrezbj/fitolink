@@ -390,9 +390,7 @@ export default function ParcelsPage() {
             </div>
           ) : (
             <div className="py-8 text-center flex flex-col items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                <span className="text-gray-400 text-xl">🗺</span>
-              </div>
+              <img src="/nav-parcels.svg" alt="" className="w-12 h-12 mb-3 opacity-80" />
               <p className="text-gray-500 font-medium">Selecciona una parcela</p>
               <p className="text-gray-400 text-xs mt-1">Haz click en el mapa o en la lista</p>
             </div>

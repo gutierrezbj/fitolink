@@ -5,12 +5,20 @@ const TYPE_LABELS: Record<string, string> = {
   phytosanitary: 'Fitosanitario',
   inspection: 'Inspeccion',
   diagnosis: 'Diagnostico',
+  herbicide: 'Herbicida',
+  fertilization: 'Fertilizacion',
+  seeding: 'Siembra',
 };
 
-const TYPE_ICONS: Record<string, string> = {
-  phytosanitary: '🌿',
-  inspection: '🔍',
-  diagnosis: '🧬',
+// Iconos del set unificado line-icon de AgroM (public/service-*.svg), NO emojis.
+// Mismo mapeo que OperationDetailPage.
+const TYPE_ICON: Record<string, string> = {
+  phytosanitary: '/service-phytosanitary.svg',
+  inspection: '/service-diagnosis.svg',
+  diagnosis: '/service-diagnosis.svg',
+  herbicide: '/service-herbicide.svg',
+  fertilization: '/service-fertilization.svg',
+  seeding: '/service-seeding.svg',
 };
 
 const SEVERITY_DOT: Record<string, string> = {
@@ -89,7 +97,7 @@ function OperationCard({ op, role, onAccept, onReject, isLoading }: {
       {/* Top row: type icon + alert severity */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-base">{TYPE_ICONS[op.type] || '📋'}</span>
+          {TYPE_ICON[op.type] && <img src={TYPE_ICON[op.type]} alt="" className="w-4 h-4" />}
           <span className="text-[11px] text-gray-500 font-medium">{TYPE_LABELS[op.type] || op.type}</span>
         </div>
         {op.alertId && (
@@ -213,7 +221,11 @@ export default function OperationKanban({ operations, role, onAccept, onReject, 
   if (operations.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <div className="text-4xl mb-3">{role === 'pilot' ? '🚁' : '📋'}</div>
+        <img
+          src={role === 'pilot' ? '/drone-pilot.svg' : '/nav-operations.svg'}
+          alt=""
+          className="w-14 h-14 mx-auto mb-3"
+        />
         <p className="text-gray-500 font-medium">
           {role === 'pilot' ? 'Sin asignaciones' : 'Sin operaciones'}
         </p>
