@@ -38,12 +38,38 @@ services:
       - JWT_SECRET=${JWT_SECRET:?Falta JWT_SECRET en el .env del VPS (genera uno con openssl rand -base64 32)}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      # (RESEND_API_KEY retirada 11-jul-2026: ningún código de la API la lee —
+      # el stack de email real es Gmail SMTP vía nodemailer, ver emailService.ts)
       # Dev-login (chips de demo como "Jorge"). Configurable vía .env del VPS
       # — default false por seguridad: en producción sin el .env, el bypass de
       # auth queda DESACTIVADO. Para la demo, el .env del VPS lleva
       # ALLOW_DEV_LOGIN=true. (Antes estaba hardcoded a mano en el VPS.)
       - ALLOW_DEV_LOGIN=${ALLOW_DEV_LOGIN:-false}
+      # NASA FIRMS (card "Focos térmicos" + sección fuego del digest). Sin la
+      # key el servicio devuelve [] a propósito y la card muestra siempre
+      # "Sin focos activos". Key GRATIS (formulario de 2 min):
+      # https://firms.modaps.eosdis.nasa.gov/api/map_key/ → al .env del VPS.
+      # (11-jul-2026 · antes esta var NI SE REENVIABA al contenedor: aunque
+      # estuviera en el .env del VPS, el proceso Node no la veía.)
+      - FIRMS_MAP_KEY=${FIRMS_MAP_KEY:-}
+      # Digest matinal ~07:00 Madrid (email de campo + creador de alertas
+      # fire_proximity). Off por defecto; activar con DIGEST_CRON=true en el
+      # .env del VPS. Sin SMTP_* configurado el email corre en modo dry-run
+      # (solo loguea, no envía) — ver emailService.ts.
+      - DIGEST_CRON=${DIGEST_CRON:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      # El default repite el del schema zod (env.ts) porque una cadena vacía
+      # NO activa el default de zod — sin esto, el From saldría vacío.
+      - SMTP_FROM=${SMTP_FROM:-FitoLink Alertas <AlertasAgrom@systemrapid.io>}
+      # Destinatarios del formulario público "solicitar demo" (emailService
+      # los lee de process.env con fallback demo@example.com — buzón que NO
+      # existe). Definirlos en el .env del VPS ANTES de configurar SMTP_*,
+      # o los leads se enviarían a un buzón muerto con log de éxito.
+      - DEMO_REQUEST_TO=${DEMO_REQUEST_TO:-}
+      - DEMO_REQUEST_CC=${DEMO_REQUEST_CC:-}
     restart: unless-stopped
     # Healthcheck contra GET /api/health (puerto 4040). La imagen base es
     # node:alpine (sin curl) → usamos el wget de BusyBox. Mientras el contenedor

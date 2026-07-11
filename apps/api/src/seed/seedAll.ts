@@ -21,6 +21,9 @@
  * Equivalente a ejecutar manualmente:
  *   docker compose exec -T api node apps/api/dist/seed/seedProviders.js
  *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisories.js
+ *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisoriesDARP.js
+ *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisoriesLevante.js
+ *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisoryITACYL.js
  *   docker compose exec -T api node apps/api/dist/seed/seedCooperativeSocios.js
  *   docker compose exec -T api node apps/api/dist/seed/seedRegantesSocios.js
  *   docker compose exec -T api node apps/api/dist/seed/seedProfessorDemo.js
@@ -40,6 +43,7 @@ const SEEDS = [
   { name: 'seedPestAdvisories',         file: 'seedPestAdvisories.js' },         // RAIF Andalucía (olivo)
   { name: 'seedPestAdvisoriesDARP',     file: 'seedPestAdvisoriesDARP.js' },     // DARP Catalunya · Bloque C 8-jun-2026
   { name: 'seedPestAdvisoriesLevante',  file: 'seedPestAdvisoriesLevante.js' },  // SAIF Valencia + SIAM Murcia · cítricos Vega Baja 9-jun-2026
+  { name: 'seedPestAdvisoryITACYL',     file: 'seedPestAdvisoryITACYL.js' },     // ITACYL Castilla y León · 5ª fuente · faltaba en el orquestador (fix 11-jul-2026)
   { name: 'seedCooperativeSocios',      file: 'seedCooperativeSocios.js' },
   { name: 'seedRegantesSocios',         file: 'seedRegantesSocios.js' },
   { name: 'seedProfessorDemo',          file: 'seedProfessorDemo.js' },

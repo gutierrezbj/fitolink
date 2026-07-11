@@ -138,14 +138,22 @@ export default function AvisosPage() {
           FitoLink reúne los boletines oficiales de plagas de las comunidades
           autónomas y los pone en un mapa común. Cada aviso enlaza a su fuente
           oficial — el dato es de cada organismo, nosotros abrimos el canal.
+          La fecha de cada aviso es la de su publicación oficial o la de su
+          última verificación por nuestro equipo.
         </p>
 
         {/* Stats */}
         <div className="mt-7 flex flex-wrap gap-6">
-          <Stat n={stats.total} label="avisos vigentes" />
+          <Stat n={stats.total} label="avisos oficiales" />
           <Stat n={stats.sources} label="fuentes oficiales" />
           <Stat n={stats.high} label="severidad alta" accent />
         </div>
+        {advisories.length > 0 && (
+          <p className="mt-4 font-mono text-[10px] uppercase tracking-wider text-earth-400">
+            Última revisión del tablón:{' '}
+            {fmtDate(advisories.reduce((m, a) => (a.detectedAt > m ? a.detectedAt : m), advisories[0].detectedAt))}
+          </p>
+        )}
       </section>
 
       {/* Lista */}
@@ -157,7 +165,9 @@ export default function AvisosPage() {
           <p className="text-sm text-red-600 py-10 text-center">No se pudieron cargar los avisos. Intente recargar.</p>
         )}
         {!isLoading && !isError && advisories.length === 0 && (
-          <p className="text-sm text-earth-400 py-10 text-center">No hay avisos vigentes ahora mismo.</p>
+          <p className="text-sm text-earth-400 py-10 text-center">
+            Ahora mismo no hay avisos vigentes en el tablón. Consulte el portal oficial de su comunidad.
+          </p>
         )}
 
         {/* Filtro por comunidad — ir al grano */}

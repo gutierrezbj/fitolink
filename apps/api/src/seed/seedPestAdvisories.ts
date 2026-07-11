@@ -1,10 +1,15 @@
 /**
- * Seed: 2 phytosanitary advisories so the PestAdvisoriesCard widget has
- * data to show in the parcel detail pages without waiting for the
- * agronomist to enter the first real bulletin.
+ * Seed: 5 advisories Prays oleae (informe REAL del portal RAIF oct-2025:
+ * Estepa/Sevilla + Málaga + Córdoba + Cádiz + Granada · cifras literales,
+ * cero invento) para que el tablón /avisos y la PestAdvisoriesCard tengan
+ * datos oficiales verificables.
+ *
+ * 11-jul-2026: retirados mosca ("Boletín 18/2026") y repilo ("Boletín
+ * 20/2026") — sourceRef no verificable contra el portal (misma cosecha que
+ * el "19/2026" ya retirado por inventado). Ver cleanup más abajo.
  *
  * Idempotent: each advisory is keyed by a deterministic fingerprint
- * (pest + source + sourceRef + detected month). Re-running this script
+ * (pest + source + provincia + mes del informe). Re-running this script
  * will skip rows that already exist instead of failing.
  *
  * Run via:
@@ -61,10 +66,19 @@ async function seed() {
     logger.info({ deletedCount: cleanupPraysProvincias.deletedCount }, 'cleanup: removed 5 Prays oct-2025 advisories for copy refresh');
   }
 
-  const now = new Date();
-  // Detected start of this month so the same advisory survives until the
-  // next monthly bulletin cycle (applies to advisories without explicit dates).
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Cleanup · 11-jul-2026 · retirar mosca (sourceRef "Boletín 18/2026") y
+  // repilo ("Boletín 20/2026"): números de boletín de la misma cosecha que el
+  // "Boletín 19/2026" ya retirado arriba por sourceRef inventado — no
+  // verificables contra el portal RAIF. CRITICAL_no_inventar: fuera del seed
+  // y de la BD hasta tener boletín real que citar (las plagas son reales;
+  // la CITA no lo era). Fingerprints llevaban sufijo -YYYY-MM del mes de
+  // siembra → regex. Idempotente: segunda ejecución borra 0.
+  const cleanupBoletinesInventados = await PestAdvisory.deleteMany({
+    fingerprint: { $regex: /^(mosca-olivo-RAIF-18-2026|repilo-olivo-RAIF-20-2026)-\d{4}-\d{2}$/ },
+  });
+  if (cleanupBoletinesInventados.deletedCount > 0) {
+    logger.info({ deletedCount: cleanupBoletinesInventados.deletedCount }, 'cleanup: removed mosca/repilo advisories with unverifiable bulletin refs');
+  }
 
   // Fechas del informe Prays oleae REAL del portal RAIF (publicado 01-oct-2025).
   // Vigente hasta nueva publicación oficial · expiresAt 2028 evita expiración
@@ -221,65 +235,6 @@ async function seed() {
       notes: 'Dato literal portal RAIF (última publicación vigente · balance temporada 2025) · supervivencia larvas Granada 1% indica baja eficacia reproductiva de Prays en últimas semanas del muestreo. La Junta publica el informe anualmente al cierre de campaña.',
       createdBy: admin._id,
       fingerprint: 'polilla-olivo-RAIF-Granada-2025-10',
-      isActive: true,
-    },
-    {
-      pestName: 'Bactrocera oleae · mosca del olivo',
-      scientificName: 'Bactrocera oleae',
-      cropTypes: ['olivo'],
-      affectedAreas: [
-        {
-          // Jaén capital area
-          province: 'Jaen',
-          comarca: 'La Loma',
-          centroid: { type: 'Point' as const, coordinates: [-3.79, 37.77] },
-          radiusKm: 40,
-        },
-        {
-          // Córdoba sub-bético
-          province: 'Cordoba',
-          comarca: 'Subbética',
-          centroid: { type: 'Point' as const, coordinates: [-4.42, 37.50] },
-          radiusKm: 30,
-        },
-      ],
-      severity: 'low',
-      detectedAt: monthStart,
-      source: 'RAIF',
-      sourceRef: 'Boletín 18/2026',
-      recommendation: 'Capturas todavía bajas. Mantener monitoreo, no es necesario actuar todavía.',
-      sourceUrl: 'https://www.juntadeandalucia.es/agriculturaypesca/raif/',
-      createdBy: admin._id,
-      fingerprint: `mosca-olivo-RAIF-18-2026-${monthStart.toISOString().slice(0, 7)}`,
-      isActive: true,
-    },
-    {
-      // Repilo del olivo · enfermedad fúngica clásica del olivar
-      // mediterráneo (anamorfo del ascomicete Venturia oleaginea).
-      // Causa defoliación temprana y reducción de producción · plaga real
-      // bien documentada en boletines RAIF zona olivarera Jaén. Centroid
-      // Loma de Úbeda (zona olivarera principal de Jaén) con radio 60km
-      // para cubrir Sierra Sur de Sevilla también (Aula Jaén + Coop Estepa).
-      pestName: 'Spilocaea oleagina · repilo del olivo',
-      scientificName: 'Spilocaea oleagina (Venturia oleaginea)',
-      cropTypes: ['olivo'],
-      affectedAreas: [
-        {
-          province: 'Jaen',
-          comarca: 'Loma de Úbeda',
-          centroid: { type: 'Point' as const, coordinates: [-3.50, 37.95] },
-          radiusKm: 60,
-        },
-      ],
-      severity: 'medium',
-      detectedAt: monthStart,
-      source: 'RAIF',
-      sourceRef: 'Boletín 20/2026',
-      recommendation: 'Vigilar manchas circulares oscuras en haz de hojas y defoliación basal. Condiciones favorables al hongo · humedad alta + T 10-25°C. Tratamientos cúpricos preventivos en ventanas secas.',
-      sourceUrl: 'https://www.juntadeandalucia.es/agriculturaypesca/raif/',
-      notes: 'Enfermedad endémica del olivar · más activa en primavera/otoño · primavera tardía sigue siendo ventana de monitoreo.',
-      createdBy: admin._id,
-      fingerprint: `repilo-olivo-RAIF-20-2026-${monthStart.toISOString().slice(0, 7)}`,
       isActive: true,
     },
   ];

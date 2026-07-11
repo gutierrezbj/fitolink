@@ -18,7 +18,7 @@
  *
  * Honra CRITICAL_no_inventar · plagas reales bien documentadas ·
  * severity 'medium' neutral · sourceUrl al portal oficial donde el
- * agricultor verifica · fingerprint estable mensual.
+ * agricultor verifica · fingerprint estable sin mes (fix 11-jul-2026).
  *
  * Ejecutar:
  *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisoriesLevante.js
@@ -30,8 +30,12 @@ import { logger } from '../utils/logger.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
 
-const IVIA_PORTAL = 'https://gvasanitatvegetal.gva.es/';   // IVIA Sanidad Vegetal Generalitat Valenciana
-const IMIDA_PORTAL = 'https://www.imida.es/';              // IMIDA Murcia
+// Fix 11-jul-2026: gvasanitatvegetal.gva.es está MUERTO (no resuelve) y las
+// rutas profundas de agroambient.gva.es redirigen a un dominio interno roto
+// (webinterna2.gva.es). URL viva y verificada (HTTP 200): la raíz de la
+// Conselleria de Agricultura GVA, que alberga Sanitat Vegetal.
+const IVIA_PORTAL = 'https://agroambient.gva.es/';   // Conselleria Agricultura GVA · Sanitat Vegetal
+const IMIDA_PORTAL = 'https://www.imida.es/';        // IMIDA Murcia (portal del organismo)
 
 async function seed() {
   await mongoose.connect(MONGODB_URI);
@@ -44,9 +48,25 @@ async function seed() {
     process.exit(1);
   }
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthIso = monthStart.toISOString().slice(0, 7);
+  // Fix 11-jul-2026 · honestidad de fechas + vigencia (mismo patrón que DARP):
+  //  - detectedAt = fecha REAL de curación contra los portales (09-jun-2026),
+  //    NO monthStart del momento del re-seed (aparentaba frescura falsa).
+  //  - expiresAt explícito: el default del modelo (now + 21 días) mataba
+  //    estos avisos en silencio — así desaparecieron SAIF/SIAM del tablón.
+  //  - fingerprint estable sin mes: un aviso = una fila, no una copia por mes.
+  const curatedAt = new Date('2026-06-09');
+  const vigenteHastaNuevaPublicacion = new Date('2028-12-31');
+
+  // Reinsert limpio: borra tanto las copias mensuales antiguas (sufijo
+  // -YYYY-MM, caducadas por el default de 21 días) como la fila estable
+  // actual, para que el upsert SIEMPRE converja al contenido de este seed
+  // ($setOnInsert no actualiza filas existentes). Idempotente.
+  const cleanup = await PestAdvisory.deleteMany({
+    fingerprint: { $regex: /^(cotonet-SAIF-VegaBaja|minador-SIAM-VegaSegura)(-\d{4}-\d{2})?$/ },
+  });
+  if (cleanup.deletedCount > 0) {
+    logger.info({ deletedCount: cleanup.deletedCount }, 'cleanup: removed stale Levante advisories for clean reinsert');
+  }
 
   const advisories = [
     {
@@ -68,15 +88,16 @@ async function seed() {
         },
       ],
       severity: 'high',
-      detectedAt: monthStart,
+      detectedAt: curatedAt,
+      expiresAt: vigenteHastaNuevaPublicacion,
       source: 'SAIF',
-      sourceRef: `Boletín SAIF / IVIA Sanitat Vegetal · Vega Baja · ${monthIso}`,
+      sourceRef: 'Vigilancia SAIF / Sanitat Vegetal GVA · Vega Baja',
       recommendation:
         'Vigilancia activa con trampas feromona en perímetro de parcela. Tratamientos coordinados con la cooperativa o ADV citrícola (el aislamiento entre parcelas vecinas reduce eficacia). Productos autorizados aplicación cítricos · consultar boletín IVIA completo en sourceUrl.',
       sourceUrl: IVIA_PORTAL,
       notes: 'Plaga emergente · daño directo a fruto (caída y deformación) · monitoreo continuo IVIA Comunitat Valenciana desde 2009. Tratamiento aislado por agricultor poco eficaz · requiere coordinación comarcal.',
       createdBy: admin._id,
-      fingerprint: `cotonet-SAIF-VegaBaja-${monthIso}`,
+      fingerprint: 'cotonet-SAIF-VegaBaja',
       isActive: true,
     },
     {
@@ -97,15 +118,16 @@ async function seed() {
         },
       ],
       severity: 'medium',
-      detectedAt: monthStart,
+      detectedAt: curatedAt,
+      expiresAt: vigenteHastaNuevaPublicacion,
       source: 'SIAM',
-      sourceRef: `Boletín SIAM / IMIDA Sanidad Vegetal · ${monthIso}`,
+      sourceRef: 'Vigilancia SIAM / IMIDA Sanidad Vegetal · Vega del Segura',
       recommendation:
         'Vigilar brotes nuevos · daño visible en hojas como galerías serpenteantes. Tratamiento solo justificado en plantaciones jóvenes (<5 años) o con elevada brotación. Adultos manejados con la coordinación habitual de la cooperativa · consultar IMIDA en sourceUrl.',
       sourceUrl: IMIDA_PORTAL,
       notes: 'Plaga clásica presente en toda España citrícola desde los años 90 · daño económico relevante solo en plantaciones jóvenes con mucha brotación · plantaciones maduras toleran sin pérdida significativa.',
       createdBy: admin._id,
-      fingerprint: `minador-SIAM-VegaSegura-${monthIso}`,
+      fingerprint: 'minador-SIAM-VegaSegura',
       isActive: true,
     },
   ];
@@ -122,7 +144,7 @@ async function seed() {
     else skipped += 1;
   }
 
-  logger.info({ inserted, skipped, sources: ['SAIF', 'SIAM'], month: monthIso }, 'Levante advisory seed complete');
+  logger.info({ inserted, skipped, sources: ['SAIF', 'SIAM'] }, 'Levante advisory seed complete');
   await mongoose.disconnect();
   process.exit(0);
 }

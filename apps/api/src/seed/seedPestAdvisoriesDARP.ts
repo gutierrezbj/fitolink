@@ -9,8 +9,9 @@
  * estación · estos advisories enlazan al portal completo via sourceUrl
  * para que el agricultor consulte el boletín original de su zona.
  *
- * Idempotente · fingerprint estable (pest + source + sourceRef + mes).
- * Re-ejecutar este script NO duplica · skips rows existentes.
+ * Idempotente · fingerprint estable (pest + source + zona, sin mes desde
+ * el fix 11-jul-2026). Re-ejecutar este script NO duplica · skips rows
+ * existentes.
  *
  * Ejecutar:
  *   docker compose exec -T api node apps/api/dist/seed/seedPestAdvisoriesDARP.js
@@ -41,9 +42,28 @@ async function seed() {
     process.exit(1);
   }
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthIso = monthStart.toISOString().slice(0, 7);
+  // Fix 11-jul-2026 · honestidad de fechas + vigencia:
+  //  - detectedAt = fecha REAL de curación contra el portal (08-jun-2026, ver
+  //    verificación tabla oficial en el comentario del mildiu), NO monthStart
+  //    del momento del re-seed (aparentaba frescura que no existe).
+  //  - expiresAt explícito: sin él, el default del modelo (now + 21 días)
+  //    mataba estos avisos en silencio — así desapareció DARP del tablón.
+  //  - fingerprint estable sin mes: un aviso = una fila, no una copia por mes.
+  const curatedAt = new Date('2026-06-08');
+  const vigenteHastaNuevaPublicacion = new Date('2028-12-31');
+
+  // Reinsert limpio: borra tanto las copias mensuales antiguas (sufijo
+  // -YYYY-MM, ya caducadas por el default de 21 días) como la fila estable
+  // actual, para que el upsert posterior SIEMPRE converja al contenido de
+  // este seed ($setOnInsert no actualiza filas existentes). Incluye el
+  // fingerprint histórico mildiu-DARP-Penedes-* (versión previa del aviso
+  // antes del ajuste de comarca a Tarragona). Idempotente.
+  const cleanup = await PestAdvisory.deleteMany({
+    fingerprint: { $regex: /^(carpocapsa-DARP-Lleida|mildiu-DARP-Tarragona|mildiu-DARP-Penedes)(-\d{4}-\d{2})?$/ },
+  });
+  if (cleanup.deletedCount > 0) {
+    logger.info({ deletedCount: cleanup.deletedCount }, 'cleanup: removed stale DARP advisories for clean reinsert');
+  }
 
   const advisories = [
     {
@@ -61,15 +81,16 @@ async function seed() {
         },
       ],
       severity: 'medium',
-      detectedAt: monthStart,
+      detectedAt: curatedAt,
+      expiresAt: vigenteHastaNuevaPublicacion,
       source: 'DARP',
-      sourceRef: `Butlletí DARP estació Lleida · ${monthIso}`,
+      sourceRef: "Portal d'avisos fitosanitaris Ruralcat (DARP) · estació Lleida",
       recommendation:
         'Consulte el boletín DARP completo de su estación en sourceUrl. Decisión de tratamiento depende de capturas en feromona y de la ventana fenológica de cada parcela.',
       sourceUrl: RURALCAT_PORTAL,
       notes: 'Plaga clave de fruticultura · 2-3 generaciones anuales en zona Lleida · vigilancia en feromona habitual desde finales abril.',
       createdBy: admin._id,
-      fingerprint: `carpocapsa-DARP-Lleida-${monthIso}`,
+      fingerprint: 'carpocapsa-DARP-Lleida',
       isActive: true,
     },
     {
@@ -92,15 +113,16 @@ async function seed() {
         },
       ],
       severity: 'medium',
-      detectedAt: monthStart,
+      detectedAt: curatedAt,
+      expiresAt: vigenteHastaNuevaPublicacion,
       source: 'DARP',
-      sourceRef: `Butlletí DARP EA Tarragona · ${monthIso}`,
+      sourceRef: "Portal d'avisos fitosanitaris Ruralcat (DARP) · EA Tarragona",
       recommendation:
         'Consulte el boletín DARP completo de su estación en sourceUrl. Riesgo mildiu vinculado a lluvias primaverales y temperatura · revisar pronóstico antes de tratamiento.',
       sourceUrl: RURALCAT_PORTAL,
       notes: 'Enfermedad clave del viñedo · contagio por agua libre en hoja >2h con T>10°C · DARP recomienda integrarse en ADV para asesoramiento individualizado.',
       createdBy: admin._id,
-      fingerprint: `mildiu-DARP-Tarragona-${monthIso}`,
+      fingerprint: 'mildiu-DARP-Tarragona',
       isActive: true,
     },
   ];
@@ -117,7 +139,7 @@ async function seed() {
     else skipped += 1;
   }
 
-  logger.info({ inserted, skipped, source: 'DARP', month: monthIso }, 'DARP advisory seed complete');
+  logger.info({ inserted, skipped, source: 'DARP' }, 'DARP advisory seed complete');
   await mongoose.disconnect();
   process.exit(0);
 }

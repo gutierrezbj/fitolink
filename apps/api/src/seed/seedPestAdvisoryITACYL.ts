@@ -57,6 +57,12 @@ async function seed() {
     ],
     severity: 'medium' as const,   // "casos próximos a los niveles de umbral" · vigilancia, umbral no superado de forma generalizada
     detectedAt: new Date('2026-06-09'),
+    // Vigente hasta nueva publicación del observatorio. expiresAt EXPLÍCITO:
+    // sin él, el default del modelo (now + 21 días) lo mata en silencio y el
+    // aviso desaparece del tablón sin que nadie se entere (fix 11-jul-2026 ·
+    // mismo patrón que RAIF). La frescura honesta la da detectedAt visible
+    // en la card, no este campo.
+    expiresAt: new Date('2028-12-31'),
     source: 'ITACYL' as const,
     sourceRef: 'Información para agricultores · Observatorio de plagas y enfermedades agrícolas de CyL · 9 jun 2026',
     recommendation:
@@ -68,6 +74,12 @@ async function seed() {
     fingerprint: 'escarabajo-patata-ITACYL-2026-06-09',
     isActive: true,
   };
+
+  // Reinsert limpio: si una ejecución manual anterior dejó este aviso con el
+  // expiresAt por defecto del modelo (21 días, ya vencido), $setOnInsert NO
+  // lo revive — borramos por fingerprint y el upsert lo reinserta con la
+  // vigencia explícita. Idempotente (fix 11-jul-2026).
+  await PestAdvisory.deleteMany({ fingerprint: advisory.fingerprint });
 
   const result = await PestAdvisory.updateOne(
     { fingerprint: advisory.fingerprint },
