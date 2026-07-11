@@ -105,9 +105,9 @@ export default function AvisosPage() {
       <header className="border-b border-earth-300/40 bg-white">
         <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" aria-label="Volver a la página principal" className="flex items-center gap-1 text-sm text-earth-500 hover:text-brand-700 transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              <span className="hidden sm:inline">Volver</span>
+            <Link to="/" aria-label="Volver a la página principal" className="inline-flex items-center gap-1.5 rounded-full border border-earth-300 bg-white px-4 py-2 text-sm font-medium text-brand-700 shadow-sm transition-colors hover:border-brand-400 hover:bg-brand-50 active:bg-brand-100">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              Volver
             </Link>
             <Link to="/" className="font-display text-xl font-bold text-brand-700">
               Agro<span className="text-terra-500">M</span>

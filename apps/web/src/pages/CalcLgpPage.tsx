@@ -49,8 +49,10 @@ const CSS = `
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--txt);line-height:1.4;-webkit-font-smoothing:antialiased;padding:16px;max-width:520px;margin:0 auto}
 .lgp *{box-sizing:border-box;margin:0;padding:0}
 .lgp .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.lgp .topbar a{color:var(--muted);font-size:12px;text-decoration:none}
-.lgp .topbar a:hover{color:var(--accent2)}
+.lgp .tb-brand{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.5px}
+.lgp .lgp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel2);color:var(--accent2);border-radius:20px;padding:8px 15px;font-size:13px;font-weight:700;text-decoration:none;transition:.15s;cursor:pointer}
+.lgp .lgp-back:hover{border-color:var(--accent);background:#1c2a20}
+.lgp .lgp-back svg{flex:0 0 auto}
 .lgp header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .lgp .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0f1512;font-size:16px}
 .lgp h1{font-size:19px;font-weight:700;letter-spacing:-.2px}
@@ -169,7 +171,11 @@ export default function CalcLgpPage() {
       <style>{CSS}</style>
       <div className="lgp">
         <div className="topbar">
-          <Link to="/" aria-label="Volver a la página principal">&larr; Volver a AgroM · FitoLink</Link>
+          <Link to="/" className="lgp-back" aria-label="Volver a la página principal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Volver
+          </Link>
+          <span className="tb-brand">AgroM · FitoLink</span>
         </div>
 
         <header>
