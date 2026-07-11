@@ -6,6 +6,7 @@ import PrivacyPage from '@/pages/PrivacyPage.js';
 import PricingPage from '@/pages/PricingPage.js';
 import SigpacViewerPage from '@/pages/SigpacViewerPage.js';
 import AvisosPage from '@/pages/AvisosPage.js';
+import CalcLgpPage from '@/pages/CalcLgpPage.js';
 import LoginPage from '@/features/auth/LoginPage.js';
 import RegisterPage from '@/features/auth/RegisterPage.js';
 import DashboardLayout from '@/layouts/DashboardLayout.js';
@@ -48,6 +49,8 @@ export default function App() {
       <Route path="/sigpac/:prov/:muni/:agre/:zona/:poligono/:parcela/:recinto" element={<SigpacViewerPage />} />
       {/* Tablón de avisos fitosanitarios oficiales · 2º lead magnet · 11-jun-2026 */}
       <Route path="/avisos" element={<AvisosPage />} />
+      {/* Calc LGP · calculadora Love Green (dron) · 3er lead magnet · 11-jul-2026 */}
+      <Route path="/calc-lgp" element={<CalcLgpPage />} />
 
       {/* Protected Dashboard */}
       <Route

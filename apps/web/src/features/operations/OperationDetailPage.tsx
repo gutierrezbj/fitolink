@@ -8,7 +8,6 @@ import { cropLabel, findCatalogProduct, labelRangeText } from '@fitolink/shared'
 import { useState } from 'react';
 import CompleteOperationForm from '@/features/pilot/CompleteOperationForm.js';
 import ParcelMap from '@/features/parcels/ParcelMap.js';
-import DoseCalculatorCard from '@/features/operations/DoseCalculatorCard.js';
 
 const STATUS_COLORS: Record<string, string> = {
   requested: 'bg-yellow-100 text-yellow-800',
@@ -318,15 +317,6 @@ export default function OperationDetailPage() {
           </div>
         )}
       </div>
-
-      {/* Mezcla según etiqueta — solo mientras la operación está pendiente de
-          volar (assigned/in_progress): producto + ha → totales para cargar el
-          dron sin sacar números a ojo. En completadas ya se muestra lo aplicado. */}
-      {(op.status === 'assigned' || op.status === 'in_progress') && (
-        <div className="mt-4">
-          <DoseCalculatorCard defaultAreaHa={op.parcelId?.areaHa} />
-        </div>
-      )}
 
       {/* Action buttons */}
       {isPilot && op.status === 'assigned' && (

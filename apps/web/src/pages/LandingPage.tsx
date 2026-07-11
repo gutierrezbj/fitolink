@@ -188,6 +188,23 @@ function Navbar() {
             Visor de plagas
           </Link>
           <Link
+            to="/calc-lgp"
+            className="flex items-center gap-1.5 text-brand-700 hover:text-brand-800 transition-colors font-medium"
+          >
+            {/* Line-icon de calculadora · pantalla + teclado */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2.5" width="14" height="19" rx="2.5" />
+              <line x1="8.5" y1="6.5" x2="15.5" y2="6.5" />
+              <circle cx="9" cy="11.5" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="11.5" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="11.5" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="9" cy="15.5" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="15.5" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="15.5" r="0.9" fill="currentColor" stroke="none" />
+            </svg>
+            Calc LGP
+          </Link>
+          <Link
             to="/login"
             className="px-5 py-2 bg-brand-600 text-white rounded-full text-sm font-medium hover:bg-brand-700 transition-all hover:shadow-lg hover:shadow-brand-500/25"
           >
@@ -800,6 +817,7 @@ function Footer() {
             <a href="#roles" className="hover:text-white transition-colors">Roles</a>
             <Link to="/sigpac" className="hover:text-white transition-colors">Visor SIGPAC</Link>
             <Link to="/avisos" className="hover:text-white transition-colors">Visor de plagas</Link>
+            <Link to="/calc-lgp" className="hover:text-white transition-colors">Calc LGP</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Precio</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Términos</Link>
             <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
