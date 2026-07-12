@@ -97,11 +97,14 @@ export default function AlertBell() {
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown · z-index POR ENCIMA de Leaflet (que usa hasta 1000 en sus
+          capas/controles). Con z-50 el mapa de la vista de parcela tapaba la
+          tarjeta de alertas (fix 12-jul-2026). Cabecera y mapa comparten
+          contexto de apilado, así que un z alto basta. */}
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-12 z-50 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="fixed inset-0 z-[1090]" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-12 z-[1100] w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-semibold text-gray-900">
                 Alertas activas
