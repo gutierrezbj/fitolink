@@ -64,3 +64,8 @@ data/db/
 # Local assets not part of the app
 Arte/
 cursos-escuela-gis/
+
+# Material fuente pesado de decks — solo versionamos el entregable final
+# (.pdf/.pptx en docs/comercial/), no los PNGs de origen ni los .pptx
+# intermedios (storyboard-cosecha/ pesaba 27 MB).
+docs/comercial/storyboard-cosecha/
