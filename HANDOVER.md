@@ -92,40 +92,71 @@
 
 ### Mejoras importantes (cuando haya tiempo)
 
-#### Bloque C · estado 9-jun-2026
+#### Bloque C · SISTEMA DE NOTIFICACIÓN DE PLAGAS · estado 12-jul-2026
 
-✅ **FOUNDATION CERRADA** (9 commits LIVE en prod entre 8-jun y 9-jun):
-- `PEST_SOURCES` enum extendido: RAIF · DARP · MAPA · SAIF · SIAM · CSCV · otros
-- Seeds activos en BD prod (idempotentes vía `seedAll.ts`):
-  - `seedPestAdvisories.ts` · 7 advisories RAIF (Prays oleae × 5 provincias REALES portal RAIF + Bactrocera + Spilocaea Repilo)
-  - `seedPestAdvisoriesDARP.ts` · 2 advisories Cataluña (Cydia Lleida + Plasmopara Tarragona)
-  - `seedPestAdvisoriesLevante.ts` · 2 advisories Levante (Cotonet SAIF Vega Baja + Minador SIAM Murcia)
-- **Total 11 advisories** geolocalizándose dinámicamente vs cada parcela según crop + radius
-- **PRIMER ADVISORY REAL** (commit `e4416ae`): Prays oleae cifras LITERALES del portal oficial RAIF (informe oct 2025 · Sevilla 35% · Málaga 45,1% · Córdoba 35,1% · Cádiz 4,1 capturas/trampa/día · Granada 1% supervivencia larvas) · cero invento · todo verificable clickeando `sourceUrl`
-- Verificación E2E via Claude in Chrome 9-jun: Aula Jaén Mancha Real ve Repilo MEDIA + Mosca BAJA · Coop Estepa Sevilla ve 3 Prays provincia (Sevilla LOW + Málaga MEDIUM + Córdoba MEDIUM) · Regantes Vega Baja Almoradí ve Cotonet ALTA + Minador MEDIA
-- Esqueleto `apps/api/src/services/raifIngestService.ts` con interfaz lista para sustituir hardcoded por scraper HTML real (TODO comentado)
+✅ **CICLO COMPLETO CONSTRUIDO** (commits `f7511f4` + `09c075b` · 11/12-jul-2026):
+`portal oficial → scraper → PestAdvisory → fan-out → Alert por parcela → campanita/AlertsPage/pills PLAGA dashboards`
 
-❌ **PENDIENTE F1 RAIF** (~6-8 días):
-- [ ] **F1 día 2-3:** convertir `fetchPraysOleaeReport()` a ingesta del **dataset abierto oficial RAIF** (NO scraper HTML · hallazgo 11-jun). La Junta publica ZIP+XML trimestral CC BY 4.0 comercial en `datosabiertos/portal/dataset/raif` con muestreos REALES por parcela+fecha (ver entrada glossary "RAIF · dataset abierto oficial"). Plan: script Python en geo-pipeline que descarga `raif_olivar_andalucia_2006_2026.zip` + `raif_citricos...zip`, parsea XML `_2017_2025` (desescapar campos x0020), reproyecta UTM→WGS84, indexa estaciones RAIF por comarca+cultivo, y dada una parcela cliente devuelve la estación más cercana + su última lectura real de plagas. Misma interfaz downstream (PestAdvisory) · cero refactor. Convierte el advisory de "cifra provincial del resumen anual" a "estación RAIF oficial a X km de su finca midió esto el [fecha]". Cron trimestral re-descarga.
-- [ ] **F1 día 4-6:** ampliar a otros endpoints RAIF (Bactrocera oleae · Spilocaea oleagina Repilo · Saissetia oleae · otros con páginas dedicadas del portal)
+- **Scraper RAIF REAL** (`raifIngestService.ts` reescrito): fetch + `parsePraysHtml()`
+  del informe Prays del portal (HTML server-rendered, regexes validados contra
+  el HTML real). Extrae fecha, cifras provinciales LITERALES, fenología y el
+  calificador del portal (severidad honesta). **Gate por fecha**: solo ingesta
+  si la Junta publica informe más nuevo — cero frescura fabricada. **FAIL-CLOSED**
+  en todo (fecha round-trip, números ambiguos lanzan, clasificación positiva
+  obligatoria): si el portal cambia su HTML, la BD queda intacta.
+- **Fan-out a alertas** (`fanOutAdvisoryAlerts` en pestAdvisoryService): nuevo
+  tipo `pest_advisory` en ALERT_TYPES · una Alert por parcela activa que matchee
+  cultivo+radio · dedupe por parcela+fingerprint (índice único parcial
+  anti-carrera) · el runner barre TODOS los avisos vigentes en cada run
+  (bootstrap + avisos manuales del admin + parcelas nuevas + reintentos, todo
+  idempotente).
+- **Runner**: `dist/ingest/ingestRaif.js` (crontab del host semanal, lunes 07:30)
+  · `--force` para pruebas · runbook completo en `docs/ingesta-avisos.md`.
+- **UI en 8 superficies sin dato falso**: BugIcon line-art en alertTypeMetadata ·
+  AlertsPage/AlertBell/ParcelDetail/admin/B2B con cuerpo condicional (una alerta
+  de plaga jamás muestra "NDVI 0.00" ni "% confianza IA") · pills PLAGA en los 4
+  dashboards agregadores · contador `pest_advisory` en cooperativeService.
+- **Tablón honesto** (11-jul, `f7511f4`): expiresAt explícito (fin de la muerte
+  silenciosa a los 21 días que vació el tablón), ITACYL cableado en seedAll (5ª
+  fuente), mosca/repilo retirados (sourceRef "Boletín 18/20-2026" no verificable),
+  sourceRefs describen el portal real consultado, "Última revisión del tablón"
+  visible en `/avisos`. **PROD: 10 avisos · 5 fuentes** (RAIF 5 + DARP 2 + SAIF 1
+  + SIAM 1 + ITACYL 1).
+- Revisión adversarial multi-agente del sistema: 18 hallazgos confirmados, todos
+  corregidos en `09c075b` (bootstrap dormido, parser 16.1→161, alertas zombis,
+  dedupe post-reinsert, NDVI falso en 5 superficies más…).
 
-❌ **PENDIENTE F1 DARP + SAIF + IRIAF** (~6-8 días):
-- [ ] **F1 día 7-8:** ingestor DARP Cataluña (`darpIngestService.ts`) · 9 estaciones · scraper portal Ruralcat
-- [ ] **F1 día 9-10:** ingestor SAIF / IVIA Valencia (`saifIngestService.ts`) · cítrico + hortícola
-- [ ] **F1 día 11-12:** ingestor IRIAF Castilla-La Mancha (`iriafIngestService.ts`) · viñedo + pistacho + cereal
-- [ ] **F1 día 13:** cron weekly + endpoint admin trigger manual + UI dashboard agricultor para forzar refresh
+⏳ **PENDIENTE OPERATIVO** (deploy · JuanCho):
+- [ ] Push + Actions verde + `deploy-ghcr.sh`
+- [ ] Bootstrap una vez: `docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaif.js`
+- [ ] Crontab del host: `30 7 * * 1 cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaif.js >> /var/log/fitolink-ingest.log 2>&1`
 
-❌ **PENDIENTE F2 (Q3 2026 · ~1-2 meses):** SIAM/IMIDA Murcia + ITAGRA Castilla y León + INTAEX Extremadura + IMIDRA Madrid (~85% PIB agrícola)
-❌ **PENDIENTE F3 (Q4 2026 / Q1 2027):** los 9 servicios autonómicos restantes (Norte + Islas) (100% cobertura)
+❌ **PENDIENTE F1.5 · dataset abierto oficial RAIF** (upgrade del scraper · hallazgo 11-jun):
+- [ ] Ingesta del ZIP+XML trimestral CC BY 4.0 de `datosabiertos/portal/dataset/raif` (muestreos REALES por estación+fecha). Convierte el advisory de "cifra provincial del informe" a "estación RAIF a X km de su finca midió esto el [fecha]". Misma interfaz downstream (PestAdvisory) · cero refactor. Ver glossary "RAIF · dataset abierto oficial".
+
+❌ **PENDIENTE F1 resto de ingestores** (~6-8 días · el fan-out y la UI ya son genéricos, solo hay que producir PestAdvisory):
+- [ ] DARP Cataluña (`darpIngestService.ts`) · scraper portal Ruralcat
+- [ ] SAIF / IVIA Valencia (`saifIngestService.ts`) · cítrico + hortícola
+- [ ] ITACYL Castilla y León (plagas.itacyl.es · HTML semanal, scrapeabilidad verificada 12-jul)
+- [ ] IRIAF Castilla-La Mancha (`iriafIngestService.ts`) · viñedo + pistacho + cereal
+- [ ] Endpoint admin trigger manual + UI para forzar refresh
+
+❌ **PENDIENTE F2 (Q3 2026):** SIAM/IMIDA Murcia + ITAGRA + INTAEX Extremadura + IMIDRA Madrid (~85% PIB agrícola)
+❌ **PENDIENTE F3 (Q4 2026 / Q1 2027):** los 9 servicios autonómicos restantes (100% cobertura)
 
 #### Visor de Plagas público `/avisos` · 2º lead magnet
 
-- [x] **Mock v2 standalone HTML** entregado 9-jun · `docs/comercial/visor-plagas-mock.html` (+copy en `apps/web/public/`) · abrir con `open` directo en browser · iteración v2 con feedback PM "de tablón a tool que engancha" (HERO input grande "¿Qué pasa en tu comarca?" + Toggle MI ZONA/TODA ESPAÑA + Mapa Leaflet grande + Timeline lateral "últimas publicaciones oficiales" con tiempo relativo + Cards agrupadas por región + KPI "2.847 agricultores esta semana" social proof). Tagline manifiesto al final.
-- [ ] **Construcción real en React** como ruta `/avisos` en `apps/web` consumiendo endpoint público `GET /api/v1/public/advisories` (sin auth · cache 1h Redis · SEO con meta tags + URLs únicas por advisory tipo `/avisos/raif-andalucia-mosca-olivo-2026-23`). Visión: agregar los 17 servicios autonómicos · vista anónima + vista logged filtrada por comarcas/cultivos del usuario. Esfuerzo: combina con F1 (ingestores reales) + ~3-4 días extra UI pública.
+- [x] **Mock v2 standalone HTML** entregado 9-jun · `docs/comercial/visor-plagas-mock.html`.
+- [x] **Página real LIVE** en `fitolink.agrom.es/avisos` (React, ruta pública sin
+  auth, `GET /pest-advisories/public`): 10 avisos · 5 fuentes · filtro por
+  comunidad · fecha del boletín por card · "Última revisión del tablón" visible ·
+  copy honesto (12-jul). Botón "Volver" pill + Acceder como conversión.
+- [ ] SEO por advisory (URLs únicas tipo `/avisos/raif-...`) + cache — cuando el
+  volumen de fuentes lo justifique.
 
 #### UX badges tipo alerta (Sprint 9-jun + cierre 10-jun)
 
-✅ **Sprint 100% CERRADO** · Helper centralizado `apps/web/src/features/alerts/alertTypeMetadata.tsx` con 4 SVG editorial line-icons (gota=stress hídrico · llama=fuego · hoja=NDVI · destello=NDRE) + `getAlertTypeMetadata(type)` → `{icon, label, shortLabel}`. Backend `cooperativeService.getOverview()` devuelve `alertTypes: AlertTypeBreakdown` per socio (reusado por Coop + ADV + Regantes via aggregator-rule).
+✅ **Sprint 100% CERRADO** · Helper centralizado `apps/web/src/features/alerts/alertTypeMetadata.tsx` con **5** SVG editorial line-icons (gota=stress hídrico · llama=fuego · hoja=NDVI · destello=NDRE · **bicho=aviso fitosanitario, añadido 12-jul**) + `getAlertTypeMetadata(type)` → `{icon, label, shortLabel}`. Backend `cooperativeService.getOverview()` devuelve `alertTypes: AlertTypeBreakdown` per socio (reusado por Coop + ADV + Regantes via aggregator-rule) — incluye `pest_advisory` desde 12-jul.
 
 Aplicado en **7 componentes** del producto:
 - `AlertsPage.tsx` (vista completa)
