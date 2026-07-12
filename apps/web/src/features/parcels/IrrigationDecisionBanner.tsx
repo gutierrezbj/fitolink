@@ -16,7 +16,7 @@ import { api } from '@/lib/api.js';
  * flag · A/B test · etc).
  */
 
-type Urgency = 'urgent' | 'soon' | 'monitor' | 'sufficient';
+type Urgency = 'urgent' | 'soon' | 'heat_watch' | 'monitor' | 'sufficient';
 
 interface IrrigationDecision {
   urgency: Urgency;
@@ -32,6 +32,8 @@ interface IrrigationDecision {
   etCropMmDay: number;
   alternative: string | null;
   analysisNarrative: string;
+  tips?: string[];
+  heatContext?: string | null;
   computedAt: string;
 }
 
@@ -46,9 +48,17 @@ const URGENCY_STYLES: Record<Urgency, { wrapper: string; eyebrow: string; pulseD
     eyebrow: 'text-terra-700',
     pulseDot: false,
   },
+  // heat_watch: naranja cálido · el cultivo está bien, es un aviso de contexto
+  // por calor, NO una alarma. Sin pulso rojo. Tono distinto del amarillo de
+  // 'monitor' para que no se confundan de un vistazo.
+  heat_watch: {
+    wrapper: 'bg-orange-50 border-orange-300',
+    eyebrow: 'text-orange-800',
+    pulseDot: false,
+  },
   monitor: {
-    wrapper: 'bg-yellow-50 border-yellow-300',
-    eyebrow: 'text-yellow-800',
+    wrapper: 'bg-yellow-50 border-yellow-200',
+    eyebrow: 'text-yellow-700',
     pulseDot: false,
   },
   sufficient: {
@@ -62,7 +72,8 @@ const URGENCY_STYLES: Record<Urgency, { wrapper: string; eyebrow: string; pulseD
 const URGENCY_DOT: Record<Urgency, string> = {
   urgent: 'bg-red-500',
   soon: 'bg-orange-500',
-  monitor: 'bg-amber-400',
+  heat_watch: 'bg-orange-500',
+  monitor: 'bg-yellow-400',
   sufficient: 'bg-green-500',
 };
 
@@ -147,7 +158,15 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
       </div>
 
       {/* Justificación agronómica corta · titular */}
-      <p className="text-sm text-brand-900 leading-relaxed mb-3">{data.reason}</p>
+      <p className="text-sm text-brand-900 leading-relaxed mb-2">{data.reason}</p>
+
+      {/* Contexto de calor / demanda (dato REAL de temperatura), si aplica */}
+      {data.heatContext && (
+        <p className="text-xs text-orange-800 leading-relaxed mb-3 flex items-start gap-1.5">
+          <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-400" />
+          <span>{data.heatContext}</span>
+        </p>
+      )}
 
       {/* Análisis integrado · narrativa server-side cruzando 6-8 variables.
           NO usa LLM · plantillas con datos reales (NDVI + tendencia + cultivo
@@ -260,8 +279,33 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
         </div>
       )}
 
+      {/* Tips accionables · "ojo en el cielo → confirmar en tierra". Aparecen
+          cuando hay algo que vigilar (calor, demanda, revisar). Colores
+          neutros: encajan igual en banner rojo/naranja/amarillo. */}
+      {data.tips && data.tips.length > 0 && (
+        <div className="bg-white/60 border border-earth-300/50 rounded-lg px-3.5 py-3 mt-3">
+          <p className={`font-mono text-[9px] uppercase tracking-[0.22em] ${style.eyebrow} mb-2`}>
+            § QUÉ REVISAR EN CAMPO
+          </p>
+          <ul className="space-y-1.5">
+            {data.tips.map((tip, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-brand-900 leading-relaxed">
+                <span className={`mt-1.5 h-1 w-1 flex-shrink-0 rounded-full ${URGENCY_DOT[data.urgency]}`} />
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Postura honesta · somos su ojo en el cielo, la última palabra es del campo */}
+      <p className="text-[11px] text-brand-700 mt-3 leading-snug italic">
+        Somos tu ojo en el cielo: te avisamos del contexto y la tendencia. La estimación es por satélite y meteo —
+        la humedad del suelo no se mide directamente— así que la última palabra la tiene tu vista en la parcela.
+      </p>
+
       {/* Pie editorial · trazabilidad */}
-      <p className="text-[10px] text-gray-400 mt-3 leading-snug">
+      <p className="text-[10px] text-gray-400 mt-2 leading-snug">
         Cálculo basado en FAO-56 simplificado · NDVI Sentinel-2 + textura SoilGrids + ERA5 reciente + Kc cultivo {data.ndviCurrent !== null ? '· última lectura ' + new Date(data.computedAt).toLocaleDateString('es-ES') : ''}
       </p>
     </div>

@@ -24,9 +24,12 @@
  */
 
 import type { IParcel } from '../models/Parcel.js';
-import { cropLabel } from '@fitolink/shared';
+import { cropLabel, ndviStatusForCrop, type NdviStatus } from '@fitolink/shared';
 
-export type IrrigationUrgency = 'urgent' | 'soon' | 'monitor' | 'sufficient';
+// 'heat_watch' (12-jul-2026): el cultivo se ve BIEN pero hace calor / la
+// demanda atmosférica es alta → aviso de CONTEXTO con tips, no una alarma de
+// estrés. Nace del caso del maíz de regadío sano que recibía "RIEGO URGENTE".
+export type IrrigationUrgency = 'urgent' | 'soon' | 'heat_watch' | 'monitor' | 'sufficient';
 
 export interface IrrigationDecision {
   urgency: IrrigationUrgency;
@@ -49,6 +52,14 @@ export interface IrrigationDecision {
    * que tenga que cruzar mentalmente todas las cards técnicas.
    */
   analysisNarrative: string;
+  /**
+   * Tips accionables de verificación en campo. Filosofía "ojo en el cielo":
+   * avisamos del contexto (calor, demanda), el agricultor confirma en tierra.
+   * Vacío cuando no hay nada que vigilar.
+   */
+  tips: string[];
+  /** Nota honesta de calor / demanda atmosférica (dato REAL de temperatura), o null. */
+  heatContext: string | null;
   computedAt: Date;
 }
 
@@ -146,7 +157,7 @@ function retentionDaysByTexture(texture: string): number {
  * más críticas. Devuelve null si la fase no aplica (cultivo poco
  * crítico ese mes, mejor no decir nada que inventar).
  */
-function phenologyNoteFor(cropType: string, now: Date): string | null {
+function phenologyNoteFor(cropType: string, now: Date, urgency: IrrigationUrgency): string | null {
   const month = now.getMonth(); // 0=enero
   if (cropType === 'citrico') {
     if (month >= 3 && month <= 5) return 'Los cítricos están en floración y cuajado, fase de máxima demanda hídrica.';
@@ -170,7 +181,86 @@ function phenologyNoteFor(cropType: string, now: Date): string | null {
     if (month >= 4 && month <= 5) return 'Floración y cuajado del viñedo, etapa decisiva.';
     if (month >= 6 && month <= 7) return 'Envero · cambio de color de la baya, crítico para calidad.';
   }
+  // Anuales de verano (maíz, girasol, algodón, arroz): sedientos POR DISEÑO
+  // en su ventana estival. Una necesidad de riego alta en julio es NORMAL,
+  // no un signo de estrés — clave para no dar falsas alarmas (12-jul-2026).
+  // PERO si la urgencia YA señala estrés real (urgent/soon), la nota
+  // tranquilizadora contradiría el aviso → se omite en esos casos.
+  const reassuringOk = urgency !== 'urgent' && urgency !== 'soon';
+  if (cropType === 'maiz' || cropType === 'girasol' || cropType === 'algodon' || cropType === 'arroz') {
+    if (reassuringOk && month >= 5 && month <= 8) {
+      return 'Cultivo de verano en plena demanda hídrica estival: una necesidad de riego alta es NORMAL y esperada en esta época, no un signo de estrés por sí sola.';
+    }
+  }
+  // Cereal de invierno: en verano está en senescencia/cosecha, NDVI bajo normal.
+  if (cropType === 'cereal') {
+    if (reassuringOk && month >= 6 && month <= 8) {
+      return 'El cereal de invierno está en senescencia o ya cosechado: un NDVI bajo en estos meses es normal (grano maduro o rastrojo), no estrés hídrico.';
+    }
+  }
   return null;
+}
+
+/**
+ * Nivel de "calor / demanda atmosférica" a partir de la temperatura máxima
+ * reciente (dato REAL medido, no estimado) y la ET0. Señal HONESTA para un
+ * aviso de contexto (heads-up), NO un diagnóstico de estrés del cultivo.
+ * Umbrales calibrados para verano peninsular.
+ */
+type HeatLevel = 'extreme' | 'high' | 'normal';
+interface HeatSignal {
+  level: HeatLevel;
+  /** true si lo dispara la temperatura máxima real; false si solo la ET0 (demanda). */
+  byTemp: boolean;
+}
+function heatSignalFrom(tempMaxC: number | null | undefined, et0PerDay: number): HeatSignal {
+  const tMax = typeof tempMaxC === 'number' ? tempMaxC : null;
+  const extreme = (tMax !== null && tMax >= 38) || et0PerDay >= 7;
+  const high = (tMax !== null && tMax >= 33) || et0PerDay >= 6;
+  const level: HeatLevel = extreme ? 'extreme' : high ? 'high' : 'normal';
+  const byTemp = tMax !== null && tMax >= (level === 'extreme' ? 38 : 33);
+  return { level, byTemp };
+}
+
+/**
+ * Frase honesta del contexto de calor/demanda. Si lo dispara la temperatura
+ * REAL medida, la nombra con la máxima; si solo lo dispara la ET0 (demanda
+ * atmosférica estimada), NO imprime una temperatura que la desmienta.
+ */
+function heatPhrase(heat: HeatSignal, tMax: number | null): { inline: string; context: string } | null {
+  if (heat.level === 'normal') return null;
+  const word = heat.level === 'extreme' ? 'muy altas' : 'altas';
+  if (heat.byTemp && tMax !== null) {
+    return {
+      inline: `temperaturas ${word} (máx. ~${Math.round(tMax)} °C)`,
+      context: `Temperaturas recientes ${word} — máxima ~${Math.round(tMax)} °C`,
+    };
+  }
+  return {
+    inline: 'una demanda atmosférica alta',
+    context: 'Demanda atmosférica (ET0) alta en los últimos días',
+  };
+}
+
+/**
+ * Fragmento de frase del NDVI coherente con su estado CROP-AWARE. Única
+ * fuente del "cómo se nombra el NDVI" — así el titular (reason) nunca
+ * contradice la narrativa (ambos salen de la misma semántica de estado).
+ */
+function capitalize(s: string): string {
+  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
+}
+
+function ndviPhrase(ndvi: number | null, status: NdviStatus | null, cropName: string): string {
+  if (ndvi === null) return `sin lectura NDVI reciente del ${cropName}`;
+  const v = ndvi.toFixed(2);
+  switch (status) {
+    case 'healthy': return `NDVI ${v}, en rango normal para el ${cropName} en esta época`;
+    case 'attention': return `NDVI ${v}, algo por debajo de lo típico para la época`;
+    case 'risk': return `NDVI ${v}, por debajo de lo normal para el ${cropName}`;
+    case 'critical': return `NDVI ${v}, bajo incluso para el ${cropName} en esta época`;
+    default: return `NDVI ${v}`;
+  }
 }
 
 /**
@@ -189,16 +279,19 @@ function composeNarrativeInsight(
   const parts: string[] = [];
   const cropName = cropLabel(parcel.cropType);
 
-  // 1. Estado actual del cultivo (frase de entrada · siempre presente si hay NDVI)
+  // 1. Estado actual del cultivo · CROP-AWARE (relativo a lo normal de ESE
+  //    cultivo en ESTE mes, no a una escala fija de cultivo denso). Un maíz
+  //    en julio y un olivo de secano no comparten "normal".
   if (ndviCurrent !== null) {
-    if (ndviCurrent >= 0.55) {
-      parts.push(`El ${cropName} se encuentra en buen estado vegetativo (NDVI ${ndviCurrent.toFixed(2)}).`);
-    } else if (ndviCurrent >= 0.45) {
-      parts.push(`El ${cropName} mantiene un estado adecuado para la época (NDVI ${ndviCurrent.toFixed(2)}).`);
-    } else if (ndviCurrent >= 0.3) {
-      parts.push(`El ${cropName} muestra signos de estrés temprano (NDVI ${ndviCurrent.toFixed(2)}).`);
+    const status = ndviStatusForCrop(ndviCurrent, parcel.cropType, new Date().getMonth() + 1);
+    if (status === 'healthy') {
+      parts.push(`El ${cropName} está en buen estado para la época (NDVI ${ndviCurrent.toFixed(2)}, dentro de lo normal para su cultivo y mes).`);
+    } else if (status === 'attention') {
+      parts.push(`El ${cropName} está algo por debajo de lo típico para la época (NDVI ${ndviCurrent.toFixed(2)}); conviene vigilar.`);
+    } else if (status === 'risk') {
+      parts.push(`El ${cropName} está por debajo de lo normal para su cultivo y mes (NDVI ${ndviCurrent.toFixed(2)}).`);
     } else {
-      parts.push(`El ${cropName} está en estrés agudo (NDVI ${ndviCurrent.toFixed(2)}, zona crítica).`);
+      parts.push(`El ${cropName} muestra un NDVI ${ndviCurrent.toFixed(2)}, bajo incluso para su cultivo en esta época — conviene revisarlo en campo.`);
     }
   } else {
     parts.push(`Sin lecturas NDVI recientes para el ${cropName}. Esperando próxima pasada Sentinel-2.`);
@@ -233,8 +326,8 @@ function composeNarrativeInsight(
     parts.push(`Lluvia reciente abundante (${precipRecentMm} mm en 14 días) cubre la mayor parte de la demanda.`);
   }
 
-  // 5. Fenología por cultivo + mes (solo si aplica)
-  const phenology = phenologyNoteFor(parcel.cropType, new Date());
+  // 5. Fenología por cultivo + mes (solo si aplica · coherente con la urgencia)
+  const phenology = phenologyNoteFor(parcel.cropType, new Date(), urgency);
   if (phenology) {
     parts.push(phenology);
   }
@@ -244,15 +337,22 @@ function composeNarrativeInsight(
     parts.push(`La parcela está en fase de establecimiento (primeros años post-plantación), demanda hídrica creciente.`);
   }
 
-  // 7. Cierre operativo según urgencia
+  // 7. Cierre operativo según urgencia · HONESTO (sin fingir certeza que el
+  //    satélite no tiene: estima por balance, no mide humedad de suelo).
   if (urgency === 'urgent') {
-    parts.push(`Acción inmediata recomendada para evitar pérdida de cosecha.`);
+    parts.push(`Señal compatible con falta de agua · conviene revisar la parcela y valorar riego. Es una estimación satélite+meteo; confírmalo en campo.`);
   } else if (urgency === 'soon') {
-    parts.push(`Conviene programar intervención antes de la próxima pasada satélite (≈ 5 días).`);
+    parts.push(`Conviene una revisión antes de la próxima pasada satélite (≈ 5 días).`);
+  } else if (urgency === 'heat_watch') {
+    parts.push(`Con este calor conviene mantenerse atento y confirmar en campo (ver recomendaciones).`);
   } else if (urgency === 'monitor') {
-    parts.push(`Próxima evaluación tras nueva pasada Sentinel-2 en ~5 días.`);
+    parts.push(`Sin urgencia · próxima evaluación tras nueva pasada Sentinel-2 en ~5 días.`);
+  } else if (ndviCurrent === null) {
+    // 'sufficient' sin lectura NDVI: el balance no señala déficit, pero NO
+    // podemos afirmar que el cultivo "está en orden" sin verlo (no-inventar).
+    parts.push(`El balance hídrico no señala déficit; a la espera de lectura NDVI para confirmar el estado del cultivo.`);
   } else {
-    parts.push(`No se requiere acción inmediata. Próxima evaluación tras nueva pasada Sentinel-2.`);
+    parts.push(`Sin acción inmediata · el cultivo y el balance hídrico están en orden.`);
   }
 
   return parts.join(' ');
@@ -296,34 +396,83 @@ export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
   // (con la norma · es el que efectivamente puede aplicar).
   const cupoWithRd9502024 = Math.round(cupoM3 * 0.8);
 
-  // Urgencia · combinación NDVI absoluto + tendencia + déficit
+  // ── Urgencia · CROP-AWARE (12-jul-2026) ────────────────────────────────
+  //
+  // Antes: 'urgent' se disparaba solo por NDVI absoluto < 0.30, igual para
+  // maíz de regadío y olivo de secano → un maíz sano recibía "RIEGO URGENTE".
+  // Ahora el estado del NDVI se juzga contra lo normal de ESE cultivo en ESE
+  // mes (ndviStatusForCrop), 'urgent' exige además déficit hídrico REAL, y se
+  // añade 'heat_watch': cultivo sano + calor alto → aviso de contexto + tips,
+  // no alarma. Filosofía "ojo en el cielo": estimamos, el campo confirma.
+  const month = new Date().getMonth() + 1;
+  const cropName = cropLabel(parcel.cropType);
+  const ndviStatus = ndviStatusForCrop(ndviCurrent, parcel.cropType, month); // null|healthy|attention|risk|critical
+  const heat = heatSignalFrom(parcel.recentClimate?.tempMaxC, et0PerDay);
+  const tMax = parcel.recentClimate?.tempMaxC ?? null;
+  const heatText = heatPhrase(heat, tMax);
+  const hasRealDeficit = deficitMm > 20; // hay falta de agua por balance, no solo NDVI
+  const ndviLowForCrop = ndviStatus === 'critical' || ndviStatus === 'risk'; // por debajo de lo normal DE SU cultivo
+  const ndviTxt = ndviPhrase(ndviCurrent, ndviStatus, cropName);
+
   let urgency: IrrigationUrgency;
   let recommendedAction: string;
   let reason: string;
   let alternative: string | null = null;
+  let heatContext: string | null = null;
 
-  if (ndviCurrent !== null && ndviCurrent < 0.3) {
+  if (ndviLowForCrop && hasRealDeficit) {
+    // Estrés compatible con falta de agua: bajo para SU cultivo Y déficit real.
     urgency = 'urgent';
-    recommendedAction = 'RIEGO URGENTE · aplicar en 24-48 h';
-    reason = `NDVI ${ndviCurrent.toFixed(2)} (crítico, < 0.30). El cultivo está en estrés agudo · cada día sin riego compromete la cosecha.`;
-  } else if (
-    ndviCurrent !== null &&
-    ndviCurrent < 0.45 &&
-    (ndviTrend7d ?? 0) < -0.05
-  ) {
+    recommendedAction = 'Posible estrés hídrico · revisar la parcela';
+    reason = `${capitalize(ndviTxt)}, con déficit de ~${Math.round(deficitMm)} mm en 14 días. Señal compatible con falta de agua — conviene revisar en campo y valorar riego.`;
+    alternative = 'Si ha regado o llovido estos días, la lectura satélite puede ir con retraso; reevaluar tras la próxima pasada.';
+  } else if (ndviLowForCrop) {
+    // NDVI bajo para su cultivo pero el balance NO señala falta de agua → NO
+    // gritar riego. Puede ser fenología, plaga o suelo — a revisar en campo.
     urgency = 'soon';
-    recommendedAction = 'Riego en los próximos 3-5 días';
-    reason = `NDVI ${ndviCurrent.toFixed(2)} con caída de ${Math.abs(ndviTrend7d!).toFixed(2)} en última lectura. Si no se interviene entra en zona crítica antes del próximo paso satélite.`;
-    alternative = 'Si llega lluvia > 15 mm en los próximos 4 días, aplazar 7 días y reevaluar.';
+    recommendedAction = 'NDVI bajo para el cultivo · revisar (no parece falta de agua)';
+    reason = `${capitalize(ndviTxt)}, pero el balance hídrico no señala déficit (suelo + lluvia cubren la demanda). La causa probablemente no es el riego — conviene revisar la parcela en campo (fenología, plaga, suelo).`;
+    if ((ndviTrend7d ?? 0) < -0.05) {
+      alternative = `Además cae ${Math.abs(ndviTrend7d!).toFixed(2)} respecto a la lectura anterior: vigilar de cerca la evolución.`;
+    }
+  } else if (heat.level !== 'normal') {
+    // ⭐ El caso del maíz: cultivo NO bajo para su tipo (sano/atención) o sin
+    // lectura, + calor/demanda alta → aviso de contexto + tips, no alarma.
+    urgency = 'heat_watch';
+    recommendedAction = 'Atento por el calor · sin estrés detectado';
+    const estado =
+      ndviStatus === 'attention'
+        ? `El ${cropName} está algo por debajo de lo típico para la época pero sin señal de estrés agudo`
+        : ndviCurrent === null
+        ? `No tenemos lectura NDVI reciente del ${cropName}`
+        : `El ${cropName} está en buen estado por satélite, sin estrés`;
+    reason = `${estado}. Con ${heatText!.inline}, la necesidad de riego sube: conviene estar atento y confirmar en campo.`;
+    heatContext = `${heatText!.context} · ET del cultivo ~${Math.round(etCrop * 10) / 10} mm/día.`;
   } else if (deficitMm > 40) {
     urgency = 'monitor';
     recommendedAction = 'Vigilar · puede esperar 7-10 días';
-    reason = `NDVI ${ndviCurrent !== null ? ndviCurrent.toFixed(2) : 'sin datos'} estable. Déficit hídrico acumulado de ~${Math.round(deficitMm)} mm en 14 días · todavía dentro de la reserva utilizable del suelo.`;
+    reason = `${ndviCurrent !== null ? `${capitalize(ndviTxt)}. ` : ''}Déficit acumulado ~${Math.round(deficitMm)} mm en 14 días, todavía dentro de la reserva utilizable del suelo.`;
     alternative = 'Programar riego ligero la próxima semana si no llueve.';
   } else {
     urgency = 'sufficient';
-    recommendedAction = 'NO requiere riego inmediato';
-    reason = `NDVI ${ndviCurrent !== null ? ndviCurrent.toFixed(2) : 'sin datos'} adecuado y déficit moderado (~${Math.round(deficitMm)} mm). Suelo + lluvia reciente cubren la demanda del cultivo.`;
+    recommendedAction = 'Sin necesidad de riego ahora';
+    const deficitTxt = deficitMm > 20
+      ? `Déficit leve ~${Math.round(deficitMm)} mm, cubierto por la reserva del suelo y la lluvia reciente.`
+      : 'Suelo y lluvia reciente cubren la demanda. Sin déficit significativo.';
+    reason = `${ndviCurrent !== null ? `${capitalize(ndviTxt)}. ` : ''}${deficitTxt}`;
+  }
+
+  // Tips accionables (ojo en el cielo → confirmar en tierra). Se muestran
+  // siempre que haya algo que mirar; en 'sufficient' plenamente sano no hacen
+  // falta, pero si el NDVI está 'attention' sí conviene el recordatorio.
+  const tips: string[] = [];
+  const somethingToWatch = urgency !== 'sufficient' || ndviStatus === 'attention';
+  if (somethingToWatch) {
+    tips.push('Revisa que tu sistema de riego esté operativo y sin fugas ni sectores tapados.');
+    tips.push('Comprueba la humedad del suelo en campo (a mano o con sonda): la estimamos por satélite y meteo, no la medimos directamente.');
+    if (heat.level !== 'normal') {
+      tips.push('Con este calor, mantente atento a focos de fuego en parcelas colindantes.');
+    }
   }
 
   const analysisNarrative = composeNarrativeInsight(
@@ -348,6 +497,8 @@ export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
     etCropMmDay: Math.round(etCrop * 10) / 10,
     alternative,
     analysisNarrative,
+    tips,
+    heatContext,
     computedAt: new Date(),
   };
 }
