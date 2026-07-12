@@ -30,12 +30,14 @@ import { logger } from '../utils/logger.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:6040/fitolink';
 
-// Fix 11-jul-2026: gvasanitatvegetal.gva.es está MUERTO (no resuelve) y las
-// rutas profundas de agroambient.gva.es redirigen a un dominio interno roto
-// (webinterna2.gva.es). URL viva y verificada (HTTP 200): la raíz de la
-// Conselleria de Agricultura GVA, que alberga Sanitat Vegetal.
-const IVIA_PORTAL = 'https://agroambient.gva.es/';   // Conselleria Agricultura GVA · Sanitat Vegetal
-const IMIDA_PORTAL = 'https://www.imida.es/';        // IMIDA Murcia (portal del organismo)
+// Fix 12-jul-2026: la raíz de agroambient.gva.es dejaba al agricultor en la
+// home de la Conselleria sin poder encontrar el aviso del cotonet ("no
+// encuentro la anexa"). La ficha REAL y VIVA (HTTP 200, cita Delottococcus
+// aberiae) vive en el portal GIP Cítricos del IVIA. (gvasanitatvegetal.gva.es
+// sigue muerto y las rutas profundas de agroambient redirigen a un dominio
+// interno roto webinterna2.gva.es — verificado.)
+const IVIA_COTONET = 'http://gipcitricos.ivia.es/area/plagas-principales/pseudococcidos'; // IVIA · ficha Cotonet (Delottococcus aberiae)
+const IMIDA_PORTAL = 'https://www.imida.es/';        // IMIDA Murcia (portal del organismo · siam.imida.es está caído)
 
 async function seed() {
   await mongoose.connect(MONGODB_URI);
@@ -91,10 +93,10 @@ async function seed() {
       detectedAt: curatedAt,
       expiresAt: vigenteHastaNuevaPublicacion,
       source: 'SAIF',
-      sourceRef: 'Vigilancia SAIF / Sanitat Vegetal GVA · Vega Baja',
+      sourceRef: 'IVIA · GIP Cítricos · ficha Cotonet (Delottococcus aberiae)',
       recommendation:
-        'Vigilancia activa con trampas feromona en perímetro de parcela. Tratamientos coordinados con la cooperativa o ADV citrícola (el aislamiento entre parcelas vecinas reduce eficacia). Productos autorizados aplicación cítricos · consultar boletín IVIA completo en sourceUrl.',
-      sourceUrl: IVIA_PORTAL,
+        'Vigilancia activa con trampas feromona en perímetro de parcela. Tratamientos coordinados con la cooperativa o ADV citrícola (el aislamiento entre parcelas vecinas reduce eficacia). Productos autorizados aplicación cítricos · consultar la ficha oficial del IVIA en sourceUrl.',
+      sourceUrl: IVIA_COTONET,
       notes: 'Plaga emergente · daño directo a fruto (caída y deformación) · monitoreo continuo IVIA Comunitat Valenciana desde 2009. Tratamiento aislado por agricultor poco eficaz · requiere coordinación comarcal.',
       createdBy: admin._id,
       fingerprint: 'cotonet-SAIF-VegaBaja',
