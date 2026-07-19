@@ -23,6 +23,7 @@ import ServicesPage from '@/features/services/ServicesPage.js';
 import B2BParcelsPage from '@/features/insurer/B2BParcelsPage.js';
 import B2BAlertsPage from '@/features/insurer/B2BAlertsPage.js';
 import AdminUsersPage from '@/features/admin/AdminUsersPage.js';
+import AdminImportParcelsPage from '@/features/admin/AdminImportParcelsPage.js';
 import DispatchPage from '@/features/admin/DispatchPage.js';
 import CooperativeMembersPage from '@/features/cooperative/CooperativeMembersPage.js';
 import PredictionPage from '@/features/prediction/PredictionPage.js';
@@ -77,6 +78,7 @@ export default function App() {
         {/* Sprint Onboarding Cooperativa · 05-jun-2026 · admin de socios */}
         <Route path="cooperative/socios" element={<CooperativeMembersPage />} />
         <Route path="admin/users" element={<AdminUsersPage />} />
+        <Route path="admin/import-parcels" element={<AdminImportParcelsPage />} />
         <Route path="admin/parcels" element={<ParcelsPage />} />
         <Route path="admin/dispatch" element={<DispatchPage />} />
       </Route>

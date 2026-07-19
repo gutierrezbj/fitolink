@@ -184,6 +184,14 @@ export interface IParcel extends Document {
    * Sprint Demo Aula Jaén · 18-may-2026.
    */
   isSyntheticDemo?: boolean;
+  /**
+   * Sprint aplicación aérea · marca la parcela como objetivo de tratamiento
+   * con dron (p.ej. sólo maíz en el caso PAC Aranjuez-Añover). Lo consume el
+   * futuro dashboard de planificación de aplicación. applicationCrop guarda
+   * el cultivo objetivo por si difiere del cropType nominal.
+   */
+  applicationTarget?: boolean;
+  applicationCrop?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -333,6 +341,8 @@ const parcelSchema = new Schema<IParcel>(
     plantingYear: { type: Number, min: 1900, max: 2100 },
     calibratingUntil: { type: Date, default: null },
     isSyntheticDemo: { type: Boolean, default: false },
+    applicationTarget: { type: Boolean, default: false },
+    applicationCrop: { type: String },
   },
   {
     timestamps: true,
