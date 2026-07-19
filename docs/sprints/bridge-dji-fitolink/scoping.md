@@ -52,9 +52,7 @@ Sin dependencias externas: ni DJI developer, ni acuerdos. El piloto exporta, el 
 
 ### Fase 1 · Sync DJI SmartFarm API (2-3 semanas dev + espera alta developer)
 
-- **Pregunta previa a Jonh**: ¿con qué cuenta DJI está logueada la app Agras del mando? Los registros sincronizan a esa cuenta.
-  - Si es cuenta AgroM/Jonh → datos nuestros, solo falta alta developer DJI Agriculture.
-  - Si es cuenta Drovinci → haría falta su OK + credenciales (el dron es suyo según modelo operativo paraguas, pero la cuenta del mando puede ser nuestra).
+- **Confirmado por JuanCho (19-jul-2026)**: la cuenta DJI es de **AgroM** y los 2 drones son **propiedad de AgroM**. Drovinci es SOLO la operadora legal (paraguas AESA). → Los datos de vuelo son nuestros. **Cero dependencia externa**: solo falta el alta developer DJI Agriculture con la cuenta AgroM.
 - Worker `djiSyncWorker` (cron diario): `GET plots` + `GET tasks` → upsert
   - plot.boundary → `Parcel.geometry` (match por externalRef)
   - task (área tratada, dosis, tiempos) → `Operation.flightLog` + `Operation.products`
@@ -71,7 +69,6 @@ Sin dependencias externas: ni DJI developer, ni acuerdos. El piloto exporta, el 
 | Riesgo | Mitigación |
 |---|---|
 | Alta developer DJI tarda semanas o se deniega | Fase 0 no depende de DJI · lanzar solicitud en paralelo YA |
-| Cuenta DJI del mando podría ser de Drovinci (sin verificar) | Preguntar a Jonh de quién es la cuenta · si es AgroM/Jonh no hay dependencia externa |
 | KMZ Agras con formato variable por versión de app | Parser tolerante + preview antes de persistir + warnings |
 | Mandos sin sync activado | Fase 0 (export manual) es el fallback permanente |
 
