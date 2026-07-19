@@ -15,6 +15,8 @@ vive en el mando o en la nube de DJI. FitoLink no la ve. Consecuencias:
 - El ciclo alerta → operación → evidencia se cierra a mano o no se cierra.
 - La promesa comercial "del pixel al tratamiento" tiene un hueco en el último tramo.
 
+**Fuera de alcance**: dronehubsrs.com es la herramienta de preparación de misiones del operador. No forma parte de este bridge — la fuente de datos post-vuelo es DJI (mando / SmartFarm), no dronehub.
+
 ## 2 · Dónde están los datos DJI (verificado / conocido)
 
 | Fuente | Qué contiene | Acceso |
@@ -22,7 +24,6 @@ vive en el mando o en la nube de DJI. FitoLink no la ve. Consecuencias:
 | **Mando (app DJI Agras)** | Campos mapeados (polígono + obstáculos + calibración) y registros de trabajo (ruta, área tratada, dosis, tiempos) | Export manual KMZ/archivo desde la app · lo hace el piloto en ~30 s |
 | **DJI SmartFarm** (nube agrícola DJI) | Lo mismo, auto-sincronizado cuando el mando tiene internet · portal web + **API de desarrollador** | Cuenta SmartFarm del operador (Drovinci) + alta developer DJI Agriculture (solicitud, tiempos de aprobación variables — semanas) |
 | DJI Cloud API genérica (developer.dji.com) | MQTT device-to-cloud, orientada a Dock/M-series | Soporte Agras limitado · NO es el camino primario |
-| dronehubsrs.com | Directorio pilotos + compliance pre-vuelo (Supabase) | Ya nuestro · NO tiene post-vuelo (verificado 19-jul) |
 
 ⚠️ Nota parser: KMZ de Agras puede traer extras propietarios junto al doc.kml → parser tolerante.
 Coordenadas WGS84 (verificar que no llegue GCJ-02 si un mando estuvo configurado región China).
@@ -62,7 +63,6 @@ Sin dependencias externas: ni DJI developer, ni acuerdos. El piloto exporta, el 
 
 - Tiempo casi-real (webhook/MQTT si DJI lo expone para Agras).
 - PDF post-aplicación por Operation (base para futura evidencia eIDAS vía Elevenais).
-- Cruce compliance: al ingestar un task, verificar contra dronehubsrs (Supabase) que el piloto tenía ROPO/AESA vigentes el día del vuelo → sello "operación conforme" en la Operation.
 
 ## 4 · Riesgos y dependencias
 
