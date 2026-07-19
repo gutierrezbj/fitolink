@@ -50,14 +50,36 @@ Sin dependencias externas: ni DJI developer, ni acuerdos. El piloto exporta, el 
 
 **Reutiliza**: parsing igual que Encineño (10-jun) · modelo Parcel intacto · patrón entidad-cliente del caso PAC.
 
-### Fase 1 · Sync DJI SmartFarm API (2-3 semanas dev + espera alta developer)
+### Fase 1 · Auto-sync — INVESTIGADO 19-jul-2026 · la API DJI directa NO existe
 
-- **Confirmado por JuanCho (19-jul-2026)**: la cuenta DJI es de **AgroM** y los 2 drones son **propiedad de AgroM**. Drovinci es SOLO la operadora legal (paraguas AESA). → Los datos de vuelo son nuestros. **Cero dependencia externa**: solo falta el alta developer DJI Agriculture con la cuenta AgroM.
-- Worker `djiSyncWorker` (cron diario): `GET plots` + `GET tasks` → upsert
-  - plot.boundary → `Parcel.geometry` (match por externalRef)
-  - task (área tratada, dosis, tiempos) → `Operation.flightLog` + `Operation.products`
-- Cambio de modelo mínimo: `externalRefs?: { djiPlotId?: string; djiTaskId?: string }` en Parcel y Operation.
-- El modelo Operation YA tiene `flightLog {startTime, endTime, areaHa}`, `products[]`, `applicationMethod`, `prescription` → el mapping encaja sin migración.
+**Hallazgo verificado (fuentes oficiales + repo dji-sdk):** no hay API pública de
+DJI para que un tercero descargue campos + tareas de Agras/SmartFarm.
+- **DJI Cloud API** = Dock + Pilot 2 + enterprise (M300/M350/M30/M3E). MQTT
+  flighttask_*/fileupload_*/DRC. Cero Agras, cero spraying, cero endpoints de
+  campos o registros de tarea (confirmado en dji-sdk/Cloud-API-Doc + WPML doc).
+- **WPML/template.kml** = misión de vuelo de drones de mapeo, no Agras, sin dosis.
+- **SmartFarm** = plataforma cerrada. Acceso a datos = **export manual KML**
+  (flight logs KML; prescripciones SHP/RX/KML/JSON). Sin API pública terceros.
+- **Único auto-sync real del sector = vía AirData UAV** como intermediario
+  (SmartFarm→servidores DJI→AirData, o app AirData en el propio mando RC Plus).
+  AirData sí publica API de terceros.
+
+**Conclusión:** la Fase 1 original ("sync DJI SmartFarm API") se DESCARTA — esa
+API no existe. Las vías reales de automatización:
+
+**1a · Import por lote de KML (recomendado · sin dependencia externa)**
+Extender Fase 0 de 1 archivo a carpeta completa: el operador exporta todos los
+campos/logs del mando o SmartFarm (KML) y FitoLink los ingesta en una pasada
+(parcelas + operaciones si el KML trae ruta/área). Quita el clic-por-archivo.
+
+**1b · Puente AirData (verdadero auto-sync · requiere adoptar AirData)**
+Si AgroM corre AirData (en el mando RC Plus o vía sync SmartFarm→AirData),
+FitoLink se integra con la API de AirData (no con DJI). Investigar contrato
+AirData + coste de licencia como sprint aparte. Cambia el target de integración
+de DJI (cerrado) a AirData (abierto).
+
+**1c · App on-controller RC Plus (descartado corto plazo)**
+Desarrollo Android nativo en el mando · demasiado pesado para el ROI actual.
 
 ### Fase 2 · Cierre de ciclo completo (Epic 11 · 1-2 meses · post-validación Fase 1)
 
