@@ -71,7 +71,7 @@
 | Pieza legal | Aporta | Detalle |
 |---|---|---|
 | Bloque 1 · AESA (PDRA-S01[F], DRI, manual ops, seguro RC aeronáutico) | **Drovinci** | Empresa registrada, certificaciones propias |
-| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** | Su dron T10 + T40/T100 según operación |
+| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** (censo bajo su operadora) | ⚠️ Corrección 19-jul-2026: los 2 drones T10 + T40 son **propiedad de AgroM** y la cuenta DJI de los mandos es de **AgroM** (los datos de vuelo son nuestros). Drovinci aporta SOLO la condición de operadora legal. |
 | Bloque 3 · Fitosanitario (autorización CCAA por tratamiento, ROPO piloto + empresa, producto autorizado aéreo, seguro RC fitosanitario, plan Anexo VI) | **Drovinci** | Tramita autorización CCAA antes de cada tratamiento |
 | Inteligencia satelital + IA + alertas + dashboard | **AgroM/FitoLink** | Lo que vendemos en SaaS |
 | Marca comercial + relación cliente + brokerage | **AgroM** | Cara visible ante cliente final |
@@ -183,7 +183,7 @@ Aplicado en **7 componentes** del producto:
 **Sprint Bridge DJI → FitoLink (task #12 pending)**:
 - Camino 1 · endpoint `POST /admin/kmz-upload` en FitoLink API (piloto sube KMZ vía web o mail-in) — cheap, cierra ciclo con fricción.
 - Camino 2 · DJI Cloud API webhooks `mission_completed` → parsea polígono + dosis + timestamps → crea `Operation` en FitoLink — 1-2 semanas dev + coste DJI Enterprise Developer + activación flota Drovinci.
-- Camino 3 · bridge dedicado con cruce referencia `dronehubsrs.pilots` (compliance ROPO/AESA vigente por vuelo) — 1-2 meses, Epic 11 completo.
+- Camino 3 · cierre de ciclo completo (tiempo casi-real + PDF post-aplicación, base eIDAS) — 1-2 meses, Epic 11 completo.
 
 **Decisión pendiente**: scoping doc primero (`docs/sprints/bridge-dji-fitolink/scoping.md`) → SDD-01/02 → aprobación JuanCho → código.
 
