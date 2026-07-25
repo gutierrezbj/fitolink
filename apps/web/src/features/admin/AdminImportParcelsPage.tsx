@@ -98,36 +98,65 @@ export default function AdminImportParcelsPage() {
   const bounds = polygons.length > 0 ? L.geoJSON(previewFc).getBounds() : null;
   const totalHa = polygons.reduce((s, p) => s + (p.areaHa || 0), 0);
 
-  const handleFile = useCallback(async (file: File) => {
+  // Carga por lote: acepta N archivos (o una carpeta entera). Cada archivo
+  // KML/KMZ/GPX/GeoJSON puede traer 1..N polígonos; los acumulamos todos.
+  // Si un archivo aporta un único polígono sin nombre propio, usamos el
+  // nombre del fichero (sin extensión) como etiqueta por defecto.
+  const baseName = (fn: string) => fn.replace(/\.[^.]+$/, '').trim();
+
+  const handleFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
     setParseError(null);
-    setFilename(file.name);
-    try {
-      const fc = await parseMissionFile(file);
-      const polys = extractPolygons(fc);
-      if (polys.length === 0) throw new Error('EMPTY_MISSION');
-      setPolygons(polys);
-    } catch (e) {
-      const code = e instanceof Error ? e.message : 'PARSE_ERROR';
-      setParseError(ERROR_MESSAGES[code] || code);
-      setPolygons([]);
+    const accepted = files.filter((f) => /\.(kml|kmz|gpx|geojson|json)$/i.test(f.name));
+    if (accepted.length === 0) {
+      setParseError('Ningún archivo con extensión .kml/.kmz/.gpx/.geojson');
+      return;
     }
+    const errors: string[] = [];
+    const collected: PolygonFeature[] = [];
+    for (const file of accepted) {
+      try {
+        const fc = await parseMissionFile(file);
+        const polys = extractPolygons(fc);
+        if (polys.length === 0) {
+          errors.push(`${file.name}: sin polígonos`);
+          continue;
+        }
+        polys.forEach((p, i) => {
+          const generic = !p.name || /^parcela\b/i.test(p.name);
+          const name = generic
+            ? baseName(file.name) + (polys.length > 1 ? ` (${i + 1})` : '')
+            : p.name;
+          collected.push({ ...p, name });
+        });
+      } catch (e) {
+        const code = e instanceof Error ? e.message : 'PARSE_ERROR';
+        errors.push(`${file.name}: ${ERROR_MESSAGES[code] || code}`);
+      }
+    }
+    setPolygons((prev) => [...prev, ...collected]);
+    setFilename(
+      accepted.length === 1 ? accepted[0].name : `${accepted.length} archivos`,
+    );
+    if (errors.length) setParseError(`${errors.length} archivo(s) con problemas: ${errors.slice(0, 3).join(' · ')}`);
   }, []);
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setDragOver(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) void handleFile(file);
+      const files = Array.from(e.dataTransfer.files ?? []);
+      if (files.length) void handleFiles(files);
     },
-    [handleFile],
+    [handleFiles],
   );
   const onPick = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) void handleFile(file);
+      const files = Array.from(e.target.files ?? []);
+      if (files.length) void handleFiles(files);
+      e.target.value = '';
     },
-    [handleFile],
+    [handleFiles],
   );
 
   const renameOne = (idx: number, name: string) =>
@@ -172,6 +201,26 @@ export default function AdminImportParcelsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* File inputs siempre montados para que el dropzone y "Añadir más" los alcancen */}
+      <input
+        id="admin-kmz-input"
+        type="file"
+        accept=".kml,.kmz,.gpx,.geojson,.json"
+        multiple
+        onChange={onPick}
+        className="hidden"
+      />
+      {/* webkitdirectory: selección de carpeta entera (Chrome/Edge). */}
+      <input
+        id="admin-kmz-dir"
+        type="file"
+        /* @ts-expect-error webkitdirectory no está en los tipos estándar */
+        webkitdirectory=""
+        directory=""
+        multiple
+        onChange={onPick}
+        className="hidden"
+      />
       <div>
         <h1 className="text-2xl font-serif text-gray-900">Importar parcelas de cliente</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -256,21 +305,24 @@ export default function AdminImportParcelsPage() {
             dragOver ? 'border-brand-500 bg-brand-50' : 'border-gray-300 bg-gray-50 hover:border-brand-400'
           }`}
         >
-          <input
-            id="admin-kmz-input"
-            type="file"
-            accept=".kml,.kmz,.gpx,.geojson,.json"
-            onChange={onPick}
-            className="hidden"
-          />
           <label htmlFor="admin-kmz-input" className="cursor-pointer block">
             <img src="/import-parcel.svg" alt="" className="w-16 h-16 mx-auto mb-4" />
             <p className="text-base font-semibold text-gray-900">
-              2 · Suelta aquí el KMZ/KML del mando DJI
+              2 · Suelta aquí los KMZ/KML del mando DJI
             </p>
-            <p className="text-sm text-gray-500 mt-1">También KML, GPX o GeoJSON</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Uno o varios archivos a la vez · también KML, GPX o GeoJSON
+            </p>
           </label>
-          {parseError && <p className="text-sm text-red-600 mt-4">{parseError}</p>}
+          <div className="mt-4">
+            <label
+              htmlFor="admin-kmz-dir"
+              className="inline-block cursor-pointer text-xs text-brand-700 underline"
+            >
+              …o selecciona una carpeta entera
+            </label>
+          </div>
+          {parseError && <p className="text-sm text-amber-600 mt-4">{parseError}</p>}
         </div>
       )}
 
@@ -288,16 +340,21 @@ export default function AdminImportParcelsPage() {
                   Superficie total: <b>{totalHa.toFixed(1)} ha</b>
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  setPolygons([]);
-                  setFilename(null);
-                  setParseError(null);
-                }}
-                className="text-xs text-gray-500 hover:text-gray-700 underline"
-              >
-                Cambiar archivo
-              </button>
+              <div className="flex items-center gap-3">
+                <label htmlFor="admin-kmz-input" className="text-xs text-brand-700 hover:text-brand-800 underline cursor-pointer">
+                  + Añadir más
+                </label>
+                <button
+                  onClick={() => {
+                    setPolygons([]);
+                    setFilename(null);
+                    setParseError(null);
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Vaciar
+                </button>
+              </div>
             </div>
 
             <div className="h-72 relative">
