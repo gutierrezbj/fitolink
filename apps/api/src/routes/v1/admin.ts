@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { protect, authorize } from '../../middleware/auth.js';
 import * as adminController from '../../controllers/adminController.js';
+import * as kmzImportController from '../../controllers/kmzImportController.js';
 
 const router = Router();
 
@@ -27,5 +28,10 @@ router.get('/operations', adminController.getOperationsHandler);
 router.get('/pilots', adminController.getPilotsHandler);
 router.patch('/operations/:id/assign', adminController.assignPilotHandler);
 router.patch('/operations/:id/status', adminController.updateStatusHandler);
+
+// Sprint Bridge DJI -> FitoLink · Fase 0 · import de parcelas bajo un cliente.
+// El KMZ/KML del mando Agras se parsea en el frontend (lib/missionParser);
+// aquí llega ya como geometrías GeoJSON + cliente destino (existente o nuevo).
+router.post('/parcels/import', kmzImportController.importParcels);
 
 export default router;

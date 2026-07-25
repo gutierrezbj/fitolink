@@ -42,6 +42,7 @@ const NAV_ITEMS: Record<string, Array<{ to: string; label: string; icon: string 
     { to: '/dashboard/admin/dispatch', label: 'Despacho', icon: '/nav-pilot.svg' },
     { to: '/dashboard/admin/users', label: 'Usuarios', icon: '/nav-users.svg' },
     { to: '/dashboard/admin/parcels', label: 'Parcelas', icon: '/nav-parcels.svg' },
+    { to: '/dashboard/admin/import-parcels', label: 'Importar KMZ', icon: '/import-parcel.svg' },
     // "Alertas" quitado: /dashboard/admin/alerts no tiene ruta real (era un
     // placeholder "Próximamente"). El loop de alertas se ve desde el Inicio.
   ],

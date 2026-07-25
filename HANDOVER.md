@@ -1,6 +1,6 @@
 # 🛸 HANDOVER · FitoLink
 
-**Snapshot:** 2026-07-06 · 09:45 CEST · v1.10 (cierre sesión PAC · admin real juang activado + baseline S2 completado 18/19 con datos reales + auth demo reabierta + scope operativo maíz 13 recintos 5.22 ha marcados applicationTarget)
+**Snapshot:** 2026-07-19 · 11:35 CEST · v1.11 (arquitectura puente DJI→FitoLink mapeada · Don Antonio pendiente KMZ piloto · sprint Bridge scoping arrancado)
 **Owner:** JuanCho
 **Para retomar:** lee este doc + `CLAUDE.md` (contexto estable) + `glossary.md` (vocabulario del proyecto).
 
@@ -71,7 +71,7 @@
 | Pieza legal | Aporta | Detalle |
 |---|---|---|
 | Bloque 1 · AESA (PDRA-S01[F], DRI, manual ops, seguro RC aeronáutico) | **Drovinci** | Empresa registrada, certificaciones propias |
-| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** | Su dron T10 + T40/T100 según operación |
+| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** (censo bajo su operadora) | ⚠️ Corrección 19-jul-2026: los 2 drones T10 + T40 son **propiedad de AgroM** y la cuenta DJI de los mandos es de **AgroM** (los datos de vuelo son nuestros). Drovinci aporta SOLO la condición de operadora legal. |
 | Bloque 3 · Fitosanitario (autorización CCAA por tratamiento, ROPO piloto + empresa, producto autorizado aéreo, seguro RC fitosanitario, plan Anexo VI) | **Drovinci** | Tramita autorización CCAA antes de cada tratamiento |
 | Inteligencia satelital + IA + alertas + dashboard | **AgroM/FitoLink** | Lo que vendemos en SaaS |
 | Marca comercial + relación cliente + brokerage | **AgroM** | Cara visible ante cliente final |
@@ -173,7 +173,23 @@ Aplicado en **7 componentes** del producto:
 ❌ **Pendiente evaluar extensión a otros 3 dashboards** (Coop home / ADV / Regantes) que tienen sidebars laterales 1/3 width · si JuanCho lo valida visualmente.
 
 
-#### Cliente real ENCINEÑO 407 ha (10-jun-2026 · pre-demo MS)
+#
+### Puente DJI → FitoLink (nuevo · 19-jul-2026)
+
+**Descubrimiento arquitectónico**: `dronehubsrs.com` (Supabase externa · srs-prod) es marketplace + directorio + compliance pre-vuelo (pilots + certifications + sectors + airspace + mission_check_events). **NO almacena KMZ post-vuelo ni polígonos de aplicación.** Los KMZ están en el mando DJI Agras del piloto o en DJI Cloud si activaron sync.
+
+**Gap**: no hay pipeline hoy desde mando DJI a FitoLink. Los ciclos de aplicación se cierran manualmente (piloto envía KMZ por mail → alguien los sube).
+
+**Sprint Bridge DJI → FitoLink (task #12 pending)**:
+- Camino 1 · endpoint `POST /admin/kmz-upload` en FitoLink API (piloto sube KMZ vía web o mail-in) — cheap, cierra ciclo con fricción.
+- Camino 2 · DJI Cloud API webhooks `mission_completed` → parsea polígono + dosis + timestamps → crea `Operation` en FitoLink — 1-2 semanas dev + coste DJI Enterprise Developer + activación flota Drovinci.
+- Camino 3 · cierre de ciclo completo (tiempo casi-real + PDF post-aplicación, base eIDAS) — 1-2 meses, Epic 11 completo.
+
+**Decisión pendiente**: scoping doc primero (`docs/sprints/bridge-dji-fitolink/scoping.md`) → SDD-01/02 → aprobación JuanCho → código.
+
+**Cliente Don Antonio (task #11 blocked)**: primer cliente que sale de este flujo. Sin PAC, sin KMZ propio · su geometría existe en el mando DJI de Jonh/Drovinci. Cuando Jonh exporte, patrón Encineño (user + parcels + pipeline manual).
+
+### Cliente real ENCINEÑO 407 ha (10-jun-2026 · pre-demo MS)
 
 ✅ **Cliente fondo de inversión cargado en sistema** desde KMZ recibido vía Jorge Leccia (jorgeleccia@hotmail.com) de Guillermo Morales Sanchez (guillermoms@live.com). Asunto literal del forward: "AgroM · Aplicación Aerea Agricola". El fondo gestiona **2.300 ha cartera total** · ENCINEÑO 407 ha es solo un sector enviado para evaluación de alcance pre-demo Microsoft 12-jun.
 
