@@ -151,19 +151,53 @@ export async function sendAlertEmail(payload: AlertEmailPayload): Promise<void> 
 
 // ── Internals ────────────────────────────────────────────────────────────
 
+/**
+ * Etiqueta legible del tipo de alerta. Espejo de `alertTypeMetadata.tsx` en la
+ * web — si se añade un tipo nuevo, actualizar ambos.
+ */
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  ndvi_drop: 'Caída de vegetación',
+  ndre_anomaly: 'Anomalía foliar',
+  stress_pattern: 'Estrés hídrico',
+  fire_proximity: 'Foco térmico',
+  pest_advisory: 'Aviso fitosanitario',
+};
+
+/**
+ * ¿La alerta viene de la serie satelital? Solo esos tipos tienen NDVI y
+ * confianza del modelo. Para fuego (NASA FIRMS) y plaga (boletín oficial)
+ * esos campos valen 0 POR DISEÑO (ver Alert.ts) — imprimirlos sería un dato
+ * falso. La UI se blindó el 12-jul; este correo se quedó atrás (fix 25-jul).
+ */
+function isSatelliteAlert(alertType: string): boolean {
+  return alertType === 'ndvi_drop' || alertType === 'ndre_anomaly' || alertType === 'stress_pattern';
+}
+
+function alertTypeLabel(alertType: string): string {
+  return ALERT_TYPE_LABELS[alertType] ?? 'Aviso';
+}
+
 function subjectFor(p: AlertEmailPayload): string {
   const sev = SEVERITY_LABELS[p.severity];
-  return `[FitoLink ${sev}] ${p.parcelName} — NDVI ${p.ndviValue.toFixed(2)}`;
+  const detail = isSatelliteAlert(p.alertType)
+    ? `NDVI ${p.ndviValue.toFixed(2)}`
+    : alertTypeLabel(p.alertType);
+  return `[FitoLink ${sev}] ${p.parcelName} — ${detail}`;
 }
 
 function renderAlertText(p: AlertEmailPayload): string {
   const sev = SEVERITY_LABELS[p.severity];
+  const satellite = isSatelliteAlert(p.alertType);
   return [
     `Alerta ${sev} en ${p.parcelName}`,
+    `Tipo: ${alertTypeLabel(p.alertType)}`,
     p.parcelProvince ? `Provincia: ${p.parcelProvince}` : null,
     p.cropType ? `Cultivo: ${p.cropType}` : null,
-    `NDVI actual: ${p.ndviValue.toFixed(2)} (delta ${p.ndviDelta >= 0 ? '+' : ''}${p.ndviDelta.toFixed(2)})`,
-    `Confianza IA: ${Math.round(p.aiConfidence * 100)}%`,
+    // NDVI y confianza IA solo si la alerta viene del satélite (ver isSatelliteAlert)
+    satellite ? `NDVI actual: ${p.ndviValue.toFixed(2)} (delta ${p.ndviDelta >= 0 ? '+' : ''}${p.ndviDelta.toFixed(2)})` : null,
+    satellite ? `Confianza IA: ${Math.round(p.aiConfidence * 100)}%` : null,
+    p.alertType === 'pest_advisory' ? 'Origen: boletín oficial del organismo fitosanitario de su comunidad.' : null,
+    p.alertType === 'fire_proximity' ? 'Origen: detección de foco térmico por satélite (NASA FIRMS).' : null,
     p.droughtFlag && p.droughtFlag !== 'none' ? `Contexto sequía: ${p.droughtFlag}` : null,
     `Detectada: ${p.detectedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
     '',
@@ -185,6 +219,33 @@ function renderAlertEmail(p: AlertEmailPayload): string {
   const detectedStr = p.detectedAt.toISOString().slice(0, 16).replace('T', ' ');
   const parcelUrl = `${STAGING_BASE}/dashboard/parcels/${p.parcelId}`;
   const c = AGROM_PALETTE;
+
+  // Contenido consciente del TIPO de alerta (fix 25-jul-2026). Antes el correo
+  // afirmaba "caída anómala del NDVI" y pintaba "NDVI 0.00" también para plagas
+  // y fuegos, donde ese campo no aplica. Alcanzable en real vía
+  // POST /alerts/:id/resend-email → riesgo de mandárselo así a un prospecto.
+  const isSatellite = isSatelliteAlert(p.alertType);
+  const typeLabel = alertTypeLabel(p.alertType);
+  const parcelBold = `<b style="color:${c.deep};">${escapeHtml(p.parcelName)}</b>`;
+
+  const originNote =
+    p.alertType === 'pest_advisory' ? 'Boletín oficial · dato del organismo'
+    : p.alertType === 'fire_proximity' ? 'NASA FIRMS · satélites VIIRS'
+    : 'FitoLink';
+
+  const narrative =
+    p.alertType === 'pest_advisory'
+      ? `Hay un aviso fitosanitario oficial vigente en la comarca de tu parcela ${parcelBold}. El dato es del organismo de tu comunidad — nosotros abrimos el canal para que te llegue.`
+      : p.alertType === 'fire_proximity'
+      ? `Se ha detectado un foco térmico activo cerca de tu parcela ${parcelBold}, según los satélites VIIRS de NASA FIRMS.`
+      : `FitoLink ha detectado una caída anómala del NDVI en tu parcela ${parcelBold}. La señal cruza los umbrales de severidad ${sev.toLowerCase()} con confianza ${confidencePct}%.`;
+
+  const nextStep =
+    p.alertType === 'pest_advisory'
+      ? 'En el panel tienes el detalle del aviso y el enlace al boletín oficial para verificarlo. Conviene revisar la parcela en campo antes de decidir cualquier tratamiento.'
+      : p.alertType === 'fire_proximity'
+      ? 'Comprueba la situación en tu zona y, si procede, avisa a los servicios de emergencia. En el panel puedes ver la distancia al foco.'
+      : 'El siguiente paso es revisar la parcela en el panel y decidir si solicitar una inspección drone para confirmar diagnóstico, o marcar como falso positivo si conoces la causa.';
 
   const drought = p.droughtFlag && p.droughtFlag !== 'none'
     ? `<tr>
@@ -247,7 +308,10 @@ function renderAlertEmail(p: AlertEmailPayload): string {
           </td>
         </tr>
 
-        <!-- KPI row -->
+        <!-- KPI row · solo alertas satelitales tienen NDVI y confianza del modelo.
+             Para fuego y plaga esos campos son 0 por diseño → mostramos el origen
+             real del dato en su lugar (fix 25-jul-2026 · CRITICAL_no_inventar). -->
+        ${isSatellite ? `
         <tr>
           <td style="padding:12px 24px;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -267,6 +331,21 @@ function renderAlertEmail(p: AlertEmailPayload): string {
             </table>
           </td>
         </tr>
+        ` : `
+        <tr>
+          <td style="padding:12px 24px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr>
+                <td style="padding:14px 16px;background:${c.parch};border-radius:10px;">
+                  <p style="margin:0;font-family:${FONT_MONO};font-size:10px;color:${c.muted};text-transform:uppercase;letter-spacing:1.5px;">Tipo de aviso</p>
+                  <p style="margin:6px 0 0;color:${sevColor};font-size:22px;font-weight:600;font-family:${FONT_DISPLAY};line-height:1.2;">${typeLabel}</p>
+                  <p style="margin:6px 0 0;color:${c.muted};font-size:11px;font-family:${FONT_MONO};">${originNote}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        `}
 
         ${drought ? `
         <!-- Drought context row -->
@@ -290,8 +369,8 @@ function renderAlertEmail(p: AlertEmailPayload): string {
         <tr>
           <td style="padding:0 28px 28px;color:${c.ink};font-size:14px;line-height:1.65;font-family:${FONT_BODY};">
             <p style="margin:0;">Hola ${escapeHtml(p.recipientName)},</p>
-            <p style="margin:14px 0 0;">FitoLink ha detectado una caída anómala del NDVI en tu parcela <b style="color:${c.deep};">${escapeHtml(p.parcelName)}</b>. La señal cruza los umbrales de severidad ${sev.toLowerCase()} con confianza ${confidencePct}%.</p>
-            <p style="margin:14px 0 0;">El siguiente paso es revisar la parcela en el panel y decidir si solicitar una inspección drone para confirmar diagnóstico, o marcar como falso positivo si conoces la causa.</p>
+            <p style="margin:14px 0 0;">${narrative}</p>
+            <p style="margin:14px 0 0;">${nextStep}</p>
           </td>
         </tr>
 

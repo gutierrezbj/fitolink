@@ -21,7 +21,8 @@ import numpy as np
 # ── Seasonal NDVI baselines per crop type ─────────────────────────────────────
 # (min_normal, max_normal) per month group — values below min are "dormant normal"
 # Crops grouped by phenological behaviour:
-#   - evergreen:   olivo, citrico, almendro (semi)
+#   - olive:       olivo (secano · banda BAJA propia, separado desde 25-jul-2026)
+#   - evergreen:   citrico, almendro (semi)
 #   - deciduous:   vinedo, frutal
 #   - winter_annual: cereal, leguminosa, remolacha, patata
 #   - summer_annual: girasol, maiz, algodon, arroz
@@ -53,13 +54,27 @@ _SEASONAL: dict[str, dict[int, tuple[float, float]]] = {
         7: (0.48, 0.72), 8: (0.45, 0.70), 9: (0.30, 0.60),
         10: (0.12, 0.30), 11: (0.08, 0.22), 12: (0.08, 0.20),
     },
+    # Olivar SEPARADO del perenne de regadío (25-jul-2026 · cierra el PENDIENTE
+    # que dejó escrito predictiveInsightService.ts en junio). El olivar
+    # tradicional de secano —mayoritario en España y en nuestra cartera— vive
+    # estructuralmente BAJO: árboles dispersos, mucho suelo desnudo entre ellos
+    # y caída fuerte en sequía estival. Compartir umbral con el cítrico de
+    # regadío (0.38-0.70 en abril-mayo) hacía que un olivar sano a 0.35 NO se
+    # suprimiera y llegase al modelo como candidato a anomalía. Valores en
+    # sync con packages/shared/src/cropContext.ts (grupo 'olive').
+    'olive': {
+        1: (0.22, 0.48), 2: (0.24, 0.50), 3: (0.28, 0.54),
+        4: (0.30, 0.56), 5: (0.30, 0.56), 6: (0.25, 0.52),
+        7: (0.22, 0.48), 8: (0.22, 0.46), 9: (0.24, 0.48),
+        10: (0.28, 0.52), 11: (0.28, 0.52), 12: (0.25, 0.50),
+    },
     'other': {  # conservative — treat as evergreen
         m: (0.20, 0.70) for m in range(1, 13)
     },
 }
 
 _CROP_TO_GROUP: dict[str, str] = {
-    'olivo': 'evergreen',
+    'olivo': 'olive',
     'citrico': 'evergreen',
     'almendro': 'deciduous',
     'pistacho': 'deciduous',
@@ -77,9 +92,17 @@ _CROP_TO_GROUP: dict[str, str] = {
     'otro': 'other',
 }
 
-# Integer ID per group for the feature vector
+# Integer ID per group for the feature vector.
+#
+# 'olive' comparte ID con 'evergreen' A PROPÓSITO (25-jul-2026): el modelo V2
+# entrenado (anomaly_detector_v2.pkl) nunca ha visto un ID 5, así que inventarle
+# uno nuevo cambiaría la distribución de esta feature para el cultivo mayoritario
+# de la cartera sin reentrenar. Lo que SÍ queremos corregir —la banda estacional
+# que usa la guarda de supresión— va por `_SEASONAL`/`seasonal_baseline`, que es
+# independiente de este ID. Cuando se reentrene el modelo con el grupo separado,
+# darle su propio ID (5) y bumpear `detectionModel`.
 _GROUP_ID: dict[str, int] = {
-    'evergreen': 0, 'deciduous': 1, 'winter_annual': 2, 'summer_annual': 3, 'other': 4
+    'evergreen': 0, 'olive': 0, 'deciduous': 1, 'winter_annual': 2, 'summer_annual': 3, 'other': 4
 }
 
 

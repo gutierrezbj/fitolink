@@ -130,9 +130,13 @@ function FarmerEmptyState({ userName }: { userName?: string }) {
             <li className="flex gap-3">
               <span className="font-mono text-xs text-terra-500 leading-none w-6 pt-1 tracking-wider">03</span>
               <span>
-                <b className="text-brand-600 font-semibold">Su primer informe llega en ~5 días.</b>{' '}
-                Cada 5 días el satélite pasa sobre su parcela y los datos se incorporan al
-                informe diario que recibe a las 7 de la mañana.
+                {/* No prometemos el correo diario de las 7 mientras DIGEST_CRON siga
+                    apagado en producción: el satélite y el panel SÍ son verificables,
+                    el envío no. Cuando el digest esté encendido, volver a mencionarlo
+                    aquí (25-jul-2026 · CRITICAL_no_inventar). */}
+                <b className="text-brand-600 font-semibold">Sus primeros datos llegan en ~5 días.</b>{' '}
+                Cada 5 días el satélite pasa sobre su parcela y la lectura se incorpora
+                a su panel, con aviso cuando algo cambia.
               </span>
             </li>
           </ol>

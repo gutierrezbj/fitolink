@@ -101,7 +101,11 @@ function isoDate(d: Date): string {
 function buildMessage(a: ParcelPestAdvisory, parcelName: string): string {
   const sevText = a.severity === 'high' ? 'severidad alta' : a.severity === 'low' ? 'severidad baja' : 'severidad media';
   const where = a.comarca ? `comarca de ${a.comarca}` : `provincia de ${a.province}`;
-  const rec = a.recommendation ? ` ${a.recommendation}` : ' Sus parcelas entran en seguimiento reforzado los próximos días.';
+  // Fallback SIN promesas: no existe ningún "seguimiento reforzado" (ni cambio
+  // de frecuencia, ni umbral, ni reanálisis) detrás de esa frase. Hoy es rama
+  // muerta —todos los avisos traen recommendation— pero se deja honesta para
+  // que no reviva sola el día que alguien cree un aviso sin recomendación.
+  const rec = a.recommendation ? ` ${a.recommendation}` : ' Consulte el boletín oficial de la fuente para la recomendación de manejo.';
   const ref = a.sourceRef ? ` Fuente: ${a.source} · ${a.sourceRef}.` : ` Fuente: boletín ${a.source}.`;
   return `Actividad de ${a.pestName} detectada en su ${where}, ${sevText}.${rec}${ref}`;
 }

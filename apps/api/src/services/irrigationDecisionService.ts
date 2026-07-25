@@ -60,6 +60,12 @@ export interface IrrigationDecision {
   tips: string[];
   /** Nota honesta de calor / demanda atmosférica (dato REAL de temperatura), o null. */
   heatContext: string | null;
+  /**
+   * Fecha de la última lectura satelital REAL (null si no hay ninguna). Es lo
+   * que debe mostrarse como "última lectura" — NO `computedAt`, que es solo
+   * cuándo se hizo este cálculo.
+   */
+  ndviLastReadingAt: Date | null;
   computedAt: Date;
 }
 
@@ -94,6 +100,20 @@ function latestNdvi(parcel: IParcel): number | null {
   const h = parcel.ndviHistory;
   if (!h || h.length === 0) return null;
   return h[h.length - 1]?.mean ?? null;
+}
+
+/**
+ * Fecha de la ÚLTIMA lectura satelital utilizable. El banner mostraba
+ * `computedAt` (= ahora) etiquetado como "última lectura": con nubes, la
+ * última pasada útil puede ser de hace semanas y el agricultor leía una
+ * frescura falsa. En un producto que vende "ojo en el cielo" eso es
+ * inaceptable (fix 25-jul-2026 · CRITICAL_no_inventar).
+ */
+function latestNdviDate(parcel: IParcel): Date | null {
+  const h = parcel.ndviHistory;
+  if (!h || h.length === 0) return null;
+  const d = h[h.length - 1]?.date;
+  return d ? new Date(d) : null;
 }
 
 /**
@@ -363,6 +383,7 @@ function composeNarrativeInsight(
  */
 export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
   const ndviCurrent = latestNdvi(parcel);
+  const ndviLastReadingAt = latestNdviDate(parcel);
   const ndviTrend7d = ndviTrend(parcel);
 
   const awcMm = availableWaterCapacityMm(parcel);
@@ -499,6 +520,7 @@ export function computeIrrigationDecision(parcel: IParcel): IrrigationDecision {
     analysisNarrative,
     tips,
     heatContext,
+    ndviLastReadingAt,
     computedAt: new Date(),
   };
 }

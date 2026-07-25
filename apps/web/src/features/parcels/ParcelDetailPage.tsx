@@ -981,7 +981,17 @@ export default function ParcelDetailPage() {
             {serviceStep === 1 ? (
               /* Step 1: Choose service type */
               <div className="p-6 space-y-3">
-                <p className="text-sm text-gray-600 mb-4">La IA ha detectado una anomalia en esta parcela. ¿Que necesitas ahora?</p>
+                {/* El modal se abre para CUALQUIER tipo de alerta, incluidos los
+                    avisos fitosanitarios oficiales (boletín de la Junta) y los
+                    focos térmicos de NASA FIRMS — que no los detecta ninguna IA
+                    nuestra. Copy neutro por tipo (25-jul-2026). */}
+                <p className="text-sm text-gray-600 mb-4">
+                  {serviceModal.alert.type === 'pest_advisory'
+                    ? 'Hay un aviso fitosanitario oficial vigente en la comarca de esta parcela. ¿Qué necesitas ahora?'
+                    : serviceModal.alert.type === 'fire_proximity'
+                    ? 'Se ha detectado un foco térmico cerca de esta parcela. ¿Qué necesitas ahora?'
+                    : 'Hemos detectado una anomalía en el seguimiento satelital de esta parcela. ¿Qué necesitas ahora?'}
+                </p>
 
                 <button
                   onClick={() => setServiceType('inspection')}
@@ -1051,8 +1061,14 @@ export default function ParcelDetailPage() {
                   />
                 </div>
 
+                {/* Honestidad (25-jul-2026): createOperation NO notifica a nadie
+                    todavía — no hay email, SMS ni push al piloto. Prometer "en
+                    menos de 24h" era una promesa que el sistema no puede cumplir
+                    y que el cliente verifica el día 1. Cuando exista el aviso al
+                    piloto, se puede volver a comprometer un plazo. */}
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Un piloto certificado de tu zona contactara contigo en menos de 24h para coordinar fecha y condiciones.
+                  Tu solicitud queda registrada y el equipo de AgroM la revisa para coordinar
+                  fecha y condiciones con un piloto de la zona.
                 </p>
 
                 <div className="flex gap-3">

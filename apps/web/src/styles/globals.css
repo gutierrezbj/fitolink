@@ -27,4 +27,13 @@
   @apply rounded-lg;
   height: 100%;
   width: 100%;
+  /* Encierra a Leaflet en su propio contexto de apilado (25-jul-2026).
+     Leaflet pinta panes y controles hasta z-index 1000; sin esto, esos
+     números compiten con los del resto de la app y el mapa se comía el
+     drawer del menú en móvil (z-40), los modales (z-50) y el desplegable
+     de la campanita. Con `isolate`, todo ese 1..1000 queda contenido
+     DENTRO del mapa y basta con el orden normal de la app — sin tener que
+     ir subiendo z-index por ahí (el fix del dropdown a z-[1100] queda como
+     cinturón, pero ya no es lo que sostiene el pantalón). */
+  isolation: isolate;
 }

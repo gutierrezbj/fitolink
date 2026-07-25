@@ -34,6 +34,8 @@ interface IrrigationDecision {
   analysisNarrative: string;
   tips?: string[];
   heatContext?: string | null;
+  /** Fecha de la última lectura satelital REAL (no cuándo se calculó esto). */
+  ndviLastReadingAt?: string | null;
   computedAt: string;
 }
 
@@ -76,6 +78,18 @@ const URGENCY_DOT: Record<Urgency, string> = {
   monitor: 'bg-yellow-400',
   sufficient: 'bg-green-500',
 };
+
+/**
+ * Días transcurridos desde una fecha ISO. Se usa para avisar cuando la última
+ * pasada satelital útil es vieja (nubes) — el agricultor debe saber que está
+ * mirando un dato de hace semanas, no de hoy.
+ */
+function daysSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86_400_000);
+}
 
 interface Props {
   parcelId: string;
@@ -304,9 +318,16 @@ export default function IrrigationDecisionBanner({ parcelId, ownerName }: Props)
         la humedad del suelo no se mide directamente— así que la última palabra la tiene tu vista en la parcela.
       </p>
 
-      {/* Pie editorial · trazabilidad */}
+      {/* Pie editorial · trazabilidad.
+          La fecha es la de la ÚLTIMA LECTURA SATELITAL real, no la del cálculo:
+          antes imprimía `computedAt` (= hoy siempre) y con nubes la última
+          pasada útil puede ser de hace semanas → frescura falsa. Si esa fecha
+          no viene (API antigua), no inventamos ninguna. */}
       <p className="text-[10px] text-gray-400 mt-2 leading-snug">
-        Cálculo basado en FAO-56 simplificado · NDVI Sentinel-2 + textura SoilGrids + ERA5 reciente + Kc cultivo {data.ndviCurrent !== null ? '· última lectura ' + new Date(data.computedAt).toLocaleDateString('es-ES') : ''}
+        Cálculo basado en FAO-56 simplificado · NDVI Sentinel-2 + textura SoilGrids + ERA5 reciente + Kc cultivo
+        {data.ndviLastReadingAt
+          ? ` · última lectura satelital ${new Date(data.ndviLastReadingAt).toLocaleDateString('es-ES')}${daysSince(data.ndviLastReadingAt) !== null && daysSince(data.ndviLastReadingAt)! > 10 ? ` (hace ${daysSince(data.ndviLastReadingAt)} días)` : ''}`
+          : ''}
       </p>
     </div>
   );

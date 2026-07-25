@@ -126,18 +126,23 @@ export function getAlertTypeMetadata(type: AlertType | undefined): AlertTypeMeta
         label: 'Estrés hídrico',
         shortLabel: 'Agua',
       };
+    // shortLabel en el idioma del agricultor, no en siglas de satélite
+    // (25-jul-2026): estos dos son los tipos más frecuentes y se pintan en la
+    // campanita Y en los pills de los 4 dashboards agregados — un gerente de
+    // cooperativa leía "3 NDVI · 1 NDRE" junto a "2 Plaga". La sigla sigue
+    // disponible en el `label` largo y en el title del badge.
     case 'ndre_anomaly':
       return {
         icon: <SparkleIcon />,
-        label: 'Anomalía foliar',
-        shortLabel: 'NDRE',
+        label: 'Anomalía foliar (NDRE)',
+        shortLabel: 'Hoja',
       };
     case 'ndvi_drop':
     default:
       return {
         icon: <LeafIcon />,
-        label: 'Caída de vegetación',
-        shortLabel: 'NDVI',
+        label: 'Caída de vegetación (NDVI)',
+        shortLabel: 'Vigor',
       };
   }
 }
