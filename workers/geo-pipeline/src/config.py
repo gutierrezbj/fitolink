@@ -33,6 +33,16 @@ NDVI_GRID_RESOLUTION: int = int(os.getenv('NDVI_GRID_RESOLUTION', '20'))
 # Schedule
 PROCESSING_INTERVAL_DAYS: int = 5
 
+# Frescura: no volver a pedir imagen de una parcela que ya tiene una lectura
+# más reciente que esto. Sentinel-2 revisita cada ~5 días, así que por debajo
+# de ese umbral NO hay escena nueva que buscar y la petición es dinero tirado.
+#
+# Sin esto (hasta 25-jul-2026) el pipeline pedía una ventana de 10 días para
+# las 63 parcelas en CADA corrida, hubiera o no dato nuevo — así se agotaron
+# los créditos de CDSE sin un solo usuario real. Poner NDVI_MIN_AGE_DAYS=0
+# fuerza el refetch (útil para depurar o rellenar huecos).
+NDVI_MIN_AGE_DAYS: float = float(os.getenv('NDVI_MIN_AGE_DAYS', '4.5'))
+
 # Sprint MPC — Microsoft Planetary Computer enrichment
 # Refresh 30-day climate snapshot on every pipeline run (cheap HTTP fetch).
 # Set MPC_CLIMATE_REFRESH=false to disable (e.g. if Open-Meteo is rate-limited).

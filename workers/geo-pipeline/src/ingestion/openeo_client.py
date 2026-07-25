@@ -39,6 +39,36 @@ logger = structlog.get_logger(__name__)
 _SCL_CLOUD_VALUES = [0, 1, 3, 8, 9, 10, 11]
 
 
+class OpenEOAccountError(RuntimeError):
+    """
+    CDSE rechazó la petición por motivos de CUENTA, no de datos: créditos
+    agotados (402 PaymentRequired), credenciales inválidas o sin permisos
+    (401/403), o cuota excedida (429).
+
+    Es una distinción crítica: un fallo de datos ("no hay escena sin nubes")
+    afecta a UNA parcela y tiene sentido seguir con las demás. Un fallo de
+    cuenta afecta a TODAS — insistir 63 veces solo quema tiempo y llamadas,
+    y arrastra al fallback OData, que usa la MISMA cuenta.
+
+    Añadido 25-jul-2026 tras quedarnos sin créditos: el cliente se tragaba el
+    402 y devolvía None, indistinguible de "no hay imagen", así que el
+    pipeline recorrió las 63 parcelas fallando en cada una.
+    """
+
+
+# Marcadores de error de CUENTA en el mensaje que devuelve CDSE.
+_ACCOUNT_ERROR_MARKERS = (
+    '402', 'paymentrequired', 'payment required', 'sufficient credits',
+    'insufficient', 'quota', '401', 'unauthorized', '403', 'forbidden', '429',
+)
+
+
+def is_account_error(message: str) -> bool:
+    """¿El mensaje de error de CDSE indica un problema de cuenta y no de datos?"""
+    low = message.lower()
+    return any(marker in low for marker in _ACCOUNT_ERROR_MARKERS)
+
+
 class OpenEOClient:
     """
     CDSE openEO client for cloud-side NDVI computation.
@@ -218,8 +248,17 @@ class OpenEOClient:
             # Return result + raw NDVI bytes for intra-parcel grid generation
             return result, raw_bytes['ndvi']
 
+        except OpenEOAccountError:
+            raise
         except Exception as e:
-            logger.error('openeo_processing_failed', error=str(e), bbox=bbox)
+            message = str(e)
+            # Un fallo de CUENTA (créditos/credenciales/cuota) no es "no hay
+            # imagen": se propaga para que el pipeline pare en seco en vez de
+            # repetirlo parcela por parcela. Ver OpenEOAccountError.
+            if is_account_error(message):
+                logger.error('openeo_account_error', error=message, bbox=bbox)
+                raise OpenEOAccountError(message) from e
+            logger.error('openeo_processing_failed', error=message, bbox=bbox)
             return None
 
 

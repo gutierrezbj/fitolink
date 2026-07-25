@@ -18,10 +18,10 @@ from typing import Optional
 from .config import (
     MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR,
     USE_OPENEO, NDVI_GRID_ENABLED, NDVI_GRID_RESOLUTION,
-    MPC_CLIMATE_REFRESH, MPC_THERMAL_REFRESH,
+    MPC_CLIMATE_REFRESH, MPC_THERMAL_REFRESH, NDVI_MIN_AGE_DAYS,
 )
 from .ingestion.copernicus import CopernicusClient
-from .ingestion.openeo_client import OpenEOClient
+from .ingestion.openeo_client import OpenEOClient, OpenEOAccountError, is_account_error
 from .ingestion.climate_context import (
     fetch_recent_climate, compute_climate_anomaly,
 )
@@ -40,6 +40,21 @@ def get_parcel_bbox(geometry: dict) -> tuple[float, float, float, float]:
     lngs = [c[0] for c in coords]
     lats = [c[1] for c in coords]
     return (min(lngs), min(lats), max(lngs), max(lats))
+
+
+def _days_since_last_reading(parcel: dict, now: datetime) -> Optional[float]:
+    """
+    Días transcurridos desde la última lectura NDVI de la parcela, o None si
+    nunca se ha procesado. Se usa para no pedir imagen que no existe todavía:
+    Sentinel-2 revisita cada ~5 días.
+    """
+    history = parcel.get('ndviHistory') or []
+    if not history:
+        return None
+    last = history[-1].get('date')
+    if not isinstance(last, datetime):
+        return None
+    return (now - last).total_seconds() / 86400.0
 
 
 def _process_parcel_openeo(
@@ -152,6 +167,11 @@ def run_pipeline() -> None:
     alerts_created = 0
     openeo_used = 0
     odata_used = 0
+    skipped_fresh = 0
+    # Corta-circuitos: si CDSE rechaza por CUENTA (créditos/credenciales), no
+    # tiene sentido repetirlo en las 62 parcelas restantes ni caer al fallback
+    # OData, que usa la MISMA cuenta. Se marca y se sale limpio.
+    account_blocked = False
 
     for parcel in parcels:
         parcel_id = str(parcel['_id'])
@@ -174,6 +194,20 @@ def run_pipeline() -> None:
             scene_id = 'unknown'
             ndvi_raw_bytes: Optional[bytes] = None
 
+            # Frescura: si la última lectura es más nueva que el ciclo de
+            # revisita, no hay escena nueva que pedir. Pedirla igualmente es
+            # gastar créditos para reescribir el mismo dato (ver NDVI_MIN_AGE_DAYS).
+            age_days = _days_since_last_reading(parcel, end_date)
+            if age_days is not None and age_days < NDVI_MIN_AGE_DAYS:
+                logger.info(
+                    'parcel_skip_fresh',
+                    parcel=parcel_name,
+                    age_days=round(age_days, 1),
+                    min_age_days=NDVI_MIN_AGE_DAYS,
+                )
+                skipped_fresh += 1
+                continue
+
             # Primary: openEO cloud processing
             if openeo_client is not None:
                 try:
@@ -183,6 +217,19 @@ def run_pipeline() -> None:
                         openeo_used += 1
                     else:
                         logger.info('openeo_no_imagery', parcel=parcel_name)
+                except OpenEOAccountError as e:
+                    # Créditos agotados / credenciales / cuota → afecta a TODAS
+                    # las parcelas y también al fallback OData (misma cuenta).
+                    # Se corta aquí: mejor una corrida corta y un log claro que
+                    # 63 fallos idénticos.
+                    logger.error(
+                        'cdse_account_blocked_aborting_run',
+                        parcel=parcel_name,
+                        error=str(e),
+                        hint='Revisar créditos/credenciales de CDSE — el pipeline no puede traer imagen hasta resolverlo',
+                    )
+                    account_blocked = True
+                    break
                 except Exception as e:
                     logger.warning(
                         'openeo_parcel_failed_using_fallback',
@@ -190,8 +237,11 @@ def run_pipeline() -> None:
                         error=str(e),
                     )
 
-            # Fallback: OData download (also used if openEO found no imagery)
-            if stats is None and copernicus_client is not None:
+            # Fallback: OData download (also used if openEO found no imagery).
+            # Usa la MISMA cuenta CDSE: si openEO ya la rechazó, aquí solo se
+            # gastarían llamadas y una descarga de ~500 MB por parcela para
+            # acabar en 401.
+            if stats is None and copernicus_client is not None and not account_blocked:
                 try:
                     result = _process_parcel_odata(copernicus_client, parcel, start_date, end_date)
                     if result is not None:
@@ -200,10 +250,21 @@ def run_pipeline() -> None:
                     else:
                         logger.info('odata_no_imagery', parcel=parcel_name)
                 except Exception as e:
-                    logger.error('odata_parcel_failed', parcel=parcel_name, error=str(e))
+                    message = str(e)
+                    if is_account_error(message):
+                        logger.error(
+                            'cdse_account_blocked_aborting_run',
+                            parcel=parcel_name,
+                            error=message,
+                            source='odata',
+                        )
+                        account_blocked = True
+                        break
+                    logger.error('odata_parcel_failed', parcel=parcel_name, error=message)
 
             # Fallback path when openEO is primary but OData client wasn't initialized
-            if stats is None and openeo_client is not None and copernicus_client is None:
+            if (stats is None and openeo_client is not None
+                    and copernicus_client is None and not account_blocked):
                 try:
                     copernicus_client = CopernicusClient()
                     result = _process_parcel_odata(copernicus_client, parcel, start_date, end_date)
@@ -211,7 +272,17 @@ def run_pipeline() -> None:
                         stats, scene_id = result
                         odata_used += 1
                 except Exception as e:
-                    logger.error('fallback_odata_init_failed', parcel=parcel_name, error=str(e))
+                    message = str(e)
+                    if is_account_error(message):
+                        logger.error(
+                            'cdse_account_blocked_aborting_run',
+                            parcel=parcel_name,
+                            error=message,
+                            source='odata_init',
+                        )
+                        account_blocked = True
+                        break
+                    logger.error('fallback_odata_init_failed', parcel=parcel_name, error=message)
 
             if stats is None:
                 logger.info('no_imagery_found', parcel=parcel_name)
@@ -468,6 +539,10 @@ def run_pipeline() -> None:
             logger.error('parcel_processing_error', parcel=parcel_name, error=str(e))
             continue
 
+    # Resumen honesto: distingue "no había nada nuevo que traer" (skipped_fresh,
+    # que es lo SANO) de "no pudimos traer nada" (account_blocked, que es una
+    # avería). Antes ambos casos acababan en parcels_processed=0 y parecían lo
+    # mismo desde fuera.
     logger.info(
         'pipeline_completed',
         parcels_processed=processed,
@@ -475,7 +550,16 @@ def run_pipeline() -> None:
         total_parcels=len(parcels),
         openeo_used=openeo_used,
         odata_fallback_used=odata_used,
+        skipped_fresh=skipped_fresh,
+        account_blocked=account_blocked,
     )
+    if account_blocked:
+        logger.error(
+            'pipeline_aborted_cdse_account',
+            hint='CDSE rechazó por cuenta (créditos/credenciales/cuota). '
+                 'La corrida se cortó a propósito para no repetir el fallo en cada parcela. '
+                 'Revisar https://marketplace-portal.dataspace.copernicus.eu',
+        )
     client.close()
 
 
