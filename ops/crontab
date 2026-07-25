@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# FitoLink · tareas programadas del HOST (VPS 100.110.52.22)
+#
+# ESTE FICHERO ES LA FUENTE DE VERDAD. El crontab del VPS debe ser un reflejo
+# de este archivo — si algo se programa, se escribe aquí primero.
+#
+# Instalar / actualizar:      bash ops/install-crontab.sh
+# Ver lo instalado:           ssh root@100.110.52.22 'crontab -l'
+#
+# Por qué existe (25-jul-2026): la programación vivía SOLO en la máquina, en un
+# comentario suelto del compose. Nadie podía saber qué debía estar corriendo, y
+# un `echo ... | crontab -` mal hecho puede borrarlo todo sin dejar rastro.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Pipeline satelital · Sentinel-2 → NDVI/NDRE/NDMI + clima + detección de
+# anomalías. Sentinel-2 revisita cada ~5 días; se lanza cada 3 días para no
+# perder ventana por nubes (el pipeline es idempotente: si no hay escena nueva
+# utilizable, no escribe nada). De madrugada para no competir por la CPU del
+# VPS compartido.
+0 3 */3 * * cd /opt/fitolink && docker compose -f docker-compose.prod.yml run --rm geo-pipeline >> /var/log/fitolink-geo.log 2>&1
+
+# Ingesta de avisos fitosanitarios (scraper RAIF) + fan-out de alertas de plaga.
+# Semanal, lunes por la mañana: el portal publica en horario de oficina. El
+# runner tiene gate por fecha y es fail-closed — si el portal no publicó nada
+# nuevo, solo hace el barrido idempotente de fan-out.
+30 7 * * 1 cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaif.js >> /var/log/fitolink-ingest.log 2>&1

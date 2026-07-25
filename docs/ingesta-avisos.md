@@ -52,11 +52,19 @@ cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api \
 
 ### Crontab del host (semanal · lunes 07:30)
 
-Mismo patrón que el geo-pipeline (`crontab -e` como root en el VPS):
+**No edites el crontab del VPS a mano.** La fuente de verdad es
+[`ops/crontab`](../ops/crontab), versionada en el repo junto a la del pipeline
+satelital. Para instalarla:
 
-```cron
-30 7 * * 1 cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaif.js >> /var/log/fitolink-ingest.log 2>&1
+```bash
+bash ops/install-crontab.sh           # simulación: enseña el diff, no toca nada
+bash ops/install-crontab.sh --apply   # aplica (hace backup antes)
 ```
+
+> ⚠️ Nunca uses `echo "..." | crontab -` para añadir una línea: **reemplaza el
+> crontab entero** y se lleva por delante lo que hubiera (le pasó a este
+> proyecto el 25-jul-2026). El instalador hace copia de seguridad y muestra el
+> diff antes de aplicar.
 
 ### Señales en logs
 
