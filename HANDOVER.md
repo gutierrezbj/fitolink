@@ -71,7 +71,7 @@
 | Pieza legal | Aporta | Detalle |
 |---|---|---|
 | Bloque 1 · AESA (PDRA-S01[F], DRI, manual ops, seguro RC aeronáutico) | **Drovinci** | Empresa registrada, certificaciones propias |
-| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** (censo bajo su operadora) | ⚠️ Corrección 19-jul-2026: los 2 drones T10 + T40 son **propiedad de AgroM** y la cuenta DJI de los mandos es de **AgroM** (los datos de vuelo son nuestros). Drovinci aporta SOLO la condición de operadora legal. |
+| Bloque 2 · ITEAF (dron censado MAPA, ISO 16122-5 cuando llegue) | **Drovinci** (censo bajo su operadora) | ⚠️ Corrección 25-jul-2026 (JuanCho, verbatim: *"solo tenemos 2 T50, nada mas"*): AgroM tiene **2 drones DJI Agras T50** — NO T10 ni T40, como decía por error la nota del 19-jul. Son **propiedad de AgroM**, igual que la cuenta DJI de los mandos (los datos de vuelo son nuestros). Drovinci aporta SOLO la condición de operadora legal. El T10 que aparece en el seed demo es de **Drovinci** (Ana Gomez Ferrer), no de AgroM. |
 | Bloque 3 · Fitosanitario (autorización CCAA por tratamiento, ROPO piloto + empresa, producto autorizado aéreo, seguro RC fitosanitario, plan Anexo VI) | **Drovinci** | Tramita autorización CCAA antes de cada tratamiento |
 | Inteligencia satelital + IA + alertas + dashboard | **AgroM/FitoLink** | Lo que vendemos en SaaS |
 | Marca comercial + relación cliente + brokerage | **AgroM** | Cara visible ante cliente final |

@@ -8,7 +8,7 @@
 ## 1 · Problema
 
 Los pilotos (Jonh · red Drovinci) mapean campos y ejecutan tratamientos con mandos DJI Agras
-(T10/T40). Esa cartografía — polígono del campo, obstáculos, ruta volada, área tratada, dosis —
+(2× T50 · flota de AgroM). Esa cartografía — polígono del campo, obstáculos, ruta volada, área tratada, dosis —
 vive en el mando o en la nube de DJI. FitoLink no la ve. Consecuencias:
 
 - Alta de clientes sin PAC (caso Don Antonio) bloqueada esperando geometría.
