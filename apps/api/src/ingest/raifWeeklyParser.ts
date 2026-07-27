@@ -104,18 +104,31 @@ export function parseRaifWeeklyBulletin(text: string): ParsedRaifBulletin | null
   // maquetación varía entre provincias: a veces el cultivo va en la misma
   // línea (ALGODÓN ... Boletín Fitosanitario), a veces en la anterior o
   // siguiente (caso PISTACHO / ARROZ). Se busca en una ventana de ±2 líneas.
-  const marks: Array<{ line: number; cropLabel: string }> = [];
+  const marks: Array<{ line: number; cropLabel: string; known: boolean }> = [];
   lines.forEach((l, i) => {
     if (!/Boletín\s+Fitosanitario/i.test(l) && !/PROVINCIA\s+DE/.test(l)) return;
     const window = [lines[i - 2], lines[i - 1], l, lines[i + 1], lines[i + 2]]
       .filter((x): x is string => typeof x === 'string')
       .join(' ');
     const token = CROP_TOKENS.find((t) => new RegExp(`(^|\\s)${escapeRe(t)}(\\s|$)`).test(window));
-    if (!token) return;
-    // Evita duplicar la marca cuando cultivo y provincia van en líneas contiguas
     const last = marks[marks.length - 1];
+
+    if (!token) {
+      // Cabecera de un cultivo que NO sabemos mapear (Huelva publica "FRUTOS
+      // ROJOS", Cádiz "CEREALES INVIERNO"). Antes se hacía `return` y sus
+      // páginas caían dentro del slice del cultivo anterior: sus plagas se
+      // habrían publicado bajo el cultivo equivocado, en silencio. Ahora se
+      // marca igual —con known:false— para CORTAR la sección previa; la
+      // propia no se publica y sale en unmappedCrops() para que el runner
+      // avise de que hay material del boletín que estamos tirando.
+      if (last && !last.known && i - last.line <= 3) return;
+      marks.push({ line: i, cropLabel: headerLabel(lines, i), known: false });
+      return;
+    }
+
+    // Evita duplicar la marca cuando cultivo y provincia van en líneas contiguas
     if (last && last.cropLabel === token && i - last.line <= 3) return;
-    marks.push({ line: i, cropLabel: token });
+    marks.push({ line: i, cropLabel: token, known: true });
   });
   if (marks.length === 0) return null;
 
@@ -159,8 +172,10 @@ export function parseRaifWeeklyBulletin(text: string): ParsedRaifBulletin | null
       });
     });
 
+    // Una sección sin cultivo reconocido se conserva SOLO si trae plagas, para
+    // que unmappedCrops() la delate. Si viene vacía no aporta nada.
     if (pests.length === 0) return;
-    const cropType = CROP_HEADER_MAP[mark.cropLabel] ?? null;
+    const cropType = mark.known ? CROP_HEADER_MAP[mark.cropLabel] ?? null : null;
     sections.push({ cropLabel: mark.cropLabel, cropType, highlightedLiteral, pests });
   });
 
@@ -175,11 +190,34 @@ export function parseRaifWeeklyBulletin(text: string): ParsedRaifBulletin | null
  */
 function isHighlighted(name: string, sci: string, highlightedLiteral?: string): boolean {
   if (!highlightedLiteral) return false;
-  const hay = stripAccents(highlightedLiteral.toLowerCase());
-  const candidates = [name, ...sci.split(/[,;y]/)]
-    .map((s) => stripAccents(s.trim().toLowerCase()))
+
+  // La lista es una enumeración: "Pulgón, tigre, anarsia y mancha ocre". Se
+  // trocea y se compara ÍTEM A ÍTEM contra el nombre del epígrafe, en los dos
+  // sentidos, porque la fuente abrevia tanto como amplía: escribe "tigre" para
+  // "TIGRE DEL ALMENDRO", y "ácaros" para "ÁCAROS (Panonychus citri)".
+  //
+  // Lo que NO se hace es buscar palabras sueltas del epígrafe dentro de la
+  // lista: con eso, "almendro" bastaba para marcar AVISPILLA DEL ALMENDRO y
+  // ORUGUETA DEL ALMENDRO como destacadas en Granada cuando la fuente solo
+  // señalaba el tigre. Y de esta marca depende quién llega a la campanita.
+  const items = stripAccents(highlightedLiteral.toLowerCase())
+    .split(/,|\sy\s|;/)
+    .map((s) => s.replace(/[.:]+$/, '').trim())
     .filter((s) => s.length >= 4);
-  return candidates.some((c) => hay.includes(c) || c.split(/\s+/).some((w) => w.length >= 5 && hay.includes(w)));
+  if (items.length === 0) return false;
+
+  const nombre = stripAccents(name.trim().toLowerCase());
+  if (items.some((it) => nombre.includes(it) || it.includes(nombre))) return true;
+
+  // Y el latín, por si la lista cita el nombre científico o solo el género.
+  for (const part of sci.split(/[,;]/)) {
+    const s = stripAccents(part.trim().toLowerCase());
+    const genero = s.split(/\s+/)[0] ?? '';
+    if (items.some((it) => (s.length >= 5 && it.includes(s)) || (genero.length >= 5 && it.includes(genero)))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -202,6 +240,30 @@ function cleanBody(lines: string[]): string {
     .join(' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+/**
+ * Etiqueta de una cabecera de cultivo que no sabemos mapear, para poder
+ * nombrarla en el log. El nombre va en la misma línea que "Boletín
+ * Fitosanitario" (a la izquierda) o en la anterior, según la provincia.
+ */
+function headerLabel(lines: string[], i: number): string {
+  // Málaga titula la sección en dos líneas y con paréntesis:
+  //   " TROPICALES"
+  //   " (Aguacate)          Boletín Fitosanitario"
+  // así que se admite el paréntesis, la caja mixta y el fin de línea, y se
+  // juntan las dos partes cuando las hay.
+  const extraer = (candidate?: string): string | undefined => {
+    if (typeof candidate !== 'string') return undefined;
+    const m = candidate.match(/^\s*\(?([A-ZÁÉÍÓÚÑÜ][A-Za-zÁÉÍÓÚÑÜáéíóúñü\s/-]{2,40}?)\)?(?:\s{2,}|\s*$)/);
+    const label = m?.[1].trim();
+    if (!label || /^(BOLET|PROVINCIA|RAIF|RED DE ALERTA|Fitosanitaria)/i.test(label)) return undefined;
+    return label;
+  };
+  const propia = extraer(lines[i]);
+  const previa = extraer(lines[i - 1]);
+  if (previa && propia) return `${previa} (${propia})`;
+  return propia ?? previa ?? extraer(lines[i + 1]) ?? '(cabecera no identificada)';
 }
 
 function stripAccents(s: string): string {

@@ -243,6 +243,28 @@ export function parseBulletinDate(text: string): BulletinDate | null {
     }
   }
 
+  // 1-bis) Rango que cruza de mes: "Del 29 de junio al 3 de julio de 2026".
+  //    Va ANTES de los fallbacks porque si no casa aquí, el patrón 3 devuelve
+  //    el MES ENTERO y con él una fecha de fin en el futuro, que desarma el
+  //    guard de frescura. La semana del RAIF es de lunes a viernes, así que
+  //    esto pasa unas 7 veces al año.
+  const cross = text.match(
+    /Del\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s*(?:de|\/)?\s*(\d{4})/i,
+  );
+  if (cross) {
+    const [, d1, mes1Raw, d2, mes2Raw, year] = cross;
+    const m1 = MONTHS[mes1Raw.toLowerCase()];
+    const m2 = MONTHS[mes2Raw.toLowerCase()];
+    if (m1 && m2) {
+      // "Del 28 de diciembre al 1 de enero de 2027": el año que trae el texto
+      // es el del final, el inicio cae en el anterior.
+      const yEnd = Number(year);
+      const start = makeUtcDate(m1 > m2 ? yEnd - 1 : yEnd, m1, Number(d1));
+      const end = makeUtcDate(yEnd, m2, Number(d2));
+      if (start && end) return { periodStart: start, periodEnd: end, literal: cross[0].trim() };
+    }
+  }
+
   // 2) Fecha suelta dd/mm/yyyy
   const dmy = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
   if (dmy) {
@@ -298,6 +320,21 @@ export function requireBulletinDate(text: string, maxAgeDays: number, sourceUrl:
       sourceUrl,
     );
   }
+  // Cota por arriba. Los patrones 2 y 3 escanean el documento entero, así que
+  // pueden capturar una fecha cualquiera del cuerpo (la cita de un Real
+  // Decreto, un mes suelto) en vez del periodo de la cabecera. Cuando eso pasa
+  // la fecha suele quedar en el futuro y `ageDays` sale negativa, con lo que el
+  // guard de antigüedad deja pasar cualquier cosa. Aquí se corta esa clase
+  // entera de fallo: si el fin de periodo está por delante de hoy, es que no
+  // hemos leído el periodo real y no se publica nada.
+  const FUTURE_TOLERANCE_MS = 2 * 86_400_000; // margen de husos y de cierre de semana
+  if (found.periodEnd.getTime() > Date.now() + FUTURE_TOLERANCE_MS) {
+    throw new PdfIngestError(
+      `La fecha leída del boletín está en el futuro ("${found.literal}") — el parser no ha localizado el periodo real, no se publica`,
+      sourceUrl,
+    );
+  }
+
   const ageDays = (Date.now() - found.periodEnd.getTime()) / 86_400_000;
   if (ageDays > maxAgeDays) {
     throw new PdfIngestError(

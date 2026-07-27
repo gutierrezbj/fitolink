@@ -7,7 +7,7 @@
 >
 > **Actualización 27-jul-2026** · segunda ingesta automática: el **boletín
 > semanal provincial** del RAIF, multicultivo, 7 provincias. Multiplica el
-> tablón de 10 avisos a ~151 por semana. Ver "Boletín semanal" más abajo.
+> tablón de 10 avisos a ~147 por semana. Ver "Boletín semanal" más abajo.
 
 ## Qué hace
 
@@ -111,15 +111,22 @@ docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/
 ```
 
 **Cuánto trae** (medido el 27-jul-2026, periodo "Del 20 al 24 de julio de
-2026"): 151 avisos · 13 destacados por la propia fuente · por cultivo
-olivo 46, cítrico 29, almendro 25, algodón 24, viñedo 17, arroz 8, pistacho 2.
+2026"): 147 avisos · 12 destacados por la propia fuente · por cultivo
+olivo 42, cítrico 29, almendro 25, algodón 24, viñedo 17, arroz 8, pistacho 2.
 
 **Qué llega a la campanita** — constante `FANOUT_POLICY` en
-`raifWeeklyIngest.ts`. Por defecto `'destacados'`: los 151 van al tablón,
+`raifWeeklyIngest.ts`. Por defecto `'destacados'`: los 147 van al tablón,
 pero solo se convierten en alerta de parcela los que el boletín lista en
-"Agentes destacados". Con `'todos'` serían 80 alertas semanales en el
+"Agentes destacados". Con `'todos'` serían ~80 alertas semanales en el
 entorno demo (12 por socio de la cooperativa). El filtro no es nuestro: lo
 decide la fuente.
+
+La decisión se **congela en el documento** (`PestAdvisory.notifyParcels`), no
+solo en esta constante. Tiene que ser así: el barrido idempotente de
+`ingestRaif.js` recorre TODOS los avisos vigentes cada lunes, así que una
+política que viviera solo en el ingester quedaría anulada dos días después de
+aplicarse. Cambiar `FANOUT_POLICY` afecta a los boletines de semanas
+siguientes, no a los ya publicados.
 
 **Trampas encontradas, por si el parser deja de casar:**
 
@@ -135,8 +142,22 @@ decide la fuente.
   cultivo) → se salta con error. Cablearla es cablear ese otro formato.
 - La imagen necesita `poppler-utils` (ya en `docker/Dockerfile.api`). Si falta,
   el error lo dice explícitamente.
-- Si aparece `cultivos del boletín sin mapear` en el log, el boletín trae
-  material que estamos tirando: añadirlo a `CROP_HEADER_MAP`.
+- **Cultivos que el catálogo no tiene.** Málaga publica `TROPICALES (Aguacate)`
+  y Huelva `FRUTOS ROJOS`; ninguno existe en `CROP_TYPES`. Esas secciones se
+  descartan y salen nombradas en el log (`cultivos del boletín sin mapear`).
+  Importante: la sección sin mapear igualmente CORTA la anterior. Antes no lo
+  hacía y sus plagas se publicaban bajo el cultivo previo — las 4 del aguacate
+  de Málaga salían como avisos de OLIVAR.
+- **Una semana a caballo de dos meses** ("Del 29 de junio al 3 de julio") tiene
+  su propio patrón de fecha. Sin él caía al fallback mensual, que devuelve el
+  mes entero, deja el fin de periodo en el futuro y desarma el guard de
+  frescura. Tres capas lo cubren ahora: el patrón, el rechazo de fechas
+  futuras (`requireBulletinDate`) y la exigencia de que el periodo dure ≤10
+  días (`MAX_WEEK_SPAN_DAYS`).
+- El `sourceUrl` que se guarda es el **índice provincial**, no el PDF: la Junta
+  sobrescribe el fichero cada semana y el aviso vive 10 días más que su
+  periodo, así que el enlace al PDF acabaría sirviendo otra semana distinta de
+  la que declara `sourceRef`.
 
 ## Añadir fuentes (F2)
 

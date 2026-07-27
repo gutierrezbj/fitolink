@@ -121,6 +121,20 @@ export interface IPestAdvisory extends Document {
   createdBy: mongoose.Types.ObjectId;
   /** Whether the advisory is currently distributable */
   isActive: boolean;
+  /**
+   * ¿Este aviso puede convertirse en alerta de parcela (campanita)?
+   *
+   * Separa las dos cosas que antes iban juntas: estar en el tablón y llegarle
+   * al agricultor. Una ingesta de gran volumen (el boletín semanal del RAIF
+   * trae ~151 avisos) quiere publicarlo todo y notificar solo una parte, y esa
+   * decisión tiene que viajar EN el documento: el barrido idempotente de
+   * ingestRaif recorre todos los avisos vigentes, así que una política que
+   * viva solo en el ingester queda anulada al siguiente run del otro cron.
+   *
+   * Por defecto true — los avisos curados a mano y los del informe Prays se
+   * comportan igual que siempre.
+   */
+  notifyParcels: boolean;
   /** Idempotency fingerprint to prevent accidental duplicates */
   fingerprint: string;
   createdAt: Date;
@@ -179,6 +193,7 @@ const pestAdvisorySchema = new Schema<IPestAdvisory>(
     sourceUrl: { type: String, trim: true, maxlength: 500 },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     isActive: { type: Boolean, default: true, index: true },
+    notifyParcels: { type: Boolean, default: true, index: true },
     fingerprint: { type: String, required: true, unique: true, index: true },
   },
   { timestamps: true },

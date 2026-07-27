@@ -86,6 +86,8 @@ const FANOUT_POLICY: 'destacados' | 'todos' | 'ninguno' = 'destacados';
 
 /** Antigüedad máxima del boletín para considerarlo vigente (semanal + margen). */
 const MAX_AGE_DAYS = 12;
+/** Duración máxima creíble del periodo de un boletín semanal (L-V + margen). */
+const MAX_WEEK_SPAN_DAYS = 10;
 /** Longitud del extracto que se guarda en notes (el original está a un clic). */
 const SNIPPET_CHARS = 600;
 
@@ -191,6 +193,21 @@ export async function ingestProvinceWeekly(
     return { ...base, error: (err as Error).message };
   }
 
+  // Tercera capa sobre la fecha: esto es un boletín SEMANAL. Si el periodo que
+  // hemos leído dura un mes, o no tiene inicio, es que no hemos cogido la
+  // cabecera sino alguna fecha suelta del cuerpo. Antes que publicar un ámbito
+  // temporal que el PDF no declara, no se publica.
+  if (!period.periodStart) {
+    return { ...base, error: `El periodo leído ("${period.literal}") no tiene fecha de inicio — no es la cabecera semanal` };
+  }
+  const spanDays = (period.periodEnd.getTime() - period.periodStart.getTime()) / 86_400_000;
+  if (spanDays < 0 || spanDays > MAX_WEEK_SPAN_DAYS) {
+    return {
+      ...base,
+      error: `El periodo leído ("${period.literal}") abarca ${Math.round(spanDays)} días — un boletín semanal no dura eso, no se publica`,
+    };
+  }
+
   const parsed = parseRaifWeeklyBulletin(doc.text);
   if (!parsed) return { ...base, error: 'No se reconoció la estructura del boletín' };
 
@@ -226,9 +243,30 @@ export async function ingestProvinceWeekly(
 
   if (opts.dryRun) return result;
 
-  // ── Escritura ──────────────────────────────────────────────────────────
+  try {
+    return await writeProvinceAdvisories(entry, planned, period, result);
+  } catch (err) {
+    // El contrato es fail-closed POR PROVINCIA: un fallo de Mongo aquí no
+    // puede tumbar el run de las otras seis. Lo ya insertado queda (el upsert
+    // es idempotente) y el run de la semana siguiente lo completa.
+    logger.error({ province, err: (err as Error).message }, 'raif_weekly_write_failed');
+    return { ...base, error: `Fallo al escribir en BD: ${(err as Error).message}` };
+  }
+}
+
+/** Persiste los avisos de una provincia. Separado para acotar el try/catch. */
+async function writeProvinceAdvisories(
+  entry: { province: string; indexUrl: string },
+  planned: PlannedAdvisory[],
+  period: { periodEnd: Date; literal: string },
+  result: RaifWeeklyResult,
+): Promise<RaifWeeklyResult> {
+  const { province, indexUrl } = entry;
+  const geo = PROVINCE_GEO[province];
   const admin = await User.findOne({ googleId: 'demo-admin-001' }).select('_id');
-  if (!admin) return { ...base, error: 'demo-admin-001 no existe — BD sin inicializar' };
+  if (!admin) {
+    return { province, status: 'error', planned: [], unmapped: [], error: 'demo-admin-001 no existe — BD sin inicializar' };
+  }
 
   // Vigencia: hasta el siguiente boletín + margen. Un parte de campo caduca
   // rápido: no se deja vivo un mes (ver expiresAt en el modelo).
@@ -237,10 +275,17 @@ export async function ingestProvinceWeekly(
   let inserted = 0;
   let fannedOut = 0;
   for (const p of planned) {
+    // La decisión se calcula UNA vez y se guarda en el documento. Si viviera
+    // solo aquí, el barrido de ingestRaif (que recorre todos los avisos
+    // vigentes) la anularía el lunes siguiente y notificaría los 151.
+    const notifica =
+      FANOUT_POLICY === 'todos' || (FANOUT_POLICY === 'destacados' && p.highlightedBySource);
+
     const r = await PestAdvisory.updateOne(
       { fingerprint: p.fingerprint },
       {
         $setOnInsert: {
+          notifyParcels: notifica,
           pestName: p.scientificName ? `${titleCase(p.pestName)} · ${p.scientificName}` : titleCase(p.pestName),
           scientificName: p.scientificName,
           cropTypes: [p.cropType],
@@ -262,7 +307,12 @@ export async function ingestProvinceWeekly(
           sourceRef: `Boletín Fitosanitario semanal · ${p.cropLabel} · ${province} · ${p.periodLiteral}`,
           recommendation: 'Consulte el boletín oficial completo en el enlace y coteje el estado en cada parcela antes de decidir tratamiento.',
           notes: (p.highlightedBySource ? '[Agente destacado por el boletín] ' : '') + p.snippet,
-          sourceUrl: p.sourceUrl,
+          // Se cita el ÍNDICE provincial, no el PDF. La Junta sobrescribe el
+          // fichero en la misma URL cada semana, y como el aviso vive hasta 10
+          // días después del periodo, el enlace al PDF acabaría sirviendo otra
+          // semana distinta de la que dice `sourceRef`. El índice es estable y
+          // siempre lleva al boletín vigente. La semana citada va en sourceRef.
+          sourceUrl: indexUrl,
           createdBy: admin._id,
           fingerprint: p.fingerprint,
           isActive: true,
@@ -272,10 +322,7 @@ export async function ingestProvinceWeekly(
     );
     if (r.upsertedCount === 0) continue; // ya existía: ni se toca ni se re-avisa
     inserted += 1;
-
-    const avisa =
-      FANOUT_POLICY === 'todos' || (FANOUT_POLICY === 'destacados' && p.highlightedBySource);
-    if (!avisa) continue;
+    if (!notifica) continue;
     // Se busca el documento recién insertado porque el fan-out necesita la
     // geometría ya persistida para cruzarla con las parcelas.
     const doc = await PestAdvisory.findOne({ fingerprint: p.fingerprint });

@@ -295,10 +295,31 @@ export async function listAdvisories(options: {
     filter.isActive = true;
     filter.expiresAt = { $gte: new Date() };
   }
-  return PestAdvisory.find(filter)
-    .sort({ severity: -1, detectedAt: -1 })
-    .limit(options.limit ?? 100)
-    .lean() as unknown as Promise<IPestAdvisory[]>;
+  // OJO: `sort({severity:-1})` ordenaba el STRING, y en orden lexicográfico
+  // descendente sale "medium" > "low" > "high" — justo al revés de lo que
+  // parece. Con 10 avisos curados daba igual porque cabían todos; desde la
+  // ingesta del boletín semanal hay ~151 avisos 'medium' que llenaban el cupo
+  // y expulsaban del tablón público a TODOS los de severidad alta. Se ordena
+  // por rango numérico y se sube el tope al volumen real.
+  const severityRank = {
+    $switch: {
+      branches: [
+        { case: { $eq: ['$severity', 'high'] }, then: 3 },
+        { case: { $eq: ['$severity', 'medium'] }, then: 2 },
+      ],
+      default: 1,
+    },
+  };
+
+  return PestAdvisory.aggregate([
+    { $match: filter },
+    { $addFields: { severityRank } },
+    // `_id` como último desempate: los 151 avisos de una misma semana comparten
+    // detectedAt, y sin él el corte sería arbitrario entre ejecuciones.
+    { $sort: { severityRank: -1, detectedAt: -1, _id: -1 } },
+    { $limit: options.limit ?? 500 },
+    { $unset: 'severityRank' },
+  ]) as unknown as Promise<IPestAdvisory[]>;
 }
 
 export async function deactivateAdvisory(advisoryId: string): Promise<IPestAdvisory> {

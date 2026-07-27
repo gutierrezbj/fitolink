@@ -37,14 +37,22 @@ const importSchema = z
         phone: z.string().max(30).optional(),
       })
       .optional(),
-    province: z.string().max(60).optional(),
+    // Obligatoria: el modelo Parcel la declara `required`, así que dejarla
+    // opcional aquí (y escribir '') hacía que Mongoose rechazara la PRIMERA
+    // parcela con un 500 genérico. Exigirla en el schema da un 400 explicativo
+    // y no escribe nada. Nunca se rellena a ojo.
+    province: z.string().min(2, 'Indique la provincia de las parcelas').max(60),
     parcels: z
       .array(
         z.object({
           name: z.string().min(1).max(120),
           cropType: z.enum(CROP_TYPES),
           geometry: polygonGeometrySchema,
-          areaHa: z.number().nonnegative(),
+          // El modelo exige min 0.1. Sin este mínimo aquí, un recinto pequeño
+          // reventaba el lote a mitad: las parcelas anteriores quedaban ya
+          // escritas y el operador solo veía un 500. Validado antes de tocar
+          // la BD, el lote se rechaza entero y con un mensaje que se entiende.
+          areaHa: z.number().min(0.1, 'Parcela por debajo de 0,1 ha (mínimo admitido)'),
           applicationTarget: z.boolean().optional(),
           applicationCrop: z.string().max(40).optional(),
         }),
@@ -97,7 +105,7 @@ export async function importParcels(req: AuthRequest, res: Response, next: NextF
         geometry: p.geometry,
         areaHa: p.areaHa,
         cropType: p.cropType,
-        province: province ?? '',
+        province,
         ...(p.applicationTarget
           ? { applicationTarget: true, applicationCrop: p.applicationCrop ?? p.cropType }
           : {}),

@@ -166,7 +166,9 @@ export default function AdminImportParcelsPage() {
 
   const clientReady =
     clientMode === 'existing' ? !!ownerId : newName.trim().length >= 2 && /.+@.+\..+/.test(newEmail);
-  const canSubmit = polygons.length > 0 && !!cropType && clientReady;
+  // La provincia es obligatoria en el modelo Parcel: sin ella el import
+  // fallaba en el servidor con un 500 sin explicación.
+  const canSubmit = polygons.length > 0 && !!cropType && !!province && clientReady;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -402,7 +404,7 @@ export default function AdminImportParcelsPage() {
                 ))}
               </select>
               <select value={province} onChange={(e) => setProvince(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                <option value="">— Provincia (opcional) —</option>
+                <option value="">— Provincia —</option>
                 {PROVINCES.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}

@@ -66,7 +66,17 @@ async function main() {
   // anterior murió tras la ingesta y antes del fan-out, avisos creados a
   // mano por el admin, y parcelas dadas de alta DESPUÉS del aviso.
   // (Hallazgos 1/2/12 de la revisión adversarial 12-jul-2026.)
-  const vigentes = await PestAdvisory.find({ isActive: true, expiresAt: { $gte: new Date() } });
+  // `notifyParcels: {$ne:false}` — el barrido recorre TODOS los avisos vigentes,
+  // no solo los Prays, y desde la ingesta del boletín semanal hay avisos que se
+  // publican en el tablón pero que deliberadamente NO deben llegar a la
+  // campanita (ver FANOUT_POLICY en raifWeeklyIngest.ts). Sin este filtro, este
+  // cron anularía esa política dos días después de aplicarse. Con $ne:false los
+  // avisos antiguos, que no tienen el campo, siguen entrando como siempre.
+  const vigentes = await PestAdvisory.find({
+    isActive: true,
+    expiresAt: { $gte: new Date() },
+    notifyParcels: { $ne: false },
+  });
   let totalCreated = 0;
   let totalMatched = 0;
   for (const advisory of vigentes) {
