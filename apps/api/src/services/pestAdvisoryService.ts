@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import mongoose from 'mongoose';
-import { PestAdvisory, type IPestAdvisory, type PestSource, type PestSeverity } from '../models/PestAdvisory.js';
+import { PestAdvisory, type IPestAdvisory, type PestSource, type PestSeverity, type PestAdvisoryKind } from '../models/PestAdvisory.js';
 import { Parcel } from '../models/Parcel.js';
 import { Alert } from '../models/Alert.js';
 import { AppError } from '../utils/AppError.js';
@@ -33,8 +33,14 @@ export interface CreateAdvisoryInput {
     /** [lng, lat] */
     centroid: [number, number];
     radiusKm?: number;
+    /** Default 'agrom' — ninguna fuente publica geometría (ver IAffectedArea). */
+    radiusSource?: 'fuente' | 'agrom';
   }>;
   severity?: PestSeverity;
+  /** Qué clase de publicación es (ver PEST_ADVISORY_KINDS). Default 'deteccion'. */
+  advisoryKind?: PestAdvisoryKind;
+  /** La zona tal como la escribe la fuente, sin interpretar. */
+  sourceScopeLiteral?: string;
   detectedAt?: Date;
   expiresAt?: Date;
   source: PestSource;
@@ -51,6 +57,12 @@ export interface ParcelPestAdvisory {
   pestName: string;
   scientificName?: string;
   severity: PestSeverity;
+  /** medición con fecha / ventana de campaña / ficha permanente */
+  advisoryKind: PestAdvisoryKind;
+  /** Zona literal de la fuente (si la dio). El radio es nuestro. */
+  sourceScopeLiteral?: string;
+  /** ¿El radio lo delimitó la fuente o lo derivamos nosotros? */
+  radiusSource: 'fuente' | 'agrom';
   source: PestSource;
   sourceRef?: string;
   detectedAt: string;       // ISO yyyy-mm-dd
@@ -145,8 +157,11 @@ export async function createAdvisory(
       comarca: a.comarca,
       centroid: { type: 'Point' as const, coordinates: a.centroid },
       radiusKm: a.radiusKm ?? 30,
+      radiusSource: a.radiusSource ?? 'agrom',
     })),
     severity: input.severity ?? 'medium',
+    advisoryKind: input.advisoryKind ?? 'deteccion',
+    sourceScopeLiteral: input.sourceScopeLiteral,
     detectedAt: input.detectedAt ?? new Date(),
     expiresAt: input.expiresAt,
     source: input.source,
@@ -333,6 +348,9 @@ export async function getAdvisoriesForParcel(parcelId: string): Promise<ParcelPe
           pestName: adv.pestName,
           scientificName: adv.scientificName,
           severity: adv.severity,
+          advisoryKind: adv.advisoryKind ?? 'deteccion',
+          sourceScopeLiteral: adv.sourceScopeLiteral,
+          radiusSource: area.radiusSource ?? 'agrom',
           source: adv.source,
           sourceRef: adv.sourceRef,
           detectedAt: isoDate(adv.detectedAt),
@@ -411,6 +429,9 @@ export async function getAdvisoriesForUser(userId: string): Promise<UserPestAdvi
             pestName: adv.pestName,
             scientificName: adv.scientificName,
             severity: adv.severity,
+            advisoryKind: adv.advisoryKind ?? 'deteccion',
+            sourceScopeLiteral: adv.sourceScopeLiteral,
+            radiusSource: area.radiusSource ?? 'agrom',
             source: adv.source,
             sourceRef: adv.sourceRef,
             detectedAt: isoDate(adv.detectedAt),

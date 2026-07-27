@@ -20,6 +20,14 @@ RUN npm run build --workspace=apps/api
 # --- Production stage ---
 FROM node:22-alpine
 
+# poppler-utils aporta `pdftotext`, que usa la ingesta de boletines
+# fitosanitarios (apps/api/src/ingest/pdfText.ts). Casi todos los servicios
+# autonómicos publican en PDF maquetado a columnas; `pdftotext -layout` es lo
+# único que preserva la maquetación lo bastante para localizar las cabeceras
+# de cultivo/provincia y los epígrafes de plaga. Añade ~15 MB a la imagen.
+# (26-jul-2026 · Fase 0 del radar de boletines)
+RUN apk add --no-cache poppler-utils
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./

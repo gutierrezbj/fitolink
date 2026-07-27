@@ -5,20 +5,39 @@ import { CROP_TYPES, PROVINCES, type CropType } from '@fitolink/shared';
  * Pest advisory — Camino B of the "plagas curadas" pattern from
  * OverWatch v2 §5.x.
  *
- * The agronomist (or temporarily JuanCho himself) reads the official
- * bulletins published every week by RAIF Andalucia, MAPA, SAIF Valencia,
- * SIAM Murcia and similar regional services. When something relevant for
- * a covered comarca + crop appears, they create a row here. The system
- * then distributes it automatically to the parcels that match by crop
- * type and geographic radius around any of the affected centroids.
+ * FitoLink reúne lo que publican los servicios fitosanitarios autonómicos
+ * (RAIF Andalucía, DARP Cataluña, SAIF/IVIA, SIAM Murcia, ITACYL…) y lo pone
+ * en un mapa común, cruzado con el cultivo y la comarca de cada parcela.
+ * El dato es de cada organismo; FitoLink abre el canal y cita la fuente.
  *
- * We deliberately avoid trying to scrape and parse those PDFs — that
- * is V2. The wedge value here is the curated distribution, not the
- * scraping pipeline.
+ * Origen: al principio los avisos se teclearon a mano (curación). Desde
+ * 12-jul-2026 hay ingesta automática del informe Prays del RAIF, y desde
+ * 26-jul-2026 el modelo distingue QUÉ tipo de publicación es cada aviso
+ * (ver PEST_ADVISORY_KINDS) porque las fuentes no publican todas lo mismo.
  */
 
 export const PEST_SEVERITIES = ['low', 'medium', 'high'] as const;
 export type PestSeverity = (typeof PEST_SEVERITIES)[number];
+
+/**
+ * QUÉ clase de publicación es el aviso. Crítico para no pintar igual cosas
+ * que el organismo dice de forma muy distinta (26-jul-2026):
+ *
+ *  · 'deteccion'  → la fuente reporta una MEDICIÓN de campo con fecha:
+ *                   "45,1% de aceitunas con Prays vivo", "16,1 adultos/
+ *                   trampa/día", "% de hojas ocupadas al alza". Es lo más
+ *                   fuerte que podemos mostrar.
+ *  · 'campana'    → la fuente declara una VENTANA DE RIESGO recurrente de
+ *                   la campaña: "en julio vigilad araña roja en maíz de
+ *                   regadío". No dice que la haya HOY en tu parcela; dice
+ *                   que es la época. Publicarlo como detección sería
+ *                   mentir (CRITICAL_no_inventar).
+ *  · 'referencia' → ficha técnica permanente sin fecha de publicación
+ *                   (biología, umbrales de muestreo). Útil como consulta,
+ *                   NUNCA como aviso vigente.
+ */
+export const PEST_ADVISORY_KINDS = ['deteccion', 'campana', 'referencia'] as const;
+export type PestAdvisoryKind = (typeof PEST_ADVISORY_KINDS)[number];
 
 export const PEST_SOURCES = ['RAIF', 'DARP', 'MAPA', 'SAIF', 'SIAM', 'CSCV', 'ITACYL', 'otros'] as const;
 export type PestSource = (typeof PEST_SOURCES)[number];
@@ -38,6 +57,17 @@ export interface IAffectedArea {
   centroid: { type: 'Point'; coordinates: [number, number] };
   /** Match radius around the centroid, in kilometers */
   radiusKm: number;
+  /**
+   * ¿De dónde sale el radio? NINGUNA fuente oficial publica geometría: lo
+   * mejor que dan es un topónimo en texto libre ("els regadius de Lleida",
+   * "valor medio provincial"). El centroide y el radio los resolvemos
+   * nosotros, así que hay que poder decirlo en la UI en vez de aparentar
+   * que el organismo dibujó un círculo (26-jul-2026).
+   *
+   *  · 'fuente' → la fuente delimita la zona de forma explícita y precisa.
+   *  · 'agrom'  → lo hemos derivado nosotros del topónimo (caso normal).
+   */
+  radiusSource: 'fuente' | 'agrom';
 }
 
 export interface IPestAdvisory extends Document {
@@ -50,9 +80,32 @@ export interface IPestAdvisory extends Document {
   /** One or more zones the advisory covers */
   affectedAreas: IAffectedArea[];
   severity: PestSeverity;
+  /**
+   * Qué clase de publicación es (medición con fecha / ventana de campaña /
+   * ficha permanente). Ver PEST_ADVISORY_KINDS. Default 'deteccion' por
+   * compatibilidad con los avisos que ya existían.
+   */
+  advisoryKind: PestAdvisoryKind;
+  /**
+   * La zona TAL COMO LA ESCRIBE la fuente, sin interpretar. Ejemplos reales:
+   * "els regadius de Lleida", "valor medio provincial", "Campo de Cartagena".
+   * Es lo único que el organismo afirma de verdad sobre el territorio — el
+   * centroide y el radio son nuestros (ver IAffectedArea.radiusSource).
+   */
+  sourceScopeLiteral?: string;
   /** Date when the activity started being reported */
   detectedAt: Date;
-  /** Date after which the advisory is no longer active */
+  /**
+   * Fecha tras la cual el aviso deja de mostrarse.
+   *
+   * Lo fija SIEMPRE el ingester/seed según lo que declare la fuente:
+   *  · 'deteccion' → hasta la siguiente publicación del boletín (semanal,
+   *                  quincenal…). Un parte de campo caduca rápido.
+   *  · 'campana'   → fin de la ventana que declara el boletín (p.ej. el mes
+   *                  o el periodo julio-agosto). NO inventar más allá.
+   * El default de 21 días es solo una red de seguridad para que nada quede
+   * vivo indefinidamente si alguien olvida ponerlo.
+   */
   expiresAt: Date;
   /** Origin of the curated information */
   source: PestSource;
@@ -88,6 +141,10 @@ const affectedAreaSchema = new Schema<IAffectedArea>(
       coordinates: { type: [Number], required: true },
     },
     radiusKm: { type: Number, required: true, min: 1, max: 200, default: 30 },
+    // Default 'agrom': es el caso real en todas las fuentes auditadas — ninguna
+    // publica geometría, así que el radio lo ponemos nosotros salvo prueba
+    // en contra. Ser honesto por defecto.
+    radiusSource: { type: String, enum: ['fuente', 'agrom'], default: 'agrom' },
   },
   { _id: false },
 );
@@ -99,6 +156,11 @@ const pestAdvisorySchema = new Schema<IPestAdvisory>(
     cropTypes: [{ type: String, enum: CROP_TYPES, required: true }],
     affectedAreas: { type: [affectedAreaSchema], required: true, validate: (v: unknown[]) => v.length > 0 },
     severity: { type: String, enum: PEST_SEVERITIES, default: 'medium' },
+    // 'deteccion' por defecto: los avisos que ya existían son mediciones de
+    // boletín (Prays con cifras, cotonet, minador…). Las ventanas de campaña
+    // las marca explícitamente su ingester.
+    advisoryKind: { type: String, enum: PEST_ADVISORY_KINDS, default: 'deteccion', index: true },
+    sourceScopeLiteral: { type: String, trim: true, maxlength: 200 },
     detectedAt: { type: Date, required: true, default: Date.now },
     expiresAt: {
       type: Date,
