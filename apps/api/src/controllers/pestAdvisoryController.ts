@@ -23,6 +23,12 @@ export async function publicList(_req: Request, res: Response, next: NextFunctio
       regions: (a.affectedAreas ?? []).map((z) => z.comarca ?? z.province).filter(Boolean),
       detectedAt: a.detectedAt,
       notes: a.notes,
+      // ¿Encabeza el tablón por defecto? Lo grave siempre, y lo que la propia
+      // fuente marca como relevante esta semana. La ingesta semanal del RAIF
+      // trae ~150 avisos de rutina; sin este filtro el tablón público es un
+      // muro. `notifyParcels` es false SOLO en los avisos de rutina del boletín
+      // (los legacy/curados no tienen el campo → !== false → destacados).
+      featured: a.severity === 'high' || a.notifyParcels !== false,
     }));
     res.json({ success: true, data });
   } catch (error) {

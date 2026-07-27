@@ -30,6 +30,8 @@ interface PublicAdvisory {
   regions: string[];
   detectedAt: string;
   notes?: string;
+  /** ¿Encabeza el tablón por defecto? (severidad alta o destacado por la fuente) */
+  featured: boolean;
 }
 
 const SEVERITY_META: Record<Severity, { label: string; dot: string; chip: string }> = {
@@ -63,6 +65,7 @@ const CROP_LABEL: Record<string, string> = {
   olivo: 'Olivar', citrico: 'Cítrico', vinedo: 'Viñedo', frutal: 'Frutal',
   almendro: 'Almendro', pistacho: 'Pistacho', cereal: 'Cereal', patata: 'Patata',
   remolacha: 'Remolacha', maiz: 'Maíz', hortaliza: 'Hortaliza',
+  algodon: 'Algodón', arroz: 'Arroz', girasol: 'Girasol',
 };
 
 function fmtDate(iso: string): string {
@@ -85,6 +88,9 @@ export default function AvisosPage() {
 
   const advisories = data ?? [];
   const [region, setRegion] = useState<string | null>(null);
+  const [crop, setCrop] = useState<string | null>(null);
+  const [onlyHigh, setOnlyHigh] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const stats = useMemo(() => {
     const sources = new Set(advisories.map((a) => a.source));
@@ -92,12 +98,38 @@ export default function AvisosPage() {
     return { total: advisories.length, sources: sources.size, high };
   }, [advisories]);
 
-  // Comunidades presentes (para los chips de filtro) + lista filtrada.
+  // Comunidades presentes (para los chips de filtro).
   const regions = useMemo(
     () => Array.from(new Set(advisories.map((a) => SOURCE_REGION[a.source] ?? a.source))).sort(),
     [advisories],
   );
-  const filtered = region ? advisories.filter((a) => SOURCE_REGION[a.source] === region) : advisories;
+
+  // Filtrado en cascada: comunidad → cultivo → severidad. Los cultivos ofrecidos
+  // se recalculan sobre la comunidad elegida, para no ofrecer un cultivo con 0.
+  const byRegion = region ? advisories.filter((a) => SOURCE_REGION[a.source] === region) : advisories;
+  const cropsHere = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const a of byRegion) for (const c of a.cropTypes) count.set(c, (count.get(c) ?? 0) + 1);
+    return [...count.entries()].sort((a, b) => b[1] - a[1]);
+  }, [byRegion]);
+
+  const byCrop = crop ? byRegion.filter((a) => a.cropTypes.includes(crop)) : byRegion;
+  const narrowed = byCrop.filter((a) => (onlyHigh ? a.severity === 'high' : true));
+
+  // "Liderar con lo que importa": sin filtro explícito de cultivo/severidad y sin
+  // "ver todos", el tablón muestra SOLO lo destacado (grave + señalado por la
+  // fuente). Elegir un cultivo o pedir "ver todos" abre el listado completo.
+  const leadMode = !showAll && !crop && !onlyHigh;
+  const filtered = leadMode ? narrowed.filter((a) => a.featured) : narrowed;
+  const hiddenCount = narrowed.length - filtered.length;
+
+  const anyFilter = region !== null || crop !== null || onlyHigh || showAll;
+  const resetAll = () => {
+    setRegion(null);
+    setCrop(null);
+    setOnlyHigh(false);
+    setShowAll(false);
+  };
 
   return (
     <div className="min-h-screen bg-earth-50 text-brand-900">
@@ -142,11 +174,29 @@ export default function AvisosPage() {
           última verificación por nuestro equipo.
         </p>
 
-        {/* Stats */}
+        {/* Stats — la de severidad alta es un atajo: lleva a esos avisos */}
         <div className="mt-7 flex flex-wrap gap-6">
           <Stat n={stats.total} label="avisos oficiales" />
           <Stat n={stats.sources} label="fuentes oficiales" />
-          <Stat n={stats.high} label="severidad alta" accent />
+          <Stat
+            n={stats.high}
+            label={onlyHigh ? 'severidad alta ·  ✕' : 'ver severidad alta'}
+            accent
+            active={onlyHigh}
+            onClick={
+              stats.high > 0
+                ? () => {
+                    if (onlyHigh) {
+                      setOnlyHigh(false);
+                    } else {
+                      setOnlyHigh(true);
+                      setRegion(null); // la grave puede estar en otra comunidad
+                      setCrop(null);
+                    }
+                  }
+                : undefined
+            }
+          />
         </div>
         {advisories.length > 0 && (
           <p className="mt-4 font-mono text-[10px] uppercase tracking-wider text-earth-400">
@@ -170,20 +220,72 @@ export default function AvisosPage() {
           </p>
         )}
 
-        {/* Filtro por comunidad — ir al grano */}
-        {regions.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 mb-6">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mr-1">Comunidad:</span>
-            <FilterChip label={`Todas (${advisories.length})`} active={region === null} onClick={() => setRegion(null)} />
-            {regions.map((r) => (
-              <FilterChip
-                key={r}
-                label={`${r} (${advisories.filter((a) => SOURCE_REGION[a.source] === r).length})`}
-                active={region === r}
-                onClick={() => setRegion(r)}
-              />
-            ))}
+        {!isLoading && !isError && advisories.length > 0 && (
+          <div className="mb-6 space-y-3">
+            {/* Filtro por comunidad */}
+            {regions.length > 1 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mr-1 w-16">Comunidad:</span>
+                <FilterChip label={`Todas (${advisories.length})`} active={region === null} onClick={() => { setRegion(null); setCrop(null); }} />
+                {regions.map((r) => (
+                  <FilterChip
+                    key={r}
+                    label={`${r} (${advisories.filter((a) => SOURCE_REGION[a.source] === r).length})`}
+                    active={region === r}
+                    onClick={() => { setRegion(r); setCrop(null); }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Filtro por cultivo — el que de verdad usa un agricultor */}
+            {cropsHere.length > 1 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mr-1 w-16">Cultivo:</span>
+                <FilterChip label="Todos" active={crop === null} onClick={() => setCrop(null)} />
+                {cropsHere.map(([c, n]) => (
+                  <FilterChip
+                    key={c}
+                    label={`${CROP_LABEL[c] ?? c} (${n})`}
+                    active={crop === c}
+                    onClick={() => setCrop(crop === c ? null : c)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Línea de contexto: qué se está mostrando + escape al listado completo */}
+        {!isLoading && !isError && advisories.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-brand-900/60">
+              {leadMode ? (
+                <>Mostrando <strong className="text-brand-800">{filtered.length}</strong> avisos destacados{region ? ` de ${region}` : ''}{hiddenCount > 0 ? ` · ${hiddenCount} más de rutina` : ''}.</>
+              ) : (
+                <>Mostrando <strong className="text-brand-800">{filtered.length}</strong> aviso{filtered.length === 1 ? '' : 's'}{onlyHigh ? ' de severidad alta' : ''}{crop ? ` de ${CROP_LABEL[crop] ?? crop}` : ''}{region ? ` en ${region}` : ''}.</>
+              )}
+            </p>
+            <div className="flex items-center gap-3">
+              {leadMode && hiddenCount > 0 && (
+                <button type="button" onClick={() => setShowAll(true)} className="text-[11px] font-semibold text-terra-600 hover:text-terra-700 uppercase tracking-wider font-mono">
+                  Ver todos ({narrowed.length}) →
+                </button>
+              )}
+              {anyFilter && (
+                <button type="button" onClick={resetAll} className="text-[11px] font-medium text-earth-400 hover:text-brand-700 uppercase tracking-wider font-mono">
+                  Limpiar filtros ✕
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !isError && advisories.length > 0 && filtered.length === 0 && (
+          <p className="text-sm text-earth-400 py-10 text-center">
+            No hay avisos que casen con este filtro.{' '}
+            <button type="button" onClick={resetAll} className="text-terra-600 hover:text-terra-700 font-semibold">Ver todo el tablón</button>.
+          </p>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -243,7 +345,7 @@ export default function AvisosPage() {
         </div>
 
         <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-wider text-earth-400">
-          Avisos curados por el equipo técnico AgroM desde boletines oficiales
+          Avisos agregados desde los boletines oficiales de cada comunidad · el dato es de la fuente
         </p>
       </section>
 
@@ -280,12 +382,34 @@ export default function AvisosPage() {
   );
 }
 
-function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean }) {
-  return (
-    <div>
+function Stat({
+  n,
+  label,
+  accent,
+  active,
+  onClick,
+}: {
+  n: number;
+  label: string;
+  accent?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
       <p className={`font-display text-3xl font-bold ${accent ? 'text-terra-500' : 'text-brand-700'}`}>{n}</p>
-      <p className="font-mono text-[10px] uppercase tracking-wider text-earth-400 mt-0.5">{label}</p>
-    </div>
+      <p className={`font-mono text-[10px] uppercase tracking-wider mt-0.5 ${active ? 'text-terra-600' : 'text-earth-400'}`}>{label}</p>
+    </>
+  );
+  if (!onClick) return <div>{body}</div>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-lg -m-1.5 p-1.5 transition-colors hover:bg-terra-50 ${active ? 'bg-terra-50 ring-1 ring-terra-500/30' : ''}`}
+    >
+      {body}
+    </button>
   );
 }
 
