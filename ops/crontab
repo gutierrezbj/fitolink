@@ -24,3 +24,10 @@
 # runner tiene gate por fecha y es fail-closed — si el portal no publicó nada
 # nuevo, solo hace el barrido idempotente de fan-out.
 30 7 * * 1 cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaif.js >> /var/log/fitolink-ingest.log 2>&1
+
+# Boletín semanal provincial del RAIF (7 provincias, multicultivo) → tablón.
+# El boletín cubre de lunes a viernes y se publica al cierre de esa ventana, así
+# que se lee el sábado por la mañana. Un run por semana basta: el fingerprint
+# lleva la semana del boletín, de modo que repetirlo no duplica nada.
+# Fail-closed por provincia — que una no publique no tumba a las demás.
+0 8 * * 6 cd /opt/fitolink && docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaifWeekly.js >> /var/log/fitolink-ingest.log 2>&1

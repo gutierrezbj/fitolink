@@ -4,6 +4,10 @@
 > real: **RAIF Andalucía** (informe "Estado fitosanitario actual de Prays
 > oleae"). El resto de fuentes (DARP/SAIF/SIAM/ITACYL) siguen en curación
 > manual por seed — ver "Añadir fuentes" abajo.
+>
+> **Actualización 27-jul-2026** · segunda ingesta automática: el **boletín
+> semanal provincial** del RAIF, multicultivo, 7 provincias. Multiplica el
+> tablón de 10 avisos a ~151 por semana. Ver "Boletín semanal" más abajo.
 
 ## Qué hace
 
@@ -83,6 +87,56 @@ bash ops/install-crontab.sh --apply   # aplica (hace backup antes)
   pisa una ingesta más fresca.
 - La ingesta reemplaza los Prays por **delete + reinsert** con fingerprint
   `polilla-olivo-RAIF-<Provincia>-<YYYY-MM>`.
+
+## Boletín semanal provincial (27-jul-2026)
+
+Segunda ingesta automática, independiente de la de Prays. Cada provincia
+andaluza publica un PDF semanal multicultivo; de ahí sale un aviso por
+(provincia · cultivo · plaga · semana).
+
+```
+índice provincial ──▶ PDF ──pdftotext──▶ parser puro ──▶ PestAdvisory
+  (HTML, 7 prov.)          -layout + -raw   fail-closed     tablón /avisos
+                           fecha INTERNA    por provincia
+```
+
+**Ficheros**: `ingest/pdfText.ts` (descarga + texto + fecha obligatoria),
+`ingest/raifWeeklyParser.ts` (puro: texto → estructura),
+`ingest/raifWeeklyIngest.ts` (una provincia → avisos),
+`ingest/ingestRaifWeekly.ts` (runner).
+
+```bash
+# Ver qué publicaría, SIN tocar la BD — hazlo siempre antes de un cambio
+docker compose -f docker-compose.prod.yml exec -T api node apps/api/dist/ingest/ingestRaifWeekly.js --dry-run
+```
+
+**Cuánto trae** (medido el 27-jul-2026, periodo "Del 20 al 24 de julio de
+2026"): 151 avisos · 13 destacados por la propia fuente · por cultivo
+olivo 46, cítrico 29, almendro 25, algodón 24, viñedo 17, arroz 8, pistacho 2.
+
+**Qué llega a la campanita** — constante `FANOUT_POLICY` en
+`raifWeeklyIngest.ts`. Por defecto `'destacados'`: los 151 van al tablón,
+pero solo se convierten en alerta de parcela los que el boletín lista en
+"Agentes destacados". Con `'todos'` serían 80 alertas semanales en el
+entorno demo (12 por socio de la cooperativa). El filtro no es nuestro: lo
+decide la fuente.
+
+**Trampas encontradas, por si el parser deja de casar:**
+
+- Los nombres de fichero son **fósiles**: `Informe_Fitosanitario_0603_0609-2.pdf`
+  en la carpeta `uploads/2023/04` sirve el boletín de julio de 2026. La fecha
+  se saca SIEMPRE del texto interno; sin fecha no se publica.
+- La URL lleva el segmento repetido `informe-semanal/informe-semanal-<prov>/`.
+  Sin el intermedio, la Junta responde 301 a `pd-web-wp-raif.apps.paas-pro…`,
+  que no resuelve fuera de su red.
+- Maquetación distinta por provincia: Granada fecha "de julio **/** 2026";
+  Almería y Granada escriben "Agentes **más** destacados", Cádiz alterna.
+- **Córdoba** no publica el informe general multicultivo (solo especiales por
+  cultivo) → se salta con error. Cablearla es cablear ese otro formato.
+- La imagen necesita `poppler-utils` (ya en `docker/Dockerfile.api`). Si falta,
+  el error lo dice explícitamente.
+- Si aparece `cultivos del boletín sin mapear` en el log, el boletín trae
+  material que estamos tirando: añadirlo a `CROP_HEADER_MAP`.
 
 ## Añadir fuentes (F2)
 
