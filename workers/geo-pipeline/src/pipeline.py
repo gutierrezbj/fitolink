@@ -19,9 +19,11 @@ from .config import (
     MONGODB_URI, CLOUD_COVER_MAX, DOWNLOAD_DIR,
     USE_OPENEO, NDVI_GRID_ENABLED, NDVI_GRID_RESOLUTION,
     MPC_CLIMATE_REFRESH, MPC_THERMAL_REFRESH, NDVI_MIN_AGE_DAYS,
+    SATELLITE_SOURCE,
 )
 from .ingestion.copernicus import CopernicusClient
 from .ingestion.openeo_client import OpenEOClient, OpenEOAccountError, is_account_error
+from .ingestion.mpc_sentinel2 import MpcSentinel2Client
 from .ingestion.climate_context import (
     fetch_recent_climate, compute_climate_anomaly,
 )
@@ -81,6 +83,29 @@ def _process_parcel_openeo(
     return ndvi_stats, scene_id, ndvi_raw_bytes
 
 
+def _process_parcel_mpc(
+    mpc_client: MpcSentinel2Client,
+    parcel: dict,
+    start_date: datetime,
+    end_date: datetime,
+) -> Optional[tuple[NdviResult, str, Optional[bytes]]]:
+    """
+    Calcula NDVI para una parcela vía Microsoft Planetary Computer.
+    Mismo contrato que _process_parcel_openeo: (NdviResult, scene_id, geotiff).
+    """
+    result = mpc_client.compute_ndvi_stats(
+        geometry=parcel['geometry'],
+        start_date=start_date,
+        end_date=end_date,
+        max_cloud_cover=CLOUD_COVER_MAX,
+    )
+    if result is None:
+        return None
+    ndvi_stats, ndvi_raw_bytes = result
+    scene_id = f"mpc_{end_date.strftime('%Y%m%d')}"
+    return ndvi_stats, scene_id, ndvi_raw_bytes
+
+
 def _process_parcel_odata(
     copernicus: CopernicusClient,
     parcel: dict,
@@ -132,7 +157,8 @@ def run_pipeline() -> None:
     3. Run anomaly detection
     4. Store NDVI reading + create alerts when anomalies are detected
     """
-    logger.info('pipeline_started', mode='openeo' if USE_OPENEO else 'odata_download')
+    mode = 'mpc' if SATELLITE_SOURCE == 'mpc' else ('openeo' if USE_OPENEO else 'odata_download')
+    logger.info('pipeline_started', mode=mode)
 
     client = MongoClient(MONGODB_URI)
     db = client.get_default_database()
@@ -146,25 +172,38 @@ def run_pipeline() -> None:
         return
 
     # Initialise clients
+    mpc_client: Optional[MpcSentinel2Client] = None
     openeo_client: Optional[OpenEOClient] = None
     copernicus_client: Optional[CopernicusClient] = None
 
-    if USE_OPENEO:
+    if SATELLITE_SOURCE == 'mpc':
+        # Modo MPC: primario y ÚNICO proveedor. Corte limpio de CDSE — si MPC
+        # falla en una parcela, se salta y el siguiente run reintenta; no se cae
+        # a openEO/OData (que es justo lo que estamos abandonando).
         try:
-            openeo_client = OpenEOClient()
-            openeo_client.connect()
+            mpc_client = MpcSentinel2Client()
+            mpc_client.connect()
         except Exception as e:
-            logger.warning('openeo_init_failed_using_fallback', error=str(e))
-            openeo_client = None
-
-    if openeo_client is None:
-        copernicus_client = CopernicusClient()
+            logger.error('mpc_init_failed', error=str(e))
+            mpc_client = None
+    else:
+        # Legacy: openEO primario + OData de respaldo (misma cuenta CDSE).
+        if USE_OPENEO:
+            try:
+                openeo_client = OpenEOClient()
+                openeo_client.connect()
+            except Exception as e:
+                logger.warning('openeo_init_failed_using_fallback', error=str(e))
+                openeo_client = None
+        if openeo_client is None:
+            copernicus_client = CopernicusClient()
 
     # Initialise ML detector (V2) once — loads/trains model on first call
     detector = get_detector()
 
     processed = 0
     alerts_created = 0
+    mpc_used = 0
     openeo_used = 0
     odata_used = 0
     skipped_fresh = 0
@@ -208,8 +247,22 @@ def run_pipeline() -> None:
                 skipped_fresh += 1
                 continue
 
-            # Primary: openEO cloud processing
-            if openeo_client is not None:
+            # Primary: MPC (modo 'mpc'). Único proveedor — sin fallback a CDSE.
+            if mpc_client is not None:
+                try:
+                    result = _process_parcel_mpc(mpc_client, parcel, start_date, end_date)
+                    if result is not None:
+                        stats, scene_id, ndvi_raw_bytes = result
+                        mpc_used += 1
+                    else:
+                        logger.info('mpc_no_imagery', parcel=parcel_name)
+                except Exception as e:
+                    # MPC es público/gratuito: un fallo afecta a ESTA parcela, no
+                    # a la corrida. Se registra y se sigue (no hay corta-circuitos).
+                    logger.warning('mpc_parcel_failed', parcel=parcel_name, error=str(e))
+
+            # Primary: openEO cloud processing (legacy, solo si no hay MPC)
+            if stats is None and openeo_client is not None:
                 try:
                     result = _process_parcel_openeo(openeo_client, parcel, start_date, end_date)
                     if result is not None:
@@ -300,6 +353,10 @@ def run_pipeline() -> None:
                 'cloudFraction': stats.cloud_fraction,
                 'anomalyDetected': False,
                 'source': 'sentinel2',
+                # Procedencia del cómputo (trazabilidad; no lo expone el modelo
+                # Mongoose, queda para inspección directa en BD). Marca la escena
+                # de corte de la migración CDSE→MPC.
+                'satSource': SATELLITE_SOURCE,
             }
             for attr, key in (
                 ('ndre_mean', 'ndreValue'),
@@ -548,6 +605,8 @@ def run_pipeline() -> None:
         parcels_processed=processed,
         alerts_created=alerts_created,
         total_parcels=len(parcels),
+        source=SATELLITE_SOURCE,
+        mpc_used=mpc_used,
         openeo_used=openeo_used,
         odata_fallback_used=odata_used,
         skipped_fresh=skipped_fresh,

@@ -17,6 +17,13 @@ OPENEO_URL: str = 'https://openeo.dataspace.copernicus.eu'
 USE_OPENEO: bool = os.getenv('USE_OPENEO', 'true').lower() != 'false'
 OPENEO_COLLECTION: str = 'SENTINEL2_L2A'
 
+# Proveedor de la imagen Sentinel-2 en vivo. Migración 3-ago-2026 (CDSE nos dejó
+# tirados dos veces con 0 clientes: 402 y 401 con créditos activos).
+#   'mpc'    → Microsoft Planetary Computer (gratis, sin cupo, NDVI local). Default.
+#   'openeo' → legacy CDSE/openEO + fallback OData (de pago por créditos).
+# En modo 'mpc' NO se cae a CDSE: es un corte limpio y reversible por env.
+SATELLITE_SOURCE: str = os.getenv('SATELLITE_SOURCE', 'mpc').strip().lower()
+
 # NDVI anomaly thresholds
 NDVI_ANOMALY_DROP_THRESHOLD: float = 0.10  # Drop of >0.10 from previous reading
 NDVI_CRITICAL_THRESHOLD: float = 0.30  # Absolute NDVI below 0.30

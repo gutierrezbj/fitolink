@@ -89,6 +89,12 @@ services:
       dockerfile: docker/Dockerfile.geo
     environment:
       - MONGODB_URI=mongodb://mongo:27017/fitolink
+      # Proveedor del Sentinel-2 en vivo. Default 'mpc' (migración 3-ago-2026).
+      # Para rollback a CDSE: SATELLITE_SOURCE=openeo en el .env del VPS.
+      - SATELLITE_SOURCE=${SATELLITE_SOURCE:-mpc}
+      # Clave opcional de MPC (reduce throttling 429). Vacía = catálogo anónimo.
+      - PC_SDK_SUBSCRIPTION_KEY=${PC_SDK_SUBSCRIPTION_KEY:-}
+      # CDSE — solo se usa en modo legacy SATELLITE_SOURCE=openeo.
       - COPERNICUS_CLIENT_ID=${COPERNICUS_CLIENT_ID}
       - COPERNICUS_CLIENT_SECRET=${COPERNICUS_CLIENT_SECRET}
     networks:

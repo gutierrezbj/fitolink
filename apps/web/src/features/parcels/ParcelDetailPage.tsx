@@ -732,7 +732,13 @@ export default function ParcelDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {available.map((idx) => {
                 const v = idx.value as number;
-                const trend = idx.prev !== undefined ? v - idx.prev : null;
+                // EVI/SAVI dependen de la escala de reflectancia y NO son
+                // comparables a través de la migración de proveedor satelital
+                // (openEO los calculaba en escala 0-10000, MPC en 0-1): su delta
+                // pintaría una caída roja falsa en la escena de corte. NDVI/NDRE/
+                // NDMI son ratios invariantes de escala → su delta sí es fiable.
+                const comparable = idx.label !== 'EVI' && idx.label !== 'SAVI';
+                const trend = comparable && idx.prev !== undefined ? v - idx.prev : null;
                 return (
                   <div key={idx.label} className="bg-gray-50 rounded-lg p-3 border border-gray-100" title={idx.tooltip}>
                     <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: idx.color }}>{idx.label}</p>
