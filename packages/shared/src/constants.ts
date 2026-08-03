@@ -79,6 +79,7 @@ export const CROP_TYPES = [
   'girasol',
   'algodon',
   'frutal',
+  'aguacate',
   'hortaliza',
   'citrico',
   'almendro',

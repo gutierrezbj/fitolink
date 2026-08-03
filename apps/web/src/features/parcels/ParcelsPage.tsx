@@ -43,6 +43,7 @@ const CROP_CHIP: Record<string, string> = {
   girasol: 'bg-amber-100 text-amber-800',
   citrico: 'bg-orange-100 text-orange-800',
   frutal: 'bg-rose-100 text-rose-800',
+  aguacate: 'bg-lime-100 text-lime-800',
   vinedo: 'bg-purple-100 text-purple-800',
   pistacho: 'bg-emerald-100 text-emerald-800',
   almendro: 'bg-pink-100 text-pink-800',

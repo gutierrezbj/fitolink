@@ -22,7 +22,7 @@ import numpy as np
 # (min_normal, max_normal) per month group — values below min are "dormant normal"
 # Crops grouped by phenological behaviour:
 #   - olive:       olivo (secano · banda BAJA propia, separado desde 25-jul-2026)
-#   - evergreen:   citrico, almendro (semi)
+#   - evergreen:   citrico, almendro (semi), aguacate (perenne tropical · RD)
 #   - deciduous:   vinedo, frutal
 #   - winter_annual: cereal, leguminosa, remolacha, patata
 #   - summer_annual: girasol, maiz, algodon, arroz
@@ -80,6 +80,7 @@ _CROP_TO_GROUP: dict[str, str] = {
     'pistacho': 'deciduous',
     'vinedo': 'deciduous',
     'frutal': 'deciduous',
+    'aguacate': 'evergreen',
     'cereal': 'winter_annual',
     'leguminosa': 'winter_annual',
     'remolacha': 'winter_annual',

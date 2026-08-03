@@ -54,6 +54,7 @@ const CROP_TO_GROUP: Record<string, keyof typeof SEASONAL_FLOOR> = {
   pistacho: 'deciduous',
   vinedo: 'deciduous',
   frutal: 'deciduous',
+  aguacate: 'evergreen',
   cereal: 'winter_annual',
   leguminosa: 'winter_annual',
   remolacha: 'winter_annual',

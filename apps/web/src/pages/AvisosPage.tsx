@@ -65,7 +65,7 @@ const CROP_LABEL: Record<string, string> = {
   olivo: 'Olivar', citrico: 'Cítrico', vinedo: 'Viñedo', frutal: 'Frutal',
   almendro: 'Almendro', pistacho: 'Pistacho', cereal: 'Cereal', patata: 'Patata',
   remolacha: 'Remolacha', maiz: 'Maíz', hortaliza: 'Hortaliza',
-  algodon: 'Algodón', arroz: 'Arroz', girasol: 'Girasol',
+  algodon: 'Algodón', arroz: 'Arroz', girasol: 'Girasol', aguacate: 'Aguacate',
 };
 
 function fmtDate(iso: string): string {

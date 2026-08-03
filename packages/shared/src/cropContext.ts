@@ -67,6 +67,7 @@ const CROP_LABELS_ES: Record<string, string> = {
   cereal: 'cereal',
   citrico: 'cítrico',
   frutal: 'frutal',
+  aguacate: 'aguacatal',
   hortaliza: 'hortícola',
   girasol: 'girasol',
   maiz: 'maíz',
@@ -161,7 +162,7 @@ const SEASONAL_RANGE: Record<string, [number, number][]> = {
 
 const CROP_GROUP: Record<string, keyof typeof SEASONAL_RANGE> = {
   olivo: 'olive', citrico: 'evergreen', almendro: 'deciduous', pistacho: 'deciduous',
-  vinedo: 'deciduous', frutal: 'deciduous',
+  vinedo: 'deciduous', frutal: 'deciduous', aguacate: 'evergreen',
   cereal: 'winter_annual', leguminosa: 'winter_annual', remolacha: 'winter_annual', patata: 'winter_annual',
   girasol: 'summer_annual', maiz: 'summer_annual', algodon: 'summer_annual', arroz: 'summer_annual',
 };
@@ -218,6 +219,7 @@ export const ESTABLISHMENT_YEARS: Record<string, number> = {
   almendro: 4,
   citrico: 4,
   frutal: 4,
+  aguacate: 4,  // Aguacate entra en producción hacia el 4º-5º año.
   vinedo: 3,
 };
 

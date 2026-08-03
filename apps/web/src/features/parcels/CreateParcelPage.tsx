@@ -20,6 +20,7 @@ const CROP_TYPES = [
   { value: 'girasol', label: 'Girasol' },
   { value: 'algodon', label: 'Algodon' },
   { value: 'frutal', label: 'Frutal' },
+  { value: 'aguacate', label: 'Aguacate' },
   { value: 'hortaliza', label: 'Hortaliza' },
   { value: 'citrico', label: 'Citrico' },
   { value: 'almendro', label: 'Almendro' },
