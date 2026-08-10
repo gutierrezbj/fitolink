@@ -103,9 +103,9 @@ async function maybeCreateFireAlert(
     status: 'new',
     aiConfidence,
     fireProximityKm: nearest.distanceKm,
-    fireSource: nearest.satellite === 'N' ? 'VIIRS_SNPP_NRT'
-              : nearest.satellite === '1' ? 'VIIRS_NOAA20_NRT'
-              : 'VIIRS_SNPP_NRT',
+    // 'N' = Suomi-NPP; cualquier otro (NASA devuelve 'N20') = NOAA-20. Antes
+    // comparaba con '1' y no casaba con 'N20' → NOAA-20 se atribuía a SNPP.
+    fireSource: nearest.satellite === 'N' ? 'VIIRS_SNPP_NRT' : 'VIIRS_NOAA20_NRT',
   });
   logger.info(
     {

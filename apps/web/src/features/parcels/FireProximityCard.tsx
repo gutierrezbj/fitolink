@@ -38,6 +38,9 @@ interface Props {
 const RADIUS_KM = 25;
 const DAYS = 7;
 const CRITICAL_DISTANCE_KM = 5;
+/** Potencia radiativa (MW) a partir de la cual un foco cercano merece vigilancia
+ *  activa. Por debajo, y más si es de día, el perfil típico es quema agrícola. */
+const INTENSE_FRP_MW = 10;
 
 const CONFIDENCE_LABEL: Record<string, string> = {
   l: 'baja',
@@ -47,8 +50,31 @@ const CONFIDENCE_LABEL: Record<string, string> = {
 
 const SATELLITE_LABEL: Record<string, string> = {
   N: 'Suomi-NPP',
+  N20: 'NOAA-20',
   '1': 'NOAA-20',
 };
+
+/**
+ * Mensaje calibrado para un foco cercano. NASA FIRMS detecta CALOR, no
+ * clasifica el origen — así que no afirmamos la causa: describimos el perfil
+ * (potencia, hora) y damos una guía honesta y VÁLIDA EN CUALQUIER PAÍS (sin
+ * "112 / Plan INFOCA", que son de España). Un foco intenso y cercano sí merece
+ * vigilancia; los de baja potencia y de día suelen ser quemas agrícolas.
+ */
+function proximityGuidance(nearest: FireDetection): { attention: boolean; eyebrow: string; note: string } {
+  if (nearest.frp >= INTENSE_FRP_MW) {
+    return {
+      attention: true,
+      eyebrow: 'Atención · foco cercano',
+      note: `Es un foco intenso (${nearest.frp.toFixed(1)} MW). Vigile si hay humo o si el viento sopla hacia la parcela; si se acerca, avise a los servicios de emergencia de su zona.`,
+    };
+  }
+  return {
+    attention: false,
+    eyebrow: 'Foco cercano',
+    note: `Los focos de baja potencia —y más si son de día— suelen corresponder a quemas agrícolas de la zona, no a incendios. Conviene vigilar si hay humo o viento hacia la parcela; ante la duda, contacte con los servicios de emergencia de su localidad.`,
+  };
+}
 
 function formatTime(acqTime: string): string {
   // FIRMS devuelve HHMM como string; 0930 → "09:30 UTC"
@@ -111,25 +137,33 @@ export default function FireProximityCard({ parcelId }: Props) {
         </p>
       </div>
 
-      {/* Banner crítico si hay foco < 5 km */}
-      {hasCritical && (
-        <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-700 text-white flex items-center justify-center font-bold">
-            !
+      {/* Banner de foco cercano (< 5 km), calibrado por potencia del foco.
+          Rojo si es intenso; ámbar si es de baja potencia (perfil de quema
+          agrícola). El mensaje es válido en cualquier país — sin 112/INFOCA. */}
+      {hasCritical && fires[0] && (() => {
+        const g = proximityGuidance(fires[0]);
+        const c = g.attention
+          ? { box: 'bg-red-50 border-red-200', dot: 'bg-red-700', eye: 'text-red-700', head: 'text-red-900', note: 'text-red-800' }
+          : { box: 'bg-amber-50 border-amber-200', dot: 'bg-amber-600', eye: 'text-amber-700', head: 'text-amber-900', note: 'text-amber-800' };
+        return (
+          <div className={`${c.box} border-b px-5 py-3 flex items-start gap-3`}>
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full ${c.dot} text-white flex items-center justify-center font-bold`}>
+              !
+            </div>
+            <div className="flex-1">
+              <p className={`font-mono text-[10px] uppercase tracking-[0.22em] ${c.eye} mb-0.5`}>
+                {g.eyebrow}
+              </p>
+              <p className={`text-sm font-semibold ${c.head} leading-snug`}>
+                {criticalFires.length} foco{criticalFires.length === 1 ? '' : 's'} térmico{criticalFires.length === 1 ? '' : 's'} a menos de {CRITICAL_DISTANCE_KM} km. El más cercano, a <span className="font-semibold">{nearestKm} km</span>.
+              </p>
+              <p className={`text-xs ${c.note} mt-1 leading-relaxed`}>
+                {g.note}
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-red-700 mb-0.5">
-              Proximidad crítica
-            </p>
-            <p className="text-sm font-semibold text-red-900 leading-snug">
-              {criticalFires.length} foco{criticalFires.length === 1 ? '' : 's'} térmico{criticalFires.length === 1 ? '' : 's'} detectado{criticalFires.length === 1 ? '' : 's'} a menos de {CRITICAL_DISTANCE_KM} km de su parcela.
-            </p>
-            <p className="text-xs text-red-800 mt-1 leading-relaxed">
-              El más cercano a <span className="font-semibold">{nearestKm} km</span>. Verifique con autoridades locales (112 / Plan INFOCA) si su finca está en riesgo.
-            </p>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Contenido */}
       {fires.length === 0 ? (
