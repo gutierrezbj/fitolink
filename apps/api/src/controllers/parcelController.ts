@@ -4,7 +4,8 @@ import * as parcelService from '../services/parcelService.js';
 import * as ndviSnapshotService from '../services/ndviSnapshotService.js';
 import { getNdviForecastForParcel } from '../services/predictiveInsightService.js';
 import { getWeatherEventsForParcel } from '../services/weatherEventsService.js';
-import { fetchSoilProfileForParcel } from '../services/soilService.js';
+import { fetchSoilProfileForParcel, buildMeasuredSoilProfile, polygonCentroid } from '../services/soilService.js';
+import { z } from 'zod';
 import { fetchActiveFiresNearParcel } from '../services/fireService.js';
 import { computeIrrigationDecision } from '../services/irrigationDecisionService.js';
 import { Parcel } from '../models/Parcel.js';
@@ -137,6 +138,63 @@ export async function refreshSoilProfile(req: AuthRequest, res: Response, next: 
   } catch (error) {
     logger.error({ err: error, parcelId: req.params.id }, 'soil_profile_refresh_failed');
     next(error instanceof Error ? error : AppError.internal('SoilGrids fetch failed'));
+  }
+}
+
+const measuredSoilSchema = z
+  .object({
+    clayPct: z.number().min(0).max(100),
+    sandPct: z.number().min(0).max(100),
+    siltPct: z.number().min(0).max(100),
+    organicMatterPct: z.number().min(0).max(100),
+    measuredOn: z.string().datetime().optional(),
+    sampleLabel: z.string().max(120).optional(),
+  })
+  // La textura debe sumar ~100. Sin esto, un dígito omitido (suma 60) o el
+  // degenerado 0/0/0 pasaría y la renormalización fabricaría una textura y una
+  // capacidad de campo que el laboratorio nunca midió. Tolerancia ±3 por redondeo.
+  .refine((d) => Math.abs(d.clayPct + d.sandPct + d.siltPct - 100) <= 3, {
+    message: 'arcilla + arena + limo debe sumar ~100 (±3)',
+  });
+
+/**
+ * Ingesta de un análisis de suelo REAL de laboratorio (textura + M.O.). Pisa
+ * la estimación satelital de SoilGrids con dato medido por lote — mejora la
+ * lógica de riego (retención de agua real, no estimada). Auth: dueño/admin.
+ */
+export async function setMeasuredSoil(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parsed = measuredSoilSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw AppError.badRequest(parsed.error.issues[0]?.message ?? 'Datos de suelo no válidos');
+    }
+    // ESCRITURA → solo-dueño (sin allowAdminRead): la auth de lectura dejaría
+    // que aseguradora/agregadores con la parcela en cartera PISARAN el suelo de
+    // una parcela ajena. Mismo criterio estricto que update/delete de parcela.
+    const parcel = await parcelService.getParcelById(
+      req.params.id as string,
+      req.user!._id.toString(),
+    );
+    const centroid = polygonCentroid(parcel.geometry as { coordinates: number[][][] });
+    const profile = buildMeasuredSoilProfile(
+      {
+        clayPct: parsed.data.clayPct,
+        sandPct: parsed.data.sandPct,
+        siltPct: parsed.data.siltPct,
+        organicMatterPct: parsed.data.organicMatterPct,
+        measuredOn: parsed.data.measuredOn ? new Date(parsed.data.measuredOn) : undefined,
+        sampleLabel: parsed.data.sampleLabel,
+      },
+      centroid,
+    );
+    await Parcel.updateOne({ _id: parcel._id }, { $set: { soil: profile } });
+    logger.info(
+      { parcelId: parcel._id.toString(), texture: profile.dominantTexture, source: 'lab-measured' },
+      'soil_profile_measured_set',
+    );
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    next(error);
   }
 }
 

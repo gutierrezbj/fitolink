@@ -243,9 +243,12 @@ type Parcel = {
     sandPct: number;
     siltPct: number;
     organicCarbonGkg: number;
-    bulkDensityGcm3: number;
+    organicMatterPct?: number;
+    bulkDensityGcm3?: number;
     fieldCapacityVol: number;
     dominantTexture: string;
+    measuredOn?: string;
+    sampleLabel?: string;
     sampledAt: { lat: number; lng: number };
   } | null;
   modisBaseline?: ModisBaseline;

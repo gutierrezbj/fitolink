@@ -84,7 +84,13 @@ export interface IRecentClimate {
  * textura dominante según triángulo USDA.
  */
 export interface ISoilProfile {
-  source: 'soilgrids-v2';
+  /**
+   * Procedencia del perfil:
+   *  · 'soilgrids-v2'  → estimación del modelo global ISRIC SoilGrids (250 m).
+   *  · 'lab-measured'  → análisis de laboratorio real aportado por el cliente
+   *                      (medido por lote). Pisa a la estimación satelital.
+   */
+  source: 'soilgrids-v2' | 'lab-measured';
   fetchedAt: Date;
   /** % arcilla, capa 0-30 cm. */
   clayPct: number;
@@ -94,12 +100,22 @@ export interface ISoilProfile {
   siltPct: number;
   /** Carbono orgánico g/kg, capa 0-30 cm. */
   organicCarbonGkg: number;
-  /** Densidad aparente g/cm³, capa 0-30 cm. */
-  bulkDensityGcm3: number;
-  /** Contenido volumétrico de agua a -33 kPa (capacidad de campo) — cm³/cm³, 0-30 cm. */
+  /** Materia orgánica % (dato crudo del laboratorio; opcional en la estimación). */
+  organicMatterPct?: number;
+  /** Densidad aparente g/cm³. Opcional: el análisis de laboratorio no siempre la mide. */
+  bulkDensityGcm3?: number;
+  /**
+   * Contenido volumétrico de agua a -33 kPa (capacidad de campo) — cm³/cm³.
+   * En 'lab-measured' se DERIVA de la textura (el laboratorio no la mide);
+   * en 'soilgrids-v2' viene del modelo.
+   */
   fieldCapacityVol: number;
   /** Textura dominante según triángulo USDA — castellano legible. */
   dominantTexture: string;
+  /** Fecha del muestreo/análisis de laboratorio (solo 'lab-measured'). */
+  measuredOn?: Date;
+  /** Etiqueta de la muestra en el informe del cliente (trazabilidad · 'lab-measured'). */
+  sampleLabel?: string;
   /** Punto de la parcela donde se muestreó (centroide del polígono). */
   sampledAt: { lat: number; lng: number };
 }
@@ -298,15 +314,19 @@ const thermalSchema = new Schema<IThermal>(
 // Sprint SoilGrids — perfil edáfico estático ISRIC SoilGrids v2.0
 const soilProfileSchema = new Schema<ISoilProfile>(
   {
-    source: { type: String, enum: ['soilgrids-v2'], required: true },
+    source: { type: String, enum: ['soilgrids-v2', 'lab-measured'], required: true },
     fetchedAt: { type: Date, required: true },
     clayPct: { type: Number, required: true, min: 0, max: 100 },
     sandPct: { type: Number, required: true, min: 0, max: 100 },
     siltPct: { type: Number, required: true, min: 0, max: 100 },
     organicCarbonGkg: { type: Number, required: true, min: 0 },
-    bulkDensityGcm3: { type: Number, required: true, min: 0 },
+    organicMatterPct: { type: Number, min: 0 },
+    // Opcional: el análisis de laboratorio no siempre mide densidad aparente.
+    bulkDensityGcm3: { type: Number, min: 0 },
     fieldCapacityVol: { type: Number, required: true, min: 0, max: 1 },
     dominantTexture: { type: String, required: true },
+    measuredOn: { type: Date },
+    sampleLabel: { type: String },
     sampledAt: {
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },

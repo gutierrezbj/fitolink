@@ -112,6 +112,81 @@ function dominantTextureUSDA(clayPct: number, sandPct: number, siltPct: number):
 }
 
 /**
+ * Capacidad de campo (θ a -33 kPa, cm³/cm³) por clase textural USDA. Valores
+ * de tabla agronómica estándar (FAO / Saxton-Rawls). Se usa para el perfil
+ * MEDIDO: el laboratorio da textura y M.O. pero no la capacidad de campo, así
+ * que se deriva de la textura — el mismo dato que el modelo estima, pero
+ * anclado a la textura REAL del lote. Suelos arenosos retienen poca agua.
+ */
+const FIELD_CAPACITY_BY_TEXTURE: Record<string, number> = {
+  arenoso: 0.1,
+  'arena franca': 0.12,
+  'franco arenoso': 0.17,
+  franco: 0.27,
+  'franco limoso': 0.3,
+  limoso: 0.3,
+  'franco arcillo arenoso': 0.25,
+  'franco arcilloso': 0.32,
+  'franco arcillo limoso': 0.33,
+  'arcilla arenosa': 0.33,
+  arcilla: 0.38,
+  'arcilla limosa': 0.39,
+};
+
+function fieldCapacityFromTexture(texture: string): number {
+  return FIELD_CAPACITY_BY_TEXTURE[texture] ?? 0.25; // franco genérico
+}
+
+/** Datos que aporta un análisis de laboratorio (textura + M.O.). */
+export interface MeasuredSoilInput {
+  clayPct: number;
+  sandPct: number;
+  siltPct: number;
+  organicMatterPct: number;
+  measuredOn?: Date;
+  sampleLabel?: string;
+}
+
+/**
+ * Construye un ISoilProfile a partir de un análisis de laboratorio REAL.
+ * Puro (no toca red ni BD): el llamante persiste el resultado. Deriva textura
+ * dominante, carbono orgánico (M.O. × 10 / 1.724, factor de Van Bemmelen) y
+ * capacidad de campo (de la textura). Renormaliza la textura a 100 por si el
+ * laboratorio redondea (p.ej. 3+8+92=103).
+ */
+export function buildMeasuredSoilProfile(
+  input: MeasuredSoilInput,
+  centroid: { lat: number; lng: number },
+): ISoilProfile {
+  const total = input.clayPct + input.sandPct + input.siltPct;
+  // Defensa (además del Zod del endpoint): renormalizar una suma lejana de 100
+  // fabricaría textura/capacidad de campo desde un dato roto. Mejor reventar.
+  if (total <= 0 || Math.abs(total - 100) > 10) {
+    throw new Error(`Textura inválida: arcilla+arena+limo=${total} (debe sumar ~100)`);
+  }
+  const factor = 100 / total;
+  const clay = input.clayPct * factor;
+  const sand = input.sandPct * factor;
+  const silt = input.siltPct * factor;
+  const dominantTexture = dominantTextureUSDA(clay, sand, silt);
+  const organicCarbonGkg = (input.organicMatterPct * 10) / 1.724;
+  return {
+    source: 'lab-measured',
+    fetchedAt: new Date(),
+    clayPct: Math.round(clay * 10) / 10,
+    sandPct: Math.round(sand * 10) / 10,
+    siltPct: Math.round(silt * 10) / 10,
+    organicCarbonGkg: Math.round(organicCarbonGkg * 10) / 10,
+    organicMatterPct: Math.round(input.organicMatterPct * 100) / 100,
+    fieldCapacityVol: fieldCapacityFromTexture(dominantTexture),
+    dominantTexture,
+    measuredOn: input.measuredOn,
+    sampleLabel: input.sampleLabel,
+    sampledAt: centroid,
+  };
+}
+
+/**
  * Consulta SoilGrids para un punto (lat/lng) y devuelve un perfil
  * agregado de la capa agronómica 0-30 cm. Throws si la API falla o
  * devuelve datos incompletos — quien llama decide qué hacer.

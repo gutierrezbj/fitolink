@@ -26,15 +26,18 @@ import { api } from '@/lib/api.js';
  */
 
 interface SoilProfile {
-  source: string;
+  source: string; // 'soilgrids-v2' | 'lab-measured'
   fetchedAt: string;
   clayPct: number;
   sandPct: number;
   siltPct: number;
   organicCarbonGkg: number;
-  bulkDensityGcm3: number;
+  organicMatterPct?: number;
+  bulkDensityGcm3?: number;
   fieldCapacityVol: number;
   dominantTexture: string;
+  measuredOn?: string;
+  sampleLabel?: string;
   sampledAt: { lat: number; lng: number };
 }
 
@@ -98,16 +101,21 @@ export default function SoilProfileCard({ parcelId, soil }: Props) {
   }
 
   // ── Cargado: render del perfil ───────────────────────────────────────
+  const isMeasured = soil.source === 'lab-measured';
   return (
     <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header */}
       <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
-          § SUELO · SOILGRIDS 250M
+          {isMeasured ? '§ SUELO · ANÁLISIS DE LABORATORIO' : '§ SUELO · SOILGRIDS 250M'}
         </p>
-        <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">
-          Gratis · Global
-        </p>
+        {isMeasured ? (
+          <span className="font-mono text-[9px] uppercase tracking-wider bg-emerald-400/90 text-emerald-950 rounded px-1.5 py-0.5">
+            Medido en campo
+          </span>
+        ) : (
+          <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">Gratis · Global</p>
+        )}
       </div>
 
       <div className="p-4">
@@ -128,38 +136,59 @@ export default function SoilProfileCard({ parcelId, soil }: Props) {
           <TextureBar label="Limo" pct={soil.siltPct} color="bg-earth-200" />
         </div>
 
-        {/* 3 métricas agronómicas */}
-        <div className="grid grid-cols-3 gap-px bg-earth-300/30 border-t border-earth-300/30 -mx-4 -mb-4 mt-2">
+        {/* Métricas agronómicas: 2 si es medido (M.O. real, sin densidad que el
+            laboratorio no mide), 3 si es estimación satelital */}
+        <div className={`grid ${isMeasured ? 'grid-cols-2' : 'grid-cols-3'} gap-px bg-earth-300/30 border-t border-earth-300/30 -mx-4 -mb-4 mt-2`}>
           <Metric
             label="Cap. agua disponible"
             value={`${Math.round(soil.fieldCapacityVol * 100)}%`}
-            sub="vol. campo capacity"
+            sub={isMeasured ? 'derivada de la textura' : 'vol. campo capacity'}
           />
-          <Metric
-            label="Carbono orgánico"
-            value={`${soil.organicCarbonGkg.toFixed(1)}`}
-            sub="g/kg materia orgánica"
-          />
-          <Metric
-            label="Densidad aparente"
-            value={`${soil.bulkDensityGcm3.toFixed(2)}`}
-            sub="g/cm³"
-          />
+          {isMeasured && soil.organicMatterPct != null ? (
+            <Metric
+              label="Materia orgánica"
+              value={`${soil.organicMatterPct.toFixed(2)}%`}
+              sub={`${soil.organicCarbonGkg.toFixed(1)} g/kg C orgánico`}
+            />
+          ) : (
+            <Metric
+              label="Carbono orgánico"
+              value={`${soil.organicCarbonGkg.toFixed(1)}`}
+              sub="g/kg C orgánico"
+            />
+          )}
+          {!isMeasured && (
+            <Metric
+              label="Densidad aparente"
+              value={soil.bulkDensityGcm3 != null ? soil.bulkDensityGcm3.toFixed(2) : '—'}
+              sub="g/cm³"
+            />
+          )}
         </div>
       </div>
 
       {/* Footer técnico */}
-      <div className="px-4 py-2 border-t border-earth-300/30 bg-earth-50 flex items-center justify-between">
-        <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500">
-          ISRIC SoilGrids v2.0 · capa 0–30 cm · {soil.sampledAt.lat.toFixed(4)}, {soil.sampledAt.lng.toFixed(4)}
-        </p>
-        <button
-          onClick={() => refreshMutation.mutate()}
-          disabled={refreshMutation.isPending}
-          className="font-mono text-[9px] uppercase tracking-wider text-brand-600 hover:text-brand-700 disabled:opacity-50"
-        >
-          {refreshMutation.isPending ? 'Actualizando…' : 'Refrescar'}
-        </button>
+      <div className="px-4 py-2 border-t border-earth-300/30 bg-earth-50 flex items-center justify-between gap-3">
+        {isMeasured ? (
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 truncate">
+            Análisis de laboratorio
+            {soil.measuredOn ? ` · ${new Date(soil.measuredOn).toLocaleDateString('es-ES')}` : ''}
+            {soil.sampleLabel ? ` · muestra «${soil.sampleLabel}»` : ''}
+          </p>
+        ) : (
+          <>
+            <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500">
+              ISRIC SoilGrids v2.0 · capa 0–30 cm · {soil.sampledAt.lat.toFixed(4)}, {soil.sampledAt.lng.toFixed(4)}
+            </p>
+            <button
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending}
+              className="font-mono text-[9px] uppercase tracking-wider text-brand-600 hover:text-brand-700 disabled:opacity-50 flex-shrink-0"
+            >
+              {refreshMutation.isPending ? 'Actualizando…' : 'Refrescar'}
+            </button>
+          </>
+        )}
       </div>
       {errorMsg && (
         <div className="px-4 py-2 bg-red-50 border-t border-red-100">

@@ -27,6 +27,9 @@ router.get('/:id/insights/weather-events', parcelController.getWeatherEvents);
 router.get('/:id/insights/pest-advisories', getPestAdvisoriesForParcel);
 // Sprint SoilGrids — refresh manual del perfil edáfico ISRIC 250m
 router.post('/:id/soil/refresh', parcelController.refreshSoilProfile);
+// Ingesta de análisis de suelo REAL de laboratorio (textura + M.O.) → pisa la
+// estimación satelital. Diana Marcela (aguacate RD), 10-ago-2026.
+router.post('/:id/soil/measured', parcelController.setMeasuredSoil);
 // Sprint FIRMS — focos térmicos activos cerca de la parcela (NASA VIIRS)
 router.get('/:id/fires', parcelController.getNearbyFires);
 // Sprint BUMM Regantes · DECISIÓN DE RIEGO operativa (NDVI + suelo + clima → m³)

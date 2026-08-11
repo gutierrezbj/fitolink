@@ -165,7 +165,9 @@ function retentionDaysByTexture(texture: string): number {
   const t = texture.toLowerCase();
   if (t.includes('arcilla') && !t.includes('arenosa') && !t.includes('limosa')) return 7;
   if (t.includes('franco arcilloso')) return 5;
-  if (t.includes('arenoso')) return 2;
+  // 'arena franca' (loamy sand) es arenoso pero no contiene el substring
+  // 'arenoso' — sin esto caía al default de 4 días, más que un franco arenoso.
+  if (t.includes('arenoso') || t.includes('arena')) return 2;
   if (t.includes('limoso')) return 5;
   if (t.includes('franco')) return 4;
   return 4; // default conservador
