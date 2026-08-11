@@ -107,11 +107,11 @@ export default function WeatherWidget({ lat, lon, parcelName }: Props) {
   return (
     <div className="bg-white rounded-xl border border-earth-300/30 overflow-hidden">
       {/* Brand strip header — armonizado con el resto de cards de la parcela.
-          Fuente real (Open-Meteo · ECMWF) citada en el eyebrow, sin gradiente
+          Fuente real (Open-Meteo) citada en el eyebrow, sin gradiente
           sky-corporate. */}
       <div className="bg-brand-600 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-earth-50/70">
-          § PRONÓSTICO 7 DÍAS · OPEN-METEO ECMWF
+          § PRONÓSTICO 7 DÍAS · OPEN-METEO
         </p>
         <div className="flex items-center bg-white/15 rounded-full p-0.5 text-[11px]">
           <button

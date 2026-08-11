@@ -1,10 +1,11 @@
 /**
  * Open-Meteo Forecast API client.
  *
- * Free, no API key, no practical rate limit. Same ECMWF/IFS model that
- * Syngenta and most pro agro tools surface. We already use Open-Meteo for
- * historical climate baselines (see climate_context.py in the pipeline) so
- * this is consistent.
+ * Free, no API key, no practical rate limit. Sin `models=`, Open-Meteo usa
+ * `best_match`: elige el mejor modelo disponible por ubicación (ECMWF/IFS,
+ * GFS, ICON…), lo correcto para un producto global (España → RD). Por eso el
+ * eyebrow cita "Open-Meteo" a secas, no un modelo concreto que no pedimos.
+ * Ya usamos Open-Meteo para las bases climáticas históricas (climate_context.py).
  *
  * The client hits the public endpoint directly from the browser — no
  * backend round-trip needed. Open-Meteo allows CORS for any origin.

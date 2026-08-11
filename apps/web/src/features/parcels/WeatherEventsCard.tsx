@@ -148,7 +148,7 @@ export default function WeatherEventsCard({ parcelId }: Props) {
       {data && (
         <div className="px-4 py-2 border-t border-earth-300/30 bg-earth-50/60">
           <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 text-center">
-            FUENTE: OPEN-METEO ECMWF · ACTUALIZADO {fmtFetchedAt(data.fetchedAt)}
+            FUENTE: OPEN-METEO · ACTUALIZADO {fmtFetchedAt(data.fetchedAt)}
           </p>
         </div>
       )}

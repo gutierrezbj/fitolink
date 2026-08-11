@@ -560,7 +560,7 @@ export default function SigpacViewerPage() {
                   § TIEMPO EN SU PARCELA · HOY
                 </p>
                 <p className="font-mono text-[9px] text-earth-50/60 tracking-wide">
-                  Open-Meteo ECMWF
+                  Open-Meteo
                 </p>
               </div>
               {weatherQuery.isLoading && (
