@@ -187,12 +187,31 @@ export async function setMeasuredSoil(req: AuthRequest, res: Response, next: Nex
       },
       centroid,
     );
-    await Parcel.updateOne({ _id: parcel._id }, { $set: { soil: profile } });
+    // Estimación satelital para comparar. Aquí SOLO fuentes sin red (lo que ya
+    // esté guardado): no bloqueamos la escritura del laboratorio con una llamada
+    // a SoilGrids, que podría tardar o colgarse.
+    let soilEstimate = parcel.soilEstimate;
+    if (!soilEstimate && parcel.soil && parcel.soil.source === 'soilgrids-v2') {
+      soilEstimate = parcel.soil;
+    }
+    const update: Record<string, unknown> = { soil: profile };
+    if (soilEstimate) update.soilEstimate = soilEstimate;
+    await Parcel.updateOne({ _id: parcel._id }, { $set: update });
     logger.info(
-      { parcelId: parcel._id.toString(), texture: profile.dominantTexture, source: 'lab-measured' },
+      { parcelId: parcel._id.toString(), texture: profile.dominantTexture, source: 'lab-measured', hasEstimate: !!soilEstimate },
       'soil_profile_measured_set',
     );
     res.json({ success: true, data: profile });
+
+    // Si no había estimación guardada, se obtiene de SoilGrids FUERA del camino
+    // crítico (fire-and-forget): la respuesta con el dato de laboratorio ya salió,
+    // y la comparación aparecerá en la siguiente carga de la parcela.
+    if (!soilEstimate) {
+      const pid = parcel._id;
+      void fetchSoilProfileForParcel(parcel)
+        .then((est) => Parcel.updateOne({ _id: pid }, { $set: { soilEstimate: est } }))
+        .catch((e) => logger.warn({ parcelId: pid.toString(), err: (e as Error).message }, 'soil_estimate_fetch_failed_on_measured'));
+    }
   } catch (error) {
     next(error);
   }

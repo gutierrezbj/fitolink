@@ -44,9 +44,11 @@ interface SoilProfile {
 interface Props {
   parcelId: string;
   soil?: SoilProfile | null;
+  /** Estimación satelital guardada — para comparar con el dato de laboratorio. */
+  estimate?: SoilProfile | null;
 }
 
-export default function SoilProfileCard({ parcelId, soil }: Props) {
+export default function SoilProfileCard({ parcelId, soil, estimate }: Props) {
   const queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -167,6 +169,26 @@ export default function SoilProfileCard({ parcelId, soil }: Props) {
         </div>
       </div>
 
+      {/* Comparación laboratorio vs estimación satelital — solo cuando hay dato
+          medido Y la estimación guardada. Valida cuánto acierta el modelo
+          global contra el suelo real (gancho para gestión remota). */}
+      {isMeasured && estimate && (
+        <div className="px-4 py-3 border-t border-earth-300/30 bg-earth-50/60">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-gray-500 mb-2">
+            Laboratorio vs. estimación satelital
+          </p>
+          <div className="space-y-1">
+            <CompareRow label="Arcilla" lab={soil.clayPct} est={estimate.clayPct} />
+            <CompareRow label="Arena" lab={soil.sandPct} est={estimate.sandPct} />
+            <CompareRow label="Limo" lab={soil.siltPct} est={estimate.siltPct} />
+          </div>
+          <p className="text-[11px] text-gray-500 mt-2 leading-snug">
+            Textura: <span className="font-semibold text-brand-800 capitalize">{soil.dominantTexture}</span> (lab)
+            {' · '}<span className="capitalize">{estimate.dominantTexture}</span> (satélite)
+          </p>
+        </div>
+      )}
+
       {/* Footer técnico */}
       <div className="px-4 py-2 border-t border-earth-300/30 bg-earth-50 flex items-center justify-between gap-3">
         {isMeasured ? (
@@ -214,6 +236,30 @@ function TextureBar({ label, pct, color }: { label: string; pct: number; color: 
           style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function CompareRow({ label, lab, est }: { label: string; lab: number; est: number }) {
+  // Se redondea ANTES de restar para que el delta mostrado sea exactamente la
+  // resta de las dos cifras que se ven al lado (si no, el redondeo por separado
+  // las contradice — y este número es la señal de "cuánto acierta el satélite").
+  const l = Math.round(lab);
+  const e = Math.round(est);
+  const delta = l - e;
+  const close = Math.abs(delta) < 5; // <5 pts = el satélite acierta bien
+  return (
+    <div className="flex items-center justify-between text-xs gap-2">
+      <span className="text-gray-600 w-20 flex-shrink-0">{label}</span>
+      <span className="tabular-nums font-semibold text-brand-900 flex-1 text-right">
+        {l}% <span className="text-gray-400 font-normal text-[10px]">lab</span>
+      </span>
+      <span className="tabular-nums text-gray-500 flex-1 text-right">
+        {e}% <span className="text-gray-400 text-[10px]">sat.</span>
+      </span>
+      <span className={`tabular-nums text-[10px] w-10 text-right font-semibold ${close ? 'text-emerald-600' : 'text-amber-600'}`}>
+        {delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`}
+      </span>
     </div>
   );
 }

@@ -155,6 +155,13 @@ export interface IParcel extends Document {
    * referencias o si SoilGrids actualiza su modelo global.
    */
   soil?: ISoilProfile;
+  /**
+   * Estimación satelital de SoilGrids GUARDADA para comparar cuando `soil` es
+   * un análisis de laboratorio ('lab-measured'). Deja ver a la vez el dato real
+   * y lo que el modelo global habría estimado — valida cuánto acierta el
+   * satélite contra el suelo medido. Vacío mientras `soil` sea la propia estimación.
+   */
+  soilEstimate?: ISoilProfile;
   isActive: boolean;
   /**
    * Crop establishment phase — true cuando la parcela está recién plantada
@@ -356,6 +363,7 @@ const parcelSchema = new Schema<IParcel>(
     recentClimate: { type: recentClimateSchema, default: undefined },
     thermal: { type: thermalSchema, default: undefined },
     soil: { type: soilProfileSchema, default: undefined },
+    soilEstimate: { type: soilProfileSchema, default: undefined },
     isActive: { type: Boolean, default: true },
     establishmentPhase: { type: Boolean, default: false },
     plantingYear: { type: Number, min: 1900, max: 2100 },

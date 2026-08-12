@@ -223,6 +223,22 @@ type RecentClimate = {
   droughtFlag?: 'none' | 'mild' | 'moderate' | 'severe';
 };
 
+type SoilShape = {
+  source: string;
+  fetchedAt: string;
+  clayPct: number;
+  sandPct: number;
+  siltPct: number;
+  organicCarbonGkg: number;
+  organicMatterPct?: number;
+  bulkDensityGcm3?: number;
+  fieldCapacityVol: number;
+  dominantTexture: string;
+  measuredOn?: string;
+  sampleLabel?: string;
+  sampledAt: { lat: number; lng: number };
+};
+
 type Parcel = {
   _id: string;
   name: string;
@@ -236,21 +252,8 @@ type Parcel = {
   establishmentPhase?: boolean;
   calibratingUntil?: string | null;
   plantingYear?: number;
-  soil?: {
-    source: string;
-    fetchedAt: string;
-    clayPct: number;
-    sandPct: number;
-    siltPct: number;
-    organicCarbonGkg: number;
-    organicMatterPct?: number;
-    bulkDensityGcm3?: number;
-    fieldCapacityVol: number;
-    dominantTexture: string;
-    measuredOn?: string;
-    sampleLabel?: string;
-    sampledAt: { lat: number; lng: number };
-  } | null;
+  soil?: SoilShape | null;
+  soilEstimate?: SoilShape | null;
   modisBaseline?: ModisBaseline;
   climateBaseline?: ClimateBaseline;
   recentClimate?: RecentClimate;
@@ -823,7 +826,7 @@ export default function ParcelDetailPage() {
           and-forget. Si no está poblado, la card muestra CTA "Calcular
           perfil de suelo" que dispara POST /soil/refresh. */}
       <div className="mb-4">
-        <SoilProfileCard parcelId={parcel._id} soil={parcel.soil} />
+        <SoilProfileCard parcelId={parcel._id} soil={parcel.soil} estimate={parcel.soilEstimate} />
       </div>
 
       {/* Forecast — closes the loop "we saw X happen → here's when you can act" */}
