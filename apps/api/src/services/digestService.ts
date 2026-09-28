@@ -62,7 +62,10 @@ import { sendDigestEmail } from './emailService.js';
  */
 const REAL_DATA_DEMO_GOOGLE_IDS = new Set<string>(['john-pistacho-real']);
 
+const DIGEST_DENYLIST = new Set<string>(['jesus-vivar-edu']);
+
 function isEligibleDemo(googleId: string): boolean {
+  if (DIGEST_DENYLIST.has(googleId)) return false;
   if (REAL_DATA_DEMO_GOOGLE_IDS.has(googleId)) return true;
   return !googleId.startsWith('demo-');
 }

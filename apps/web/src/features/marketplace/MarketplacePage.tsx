@@ -772,10 +772,10 @@ export default function MarketplacePage() {
           <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-full">
             <MapContainer center={[39.5, -4.0]} zoom={6} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>'
-                subdomains="abcd"
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                attribution='Tiles &copy; <a href="https://www.esri.com/">Esri</a>'
                 maxZoom={19}
+                maxNativeZoom={16}
               />
 
               {/* Farmer's parcels in green */}
