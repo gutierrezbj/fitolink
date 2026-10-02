@@ -61,10 +61,33 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const COUNTRY_BOXES: { name: string; minLon: number; maxLon: number; minLat: number; maxLat: number }[] = [
+  { name: 'España', minLon: -18.5, maxLon: 4.6, minLat: 27.5, maxLat: 44.0 },
+  { name: 'República Dominicana', minLon: -72.5, maxLon: -68.0, minLat: 17.3, maxLat: 20.2 },
+];
+
+function parcelCountry(geometry: GeoJSON.Polygon): string {
+  const ring = geometry?.coordinates?.[0];
+  if (!ring || ring.length === 0) return 'Otro';
+  let lon = 0;
+  let lat = 0;
+  for (const pos of ring) {
+    lon += pos[0] ?? 0;
+    lat += pos[1] ?? 0;
+  }
+  lon /= ring.length;
+  lat /= ring.length;
+  for (const b of COUNTRY_BOXES) {
+    if (lon >= b.minLon && lon <= b.maxLon && lat >= b.minLat && lat <= b.maxLat) return b.name;
+  }
+  return 'Otro';
+}
+
 export default function ParcelsPage() {
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [cropFilter, setCropFilter] = useState<string | null>(null);
+  const [countryFilter, setCountryFilter] = useState<string | null>(null);
   // Modo de color del mapa, recordado por navegador (Estado / Cultivo).
   const [colorMode, setColorMode] = useState<'estado' | 'cultivo'>(() => {
     try {
@@ -108,8 +131,18 @@ export default function ParcelsPage() {
     return [...m.entries()].sort((a, b) => b[1].count - a[1].count);
   }, [parcels]);
 
-  // Parcelas mostradas (lista + mapa) según el filtro de cultivo activo.
-  const shownParcels = cropFilter ? parcels.filter((p) => p.cropType === cropFilter) : parcels;
+  const countrySummary = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of parcels) {
+      const c = parcelCountry(p.geometry);
+      m.set(c, (m.get(c) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [parcels]);
+
+  const shownParcels = parcels.filter(
+    (p) => (!cropFilter || p.cropType === cropFilter) && (!countryFilter || parcelCountry(p.geometry) === countryFilter),
+  );
 
   const selectedParcel = parcels.find((p) => p._id === selectedParcelId);
   const parcelToDelete = parcels.find((p) => p._id === confirmDeleteId);
@@ -213,8 +246,41 @@ export default function ParcelsPage() {
           {/* List header — los chips de cultivo son FILTROS clicables. */}
           <div className="px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              {cropFilter ? `${shownParcels.length} de ${parcels.length} parcelas` : `${parcels.length} parcelas`}
+              {cropFilter || countryFilter ? `${shownParcels.length} de ${parcels.length} parcelas` : `${parcels.length} parcelas`}
             </p>
+            {countrySummary.length > 1 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {countrySummary.map(([country, n]) => {
+                  const active = countryFilter === country;
+                  return (
+                    <button
+                      key={country}
+                      type="button"
+                      onClick={() => setCountryFilter(active ? null : country)}
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border transition ${
+                        active
+                          ? 'bg-brand-600 text-white border-brand-600'
+                          : countryFilter
+                          ? 'bg-white text-gray-500 border-gray-200 opacity-60 hover:opacity-100'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                      title={`Filtrar por país: ${country} (${n} parcela${n > 1 ? 's' : ''})`}
+                    >
+                      {country} {n}
+                    </button>
+                  );
+                })}
+                {countryFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setCountryFilter(null)}
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  >
+                    ✕ Todos
+                  </button>
+                )}
+              </div>
+            )}
             {cropSummary.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {cropSummary.map(([crop, s]) => {
