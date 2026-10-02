@@ -10,6 +10,7 @@ import ParcelExportButtons from './ParcelExportButtons.js';
 import NdviChart from './NdviChart.js';
 import HealthScoreGauge from '@/components/HealthScoreGauge.js';
 import { ndviColor, ndviLowForCrop } from '@/lib/cropHealth.js';
+import { useAuthStore } from '@/features/auth/authStore.js';
 
 type NdviReading = { date: string; mean: number; min: number; max: number; anomalyDetected: boolean; source?: string };
 type Parcel = {
@@ -81,11 +82,13 @@ export default function ParcelsPage() {
   }, [colorMode]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
   const { data: parcelsData, isLoading } = useQuery({
-    queryKey: ['parcels', 'mine'],
+    queryKey: ['parcels', isAdmin ? 'all' : 'mine'],
     queryFn: async () => {
-      const res = await api.get('/parcels/mine');
+      const res = await api.get(isAdmin ? '/parcels?limit=500' : '/parcels/mine');
       return res.data.data;
     },
   });
@@ -142,7 +145,7 @@ export default function ParcelsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mis Parcelas</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{isAdmin ? 'Todas las parcelas' : 'Mis Parcelas'}</h1>
           <p className="text-gray-500 text-sm mt-1">{parcels.length} parcelas · monitorizado via Sentinel-2</p>
         </div>
         <div className="flex items-center gap-2">
